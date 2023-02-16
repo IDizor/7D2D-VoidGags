@@ -23,7 +23,7 @@ The features list / `VoidGags.config` file content:
   // Use helmet light mod by default when pressing F. Instead of weapon light mod or laser pointer mod.
   "HelmetLightByDefault": true,
 
-  // Allows to pickup slightly damaged items. Percentage is the alloved remainig item health. Note: Items will be fully repaired when placed again.
+  // Allows to pickup slightly damaged items. Percentage is the allowed remaining item health. Note: Items will be fully repaired when placed again.
   "PickupDamagedItems": true,
   "PickupDamagedItems_Percentage": 80,
 
