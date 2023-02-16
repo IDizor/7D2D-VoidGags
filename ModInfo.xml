@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xml>
+	<ModInfo>
+		<Name value="VoidGags" />
+		<Description value="The set of the useful fixes and features." />
+		<Author value="Dizor" />
+		<Website value="https://github.com/IDizor/7D2D-VoidGags" />
+		<Version value="1.0" compat="A20"/>
+	</ModInfo>
+</xml>
