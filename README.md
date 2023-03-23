@@ -39,6 +39,19 @@ The features list / `VoidGags.config` file content:
   "SaveLockedSlotsCount": true,
 
   // Makes the scrapping process in inventory faster, depending on the Salvage Operations perk level.
-  "ScrapTimeAndSalvageOperations": true
+  "ScrapTimeAndSalvageOperations": true,
+
+  // Auto-open console on first exception only. All further exceptions will not open the console.
+  "PreventConsoleErrorSpam": true,
+
+  // Arrows and bolts make noise and attract enemies. Can wake sleeping zombies.
+  "ArrowsBoltsDistraction": true,
+
+  // Thrown grenades rolling on the ground attract zombies in the same way like a thrown rock. Can wake sleeping zombies.
+  "RocksGrenadesDistraction": true,
+
+  // How zombies get know where the player is when a grenade or dynamite explodes?
+  // Not damaged zombies will check the explosion location, and not the player location.
+  "ExplosionAttractionFix": true
 }
 ```

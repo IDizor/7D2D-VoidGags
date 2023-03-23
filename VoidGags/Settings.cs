@@ -23,6 +23,10 @@ namespace VoidGags
         public static bln RepairHasTopPriority = true;
         public static bln SaveLockedSlotsCount = true;
         public static bln ScrapTimeAndSalvageOperations = true;
+        public static bln PreventConsoleErrorSpam = false;
+        public static bln ArrowsBoltsDistraction = true;
+        public static bln RocksGrenadesDistraction = true;
+        public static bln ExplosionAttractionFix = true;
 
         static Settings()
         {
@@ -36,12 +40,14 @@ namespace VoidGags
                     typeof(Settings).GetFields(BindingFlags.Static | BindingFlags.Public).ToList().ForEach(f =>
                     {
                         if (settings.TryGetValue(f.Name, out object v))
+                        {
                             f.SetValue(null, Convert.ChangeType(v, f.FieldType));
+                        }
                     });
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Debug.LogError($"Mod {nameof(AirDropIsNeverEmpty)}: {ex.Message}");
+                    Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Failed to parse config file."));
                 }
             }
             else

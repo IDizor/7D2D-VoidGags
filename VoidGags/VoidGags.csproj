@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VoidGags</RootNamespace>
     <AssemblyName>VoidGags</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -80,8 +81,15 @@
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.InputModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VoidGags.ArrowsBoltsDistraction.cs" />
+    <Compile Include="VoidGags.RocksGrenadesDistraction.cs" />
+    <Compile Include="VoidGags.PreventConsoleErrorSpam.cs" />
+    <Compile Include="VoidGags.ExplosionAttractionFix.cs" />
     <Compile Include="VoidGags.UL.cs" />
     <Compile Include="VoidGags.ExperienceByMaxHP.cs" />
     <Compile Include="VoidGags.CraftingQueueMove.cs" />
