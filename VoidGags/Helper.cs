@@ -1,21 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Platform;
 using UnityEngine;
-using static UIPopupList;
 
 namespace VoidGags
 {
     public static class Helper
     {
-        /// <summary>
-        /// Gets the configuration directory path for locked slots.
-        /// </summary>
-        public static string LockedSlotsConfigDirectory => VoidGags.ModFolder + "\\LockedSlots";
-
         /// <summary>
         /// Gets the local player entity.
         /// </summary>
@@ -24,44 +18,12 @@ namespace VoidGags
         /// <summary>
         /// Gets the current player identifier.
         /// </summary>
-        public static string PlayerId => GameManager.Instance?.persistentLocalPlayer?.UserIdentifier?.ReadablePlatformUserIdentifier;
+        public static string PlayerId => PlatformManager.InternalLocalUserIdentifier?.ReadablePlatformUserIdentifier;
 
         /// <summary>
         /// Gets the current world seed.
         /// </summary>
         public static string WorldSeed => GameManager.Instance?.World?.Seed.ToString();
-
-        /// <summary>
-        /// Saves specified locked slots count to file.
-        /// </summary>
-        public static void SaveLockedSlotsCount(int lockedSlots)
-        {
-            var playerId = PlayerId;
-            var worldSeed = WorldSeed;
-            if (!string.IsNullOrEmpty(playerId) && !string.IsNullOrEmpty(worldSeed))
-            {
-                Directory.CreateDirectory(LockedSlotsConfigDirectory);
-                File.WriteAllText(Path.Combine(LockedSlotsConfigDirectory, $"{playerId}-{worldSeed}.txt"), lockedSlots.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Gets locked slots count from the corresponding file.
-        /// </summary>
-        public static int LoadLockedSlotsCount()
-        {
-            var playerId = PlayerId;
-            var worldSeed = WorldSeed;
-            if (!string.IsNullOrEmpty(playerId) && !string.IsNullOrEmpty(worldSeed))
-            {
-                var configFile = Path.Combine(LockedSlotsConfigDirectory, $"{playerId}-{worldSeed}.txt");
-                if (File.Exists(configFile))
-                {
-                    return int.Parse(File.ReadAllText(configFile));
-                }
-            }
-            return 0;
-        }
 
         /// <summary>
         /// Gets the method the current method is called from.
@@ -149,9 +111,40 @@ namespace VoidGags
         }
 
         /// <summary>
+        /// Gets the list of tile entities from the position.
+        /// </summary>
+        public static TileEntity[] GetTileEntities(Vector3 pos, float radius)
+        {
+            var tiles = new List<KeyValuePair<float, TileEntity>>();
+            int maxDistance = Mathf.CeilToInt(radius);
+            if (maxDistance >= 1)
+            {
+                var intPos = new Vector3i(pos);
+                var world = GameManager.Instance.World;
+                for (int x = -maxDistance; x <= maxDistance; x++)
+                for (int y = -maxDistance; y <= maxDistance; y++)
+                for (int z = -maxDistance; z <= maxDistance; z++)
+                {
+                    var tilePos = new Vector3i(intPos.x + x, intPos.y + y, intPos.z + z);
+                    var distance = (pos - tilePos.ToVector3Center()).magnitude;
+                    if (distance < radius)
+                    {
+                        var tile = world.GetTileEntity(0, tilePos);
+                        if (tile != null)
+                        {
+                            tiles.Add(new KeyValuePair<float, TileEntity>(distance, tile));
+                        }
+                    }
+                }
+            }
+
+            return tiles.OrderBy(e => e.Key).Select(e => e.Value).Distinct().ToArray();
+        }
+
+        /// <summary>
         /// Waits for the function to return true.
         /// </summary>
-        public static bool WaitFor(Func<bool> checkFunc, int checkIntervalMs = 2, int timeoutMs = 10000)
+        public static bool WaitFor(Func<bool> checkFunc, int checkIntervalMs = 2, int timeoutMs = 3000)
         {
             var startTime = DateTime.Now;
             while (!checkFunc())

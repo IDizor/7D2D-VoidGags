@@ -21,12 +21,14 @@ namespace VoidGags
         public static int PickupDamagedItems_Percentage = 80;
         public static bln MouseWheelClickFastRepair = true;
         public static bln RepairHasTopPriority = true;
-        public static bln SaveLockedSlotsCount = true;
+        public static bln LockedSlotsSystem = true;
         public static bln ScrapTimeAndSalvageOperations = true;
         public static bln PreventConsoleErrorSpam = false;
         public static bln ArrowsBoltsDistraction = true;
         public static bln RocksGrenadesDistraction = true;
         public static bln ExplosionAttractionFix = true;
+        public static bln ScrapDrinksToEmptyJars = true;
+        public static bln DigThroughTheGrass = true;
 
         static Settings()
         {

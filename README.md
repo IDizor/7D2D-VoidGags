@@ -33,10 +33,11 @@ The features list / `VoidGags.config` file content:
   // New items to repair are always placed to the top of the crafting queue.
   "RepairHasTopPriority": true,
 
-  // Saves the inventory locked slots count.
-  // (in case you have any mod that displays inventory locked slots count on UI)
+  // Allows to lock backpack/vehicle slots to prevent sorting and moving them with special buttons.
+  // Highlights locked slots. Remembers the locked slots count if the game is restarted.
+  // Added button to auto-spread the loot to nearby containers.
   // (not applicable for Undead Legacy mod)
-  "SaveLockedSlotsCount": true,
+  "LockedSlotsSystem": true,
 
   // Makes the scrapping process in inventory faster, depending on the Salvage Operations perk level.
   "ScrapTimeAndSalvageOperations": true,
@@ -52,6 +53,12 @@ The features list / `VoidGags.config` file content:
 
   // How zombies get know where the player is when a grenade or dynamite explodes?
   // Not damaged zombies will check the explosion location, and not the player location.
-  "ExplosionAttractionFix": true
+  "ExplosionAttractionFix": true,
+
+  // Scrap any drink like water/murky/tea/coffee/etc to an empty jar.
+  "ScrapDrinksToEmptyJars": true,
+
+  // Dig with a shovel or pickaxe through the grass/plants.
+  "DigThroughTheGrass": true
 }
 ```

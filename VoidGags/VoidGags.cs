@@ -36,12 +36,14 @@ namespace VoidGags
             if (Settings.PickupDamagedItems) ApplyPatches_PickupDamagedBlock(harmony);
             if (Settings.MouseWheelClickFastRepair) ApplyPatches_RepairByWheelClick(harmony);
             if (Settings.RepairHasTopPriority) ApplyPatches_RepairPriority(harmony);
-            if (Settings.SaveLockedSlotsCount) ApplyPatches_SaveLockedSlots(harmony);
+            if (Settings.LockedSlotsSystem) ApplyPatches_LockedSlotsSystem(harmony);
             if (Settings.ScrapTimeAndSalvageOperations) ApplyPatches_ScrapTime(harmony);
             if (Settings.PreventConsoleErrorSpam) ApplyPatches_PreventConsoleErrorSpam(harmony);
             if (Settings.ArrowsBoltsDistraction) ApplyPatches_ArrowsBoltsDistraction(harmony);
             if (Settings.RocksGrenadesDistraction) ApplyPatches_RocksGrenadesDistraction(harmony);
             if (Settings.ExplosionAttractionFix) ApplyPatches_ExplosionAttractionFix(harmony);
+            if (Settings.ScrapDrinksToEmptyJars) ApplyPatches_ScrapDrinksToEmptyJars(harmony);
+            if (Settings.DigThroughTheGrass) ApplyPatches_DigThroughTheGrass(harmony);
         }
 
         /// <summary>
@@ -96,10 +98,13 @@ namespace VoidGags
                 {
                     foreach (var patchName in AdditionalXmlPatches)
                     {
-                        var configPath = $"{ModFolder}\\{patchName}\\{cachingXmlName}.xml";
+                        var configPath = $"{ModFolder}\\{patchName}\\{cachingXmlName.Replace('/','\\')}.xml";
+                        var configDir = $"{ModFolder}\\{patchName}";
                         if (File.Exists(configPath))
                         {
-                            var patchXml = new XmlFile(Path.GetDirectoryName(configPath), cachingXmlName, (_) => { });
+                            var patchXml = new XmlFile(configDir, cachingXmlName, (ex) => {
+                                //Debug.LogException(ex);
+                            });
                             if (Helper.WaitFor(() => patchXml.Loaded))
                             {
                                 XmlPatcher.PatchXml(_origXml, patchXml, patchName);

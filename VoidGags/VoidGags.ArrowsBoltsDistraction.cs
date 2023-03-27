@@ -13,7 +13,7 @@ namespace VoidGags
         {
             harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), "Hit"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit_Params p) =>
-                ItemActionAttack_Hit.Postfix(p.hitInfo, p._damageType, p._attackDetails))));
+                ItemActionAttack_Hit.Postfix(p.hitInfo, p._damageType, p._attackDetails, p.damagingItemValue))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ArrowsBoltsDistraction)}");
         }
@@ -23,6 +23,7 @@ namespace VoidGags
             public WorldRayHitInfo hitInfo;
             public EnumDamageTypes _damageType;
             public AttackHitInfo _attackDetails;
+            public ItemValue damagingItemValue;
         }
 
         /// <summary>
@@ -30,9 +31,12 @@ namespace VoidGags
         /// </summary>
         public class ItemActionAttack_Hit
         {
-            public static void Postfix(WorldRayHitInfo hitInfo, EnumDamageTypes _damageType, AttackHitInfo _attackDetails)
+            public static FastTags PerkArcheryTag = FastTags.Parse("perkArchery");
+
+            public static void Postfix(WorldRayHitInfo hitInfo, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
             {
-                if (_damageType == EnumDamageTypes.Piercing)
+                if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null
+                    && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
                 {
                     var material = _attackDetails.blockBeingDamaged.Block?.Properties.GetString("Material");
                     if (material != null)
@@ -77,7 +81,7 @@ namespace VoidGags
                         var distractionTargets = Helper.GetEntities<EntityEnemy>(hitInfo.hit.pos, distractionRadius);
                         var lastBlockPos = hitInfo.lastBlockPos.ToVector3Center();
                         var hitPos = hitInfo.hit.pos;
-                        Debug.LogError($"distractionRadius = {distractionRadius}");
+
                         Helper.DeferredAction(delayMs: 333, () =>
                         {
                             foreach (var entityEnemy in distractionTargets)
@@ -86,7 +90,6 @@ namespace VoidGags
                                 {
                                     var occlusion = Helper.CalculateNoiseOcclusion(lastBlockPos, entityEnemy.position, 0.03f);
                                     occlusion *= Mathf.Sqrt(distractionRadius / 10f); // adjust occlusion depending on radius/material
-                                    Debug.LogWarning($"{occlusion} : {entityEnemy.EntityName}, distance = {(lastBlockPos - entityEnemy.position).magnitude}");
                                     if (occlusion >= 0.9f)
                                     {
                                         entityEnemy.ConditionalTriggerSleeperWakeUp();
