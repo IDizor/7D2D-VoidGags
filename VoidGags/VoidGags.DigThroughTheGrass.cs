@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using HarmonyLib;
 using UnityEngine;
-using static ItemActionDynamic;
 
 namespace VoidGags
 {
@@ -31,6 +30,7 @@ namespace VoidGags
         /// </summary>
         public class ItemActionDynamic_hitTarget
         {
+            public static FastTags AxeTag = FastTags.Parse("axe");
             public static FastTags ShovelTag = FastTags.Parse("shovel");
             public static FastTags MiningToolTag = FastTags.Parse("miningTool");
 
@@ -40,7 +40,7 @@ namespace VoidGags
                 if (__instance is ItemActionDynamicMelee meleeAction && block.IsTerrainDecoration && block.MaxDamage < 4)
                 {
                     var itemTags = _actionData.invData.itemValue.ItemClass.ItemTags;
-                    if (itemTags.Test_AnySet(ShovelTag) || itemTags.Test_AnySet(MiningToolTag))
+                    if ((itemTags.Test_AnySet(ShovelTag) || itemTags.Test_AnySet(MiningToolTag)) && !itemTags.Test_AnySet(AxeTag))
                     {
                         var isCrop = false;
                         if (block.FilterTags != null &&
@@ -58,7 +58,9 @@ namespace VoidGags
                         }
                         if (!isCrop)
                         {
-                            meleeAction.Raycast((ItemActionDynamicData)_actionData);
+                            var itemActionDynamicData = (ItemActionDynamicMelee.ItemActionDynamicMeleeData)_actionData;
+                            itemActionDynamicData.StaminaUsage = 0;
+                            meleeAction.Raycast(itemActionDynamicData);
                         }
                     }
                 }
