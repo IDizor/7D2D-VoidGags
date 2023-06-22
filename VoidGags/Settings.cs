@@ -29,6 +29,12 @@ namespace VoidGags
         public static bln ExplosionAttractionFix = true;
         public static bln ScrapDrinksToEmptyJars = true;
         public static bln DigThroughTheGrass = true;
+        public static bln LessFogWhenFlying = true;
+        public static bln SocialZombies = false;
+        public static bln PreventDestroyOnClose = true;
+        public static int PreventDestroyOnClose_KeyCode = (int)KeyCode.LeftShift;
+        public static bln MainLootTierBonus = false; // hidden feature, disabled by default
+        public static bln PiercingShots = true;
 
         static Settings()
         {

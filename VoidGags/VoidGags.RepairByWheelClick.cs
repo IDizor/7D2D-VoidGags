@@ -11,27 +11,25 @@ namespace VoidGags
         public void ApplyPatches_RepairByWheelClick(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), "Update"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) =>
                 XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.MouseWheelClickFastRepair)}");
         }
 
-        private struct XUiC_Toolbelt_Update_Params
-        {
-            public XUiC_Toolbelt __instance;
-            public XUiController[] ___itemControllers;
-            public int ___currentHoldingIndex;
-        }
-
         /// <summary>
         /// Repairs current weapon/tool in hands by mouse wheel click.
         /// </summary>
-        [HarmonyPatch(typeof(XUiC_Toolbelt))]
-        [HarmonyPatch("Update")]
         public class XUiC_Toolbelt_Update
         {
             private static bool RepairingFlag = false;
+
+            public struct APostfix
+            {
+                public XUiC_Toolbelt __instance;
+                public XUiController[] ___itemControllers;
+                public int ___currentHoldingIndex;
+            }
 
             public static void Postfix(XUiC_Toolbelt __instance, XUiController[] ___itemControllers, int ___currentHoldingIndex)
             {

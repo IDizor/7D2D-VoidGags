@@ -12,16 +12,10 @@ namespace VoidGags
         public void ApplyPatches_CraftingQueueMove(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), "Init"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_Init_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_Init.APostfix p) =>
                 XUiC_RecipeStack_Init.Postfix(p.__instance, p.___background))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.CraftingQueueRightClickToMove)}");
-        }
-
-        private struct XUiC_RecipeStack_Init_Params
-        {
-            public XUiC_RecipeStack __instance;
-            public XUiController ___background;
         }
 
         /// <summary>
@@ -29,6 +23,12 @@ namespace VoidGags
         /// </summary>
         public class XUiC_RecipeStack_Init
         {
+            public struct APostfix
+            {
+                public XUiC_RecipeStack __instance;
+                public XUiController ___background;
+            }
+
             public static void Postfix(XUiC_RecipeStack __instance, XUiController ___background)
             {
                 if (___background != null)

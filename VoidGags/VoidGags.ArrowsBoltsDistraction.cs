@@ -12,18 +12,10 @@ namespace VoidGags
         public void ApplyPatches_ArrowsBoltsDistraction(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), "Hit"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit.APostfix p) =>
                 ItemActionAttack_Hit.Postfix(p.hitInfo, p._damageType, p._attackDetails, p.damagingItemValue))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ArrowsBoltsDistraction)}");
-        }
-
-        private struct ItemActionAttack_Hit_Params
-        {
-            public WorldRayHitInfo hitInfo;
-            public EnumDamageTypes _damageType;
-            public AttackHitInfo _attackDetails;
-            public ItemValue damagingItemValue;
         }
 
         /// <summary>
@@ -33,12 +25,27 @@ namespace VoidGags
         {
             public static FastTags PerkArcheryTag = FastTags.Parse("perkArchery");
 
+            public struct APostfix
+            {
+                public WorldRayHitInfo hitInfo;
+                public EnumDamageTypes _damageType;
+                public AttackHitInfo _attackDetails;
+                public ItemValue damagingItemValue;
+            }
+
             public static void Postfix(WorldRayHitInfo hitInfo, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
             {
-                if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null
-                    && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
+                if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
                 {
-                    var material = _attackDetails.blockBeingDamaged.Block?.Properties.GetString("Material");
+                    ProcessBlockHitAttraction(GameManager.Instance.World, hitInfo, _attackDetails.blockBeingDamaged);
+                }
+            }
+
+            public static void ProcessBlockHitAttraction(World world, WorldRayHitInfo hitInfo, BlockValue damagedBlock)
+            {
+                if (!damagedBlock.isair)
+                {
+                    var material = damagedBlock.Block?.Properties.GetString("Material");
                     if (material != null)
                     {
                         var distractionRadius = 10f;
@@ -66,7 +73,7 @@ namespace VoidGags
                         }
                         else if (material.StartsWith("mcloth"))
                         {
-                            distractionRadius = 2f;
+                            distractionRadius = 5f;
                         }
                         else if (material.StartsWith("mfurniture"))
                         {
@@ -74,38 +81,45 @@ namespace VoidGags
                         }
                         else if (material.StartsWith("mglass"))
                         {
-                            distractionRadius = 15f;
+                            distractionRadius = 20f;
                         }
 
-                        var distractionStrength = 20f;
+                        var distractionStrength = 80f;
                         var distractionTargets = Helper.GetEntities<EntityEnemy>(hitInfo.hit.pos, distractionRadius);
                         var lastBlockPos = hitInfo.lastBlockPos.ToVector3Center();
                         var hitPos = hitInfo.hit.pos;
 
-                        Helper.DeferredAction(delayMs: 333, () =>
+                        //Debug.LogError($"distractionTargets = {distractionTargets.Count}");
+                        if (distractionTargets.Count > 0)
                         {
-                            foreach (var entityEnemy in distractionTargets)
+                            Helper.DeferredAction(0.333f, () =>
                             {
-                                if (entityEnemy != null && entityEnemy.distraction == null && !entityEnemy.IsDead())
+                                foreach (var enemy in distractionTargets)
                                 {
-                                    var occlusion = Helper.CalculateNoiseOcclusion(lastBlockPos, entityEnemy.position, 0.03f);
-                                    occlusion *= Mathf.Sqrt(distractionRadius / 10f); // adjust occlusion depending on radius/material
-                                    if (occlusion >= 0.9f)
+                                    //Debug.LogWarning($"{enemy.EntityClass.entityClassName} [{(lastBlockPos - enemy.position).magnitude:0.00}] : {enemy != null}, {enemy.distraction == null}, {!enemy.IsDead()}, {!enemy.InvestigatesMoreDistantPos(lastBlockPos)}");
+                                    if (enemy != null && enemy.distraction == null && !enemy.IsDead() && !enemy.InvestigatesMoreDistantPos(lastBlockPos))
                                     {
-                                        entityEnemy.ConditionalTriggerSleeperWakeUp();
-                                    }
-                                    if (occlusion >= 0.3f)
-                                    {
-                                        float num = entityEnemy.distractionResistance - distractionStrength;
-                                        if (num <= 0f || num < GameManager.Instance.World.GetGameRandom().RandomFloat * 100f)
+                                        var noiceOcclusion = Helper.CalculateNoiseOcclusion(lastBlockPos, enemy.position, 0.027f);
+                                        var occlusion = noiceOcclusion * Mathf.Pow(distractionRadius / 10f, 0.2f); // apply material/radius adjustment
+                                        //Debug.LogWarning($"occlusion : {noiceOcclusion:0.000} -> {occlusion:0.000}, distractionRadius = {distractionRadius:0.00}");
+                                        if (occlusion >= 0.87f && enemy.IsSleeping)
                                         {
-                                            entityEnemy.SetInvestigatePosition(lastBlockPos, 1000);
+                                            enemy.ConditionalTriggerSleeperWakeUp();
+                                        }
+                                        if (occlusion >= 0.3f && !enemy.IsSleeping)
+                                        {
+                                            float num = enemy.distractionResistance - distractionStrength;
+                                            if (num <= 0f || num < world.GetGameRandom().RandomFloat * 100f)
+                                            {
+                                                enemy.SetInvestigatePosition(lastBlockPos, 1000);
+                                                //Debug.LogWarning($"InvestigatePosition set.");
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            distractionTargets.Clear();
-                        });
+                                distractionTargets.Clear();
+                            });
+                        }
                     }
                 }
             }

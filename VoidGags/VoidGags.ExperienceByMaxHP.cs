@@ -13,7 +13,7 @@ namespace VoidGags
         {
             if (Settings.ExperienceRewardByMaxHP_Multiplier >= 0)
             {
-                ExpMultiplier = Settings.ExperienceRewardByMaxHP_Multiplier;
+                EntityPlayer_AddKillXP.ExpMultiplier = Settings.ExperienceRewardByMaxHP_Multiplier;
 
                 harmony.Patch(AccessTools.Method(typeof(EntityPlayer), "AddKillXP"),
                     new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Prefix(killedEntity))),
@@ -27,14 +27,14 @@ namespace VoidGags
             }
         }
 
-        private static float ExpMultiplier = 1.0f;
-        private static ConcurrentDictionary<string, int> EntityExperience = new ConcurrentDictionary<string, int>();
-
         /// <summary>
         /// Experience reward for killing zombies depends on their max health and armor rate. Plus a little random.
         /// </summary>
         public class EntityPlayer_AddKillXP
         {
+            public static float ExpMultiplier = 1.0f;
+            public static ConcurrentDictionary<string, int> EntityExperience = new ConcurrentDictionary<string, int>();
+
             public static void Prefix(EntityAlive killedEntity)
             {
                 if (killedEntity.EntityClass.ExperienceValue > 0)

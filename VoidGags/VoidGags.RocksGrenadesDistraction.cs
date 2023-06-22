@@ -13,18 +13,10 @@ namespace VoidGags
             UseXmlPatches(nameof(Settings.RocksGrenadesDistraction));
 
             harmony.Patch(AccessTools.Method(typeof(EntityItem), "tickDistraction"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityItem_tickDistraction_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityItem_tickDistraction.APrefix p) =>
                 EntityItem_tickDistraction.Prefix(p.__instance, p.___distractionLifetime, p.___distractionRadiusSq, p.___nextDistractionTick))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.RocksGrenadesDistraction)}");
-        }
-
-        private struct EntityItem_tickDistraction_Params
-        {
-            public EntityItem __instance;
-            public int ___distractionLifetime;
-            public float ___distractionRadiusSq;
-            public int ___nextDistractionTick;
         }
 
         /// <summary>
@@ -32,6 +24,14 @@ namespace VoidGags
         /// </summary>
         public class EntityItem_tickDistraction
         {
+            public struct APrefix
+            {
+                public EntityItem __instance;
+                public int ___distractionLifetime;
+                public float ___distractionRadiusSq;
+                public int ___nextDistractionTick;
+            }
+
             public static void Prefix(EntityItem __instance, int ___distractionLifetime, float ___distractionRadiusSq, int ___nextDistractionTick)
             {
                 if (___nextDistractionTick > 0 && ___nextDistractionTick % 5 == 0)

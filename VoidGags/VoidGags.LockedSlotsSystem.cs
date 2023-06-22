@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using HarmonyLib;
 using Platform;
 using UnityEngine;
@@ -22,33 +23,23 @@ namespace VoidGags
             UseXmlPatches(nameof(Settings.LockedSlotsSystem));
 
             harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), "ParseAttribute"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_ParseAttribute_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_ParseAttribute.APrefix p) =>
                 XUiC_ItemStack_ParseAttribute.Prefix(ref p.__result, p._name, p._value))));
 
             harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStackGrid), "OnOpen"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStackGrid __instance) => XUiC_ItemStackGrid_OnOpen.Prefix(__instance))));
 
             harmony.Patch(AccessTools.Method(typeof(XUiC_ContainerStandardControls), "ChangeLockedSlots"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ContainerStandardControls_ChangeLockedSlots_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ContainerStandardControls_ChangeLockedSlots.APostfix p) =>
                 XUiC_ContainerStandardControls_ChangeLockedSlots.Postfix(p.__instance, p._newValue))));
 
             harmony.Patch(AccessTools.Method(typeof(XUiC_ContainerStandardControls), "Init"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ContainerStandardControls __instance) => XUiC_ContainerStandardControls_Init.Postfix(__instance))));
 
+            harmony.Patch(AccessTools.Method(typeof(GameManager), "TEAccessClient"),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEAccessClient.Prefix(_blockPos))));
+
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.LockedSlotsSystem)}");
-        }
-
-        private struct XUiC_ContainerStandardControls_ChangeLockedSlots_Params
-        {
-            public XUiC_ContainerStandardControls __instance;
-            public long _newValue;
-        }
-
-        private struct XUiC_ItemStack_ParseAttribute_Params
-        {
-            public bool __result;
-            public string _name;
-            public string _value;
         }
 
         /// <summary>
@@ -58,6 +49,13 @@ namespace VoidGags
         {
             public static Color32 RegularColor;
             public static Color32 LockColor = new Color32(100, 20, 20, 255);
+
+            public struct APrefix
+            {
+                public bool __result;
+                public string _name;
+                public string _value;
+            }
 
             public static bool Prefix(ref bool __result, string _name, string _value)
             {
@@ -83,7 +81,7 @@ namespace VoidGags
         public class XUiC_ItemStackGrid_OnOpen
         {
             private static Dictionary<string, long> entityLockedSlots = new Dictionary<string, long>();
-            private static string LockedSlotsConfigDirectory => ModFolder + $"\\{nameof(Settings.LockedSlotsSystem)}\\Saves";
+            private static string LockedSlotsSavesDirectory => FeaturesFolder + $"\\{nameof(Settings.LockedSlotsSystem)}\\Saves";
 
             public static void Prefix(XUiC_ItemStackGrid __instance)
             {
@@ -134,8 +132,8 @@ namespace VoidGags
                     var worldSeed = Helper.WorldSeed;
                     if (!string.IsNullOrEmpty(worldSeed))
                     {
-                        Directory.CreateDirectory(LockedSlotsConfigDirectory);
-                        File.WriteAllText(Path.Combine(LockedSlotsConfigDirectory, $"{entityId}-{worldSeed}.txt"), lockedSlots.ToString());
+                        Directory.CreateDirectory(LockedSlotsSavesDirectory);
+                        File.WriteAllText(Path.Combine(LockedSlotsSavesDirectory, $"{entityId}-{worldSeed}.txt"), lockedSlots.ToString());
                     }
                 }
             }
@@ -151,7 +149,7 @@ namespace VoidGags
                     var worldSeed = Helper.WorldSeed;
                     if (!string.IsNullOrEmpty(worldSeed))
                     {
-                        var configFile = Path.Combine(LockedSlotsConfigDirectory, $"{entityId}-{worldSeed}.txt");
+                        var configFile = Path.Combine(LockedSlotsSavesDirectory, $"{entityId}-{worldSeed}.txt");
                         if (File.Exists(configFile))
                         {
                             entityLockedSlots[entityId] = long.Parse(File.ReadAllText(configFile));
@@ -169,6 +167,12 @@ namespace VoidGags
         /// </summary>
         public class XUiC_ContainerStandardControls_ChangeLockedSlots
         {
+            public struct APostfix
+            {
+                public XUiC_ContainerStandardControls __instance;
+                public long _newValue;
+            }
+
             public static void Postfix(XUiC_ContainerStandardControls __instance, long _newValue)
             {
                 var isVehicleGroup = __instance.xui.vehicle != null && __instance.GetParentByType<XUiC_VehicleStorageWindowGroup>() != null;
@@ -204,35 +208,93 @@ namespace VoidGags
         /// </summary>
         public class XUiC_ContainerStandardControls_Init
         {
+            public static List<Vector3i> SpreadingContainers = new List<Vector3i>();
+            static FieldInfo stashLockedSlots = AccessTools.Field(typeof(XUiC_ContainerStandardControls), "stashLockedSlots");
+
             public static void Postfix(XUiC_ContainerStandardControls __instance)
             {
                 XUiController btnSpreadLoot = __instance.GetChildById("btnSpreadLoot");
                 if (btnSpreadLoot != null)
                 {
-                    btnSpreadLoot.OnPress += delegate
+                    btnSpreadLoot.OnPress += SpreadLoot;
+                }
+
+                void SpreadLoot(XUiController sender, int mouseButton)
+                {
+                    var controls = sender.GetParentByType<XUiC_ContainerStandardControls>();
+                    var loot = controls.GetItemStackGrid();
+                    var lockedSlots = (int)stashLockedSlots.GetValue(controls);
+                    var startFromBottom = controls.MoveStartBottomRight;
+                    var player = Helper.PlayerLocal;
+                    var tiles = Helper.GetTileEntities(player.position, 10f);
+
+                    foreach (var tile in tiles)
                     {
-                        var player = GameManager.Instance.World.GetPrimaryPlayer();
-                        var tiles = Helper.GetTileEntities(player.position, 10f);
-                        var stashLockedSlots = AccessTools.Field(typeof(XUiC_ContainerStandardControls), "stashLockedSlots");
-                        foreach (var tile in tiles)
+                        if (tile is TileEntityLootContainer box)
                         {
-                            if (tile is TileEntityLootContainer box)
+                            if (box.bTouched)
                             {
-                                var secure = box as TileEntitySecureLootContainer;
-                                var hasAccess = secure == null || secure.IsUserAllowed(PlatformManager.InternalLocalUserIdentifier);
-                                if (box.bTouched && hasAccess)
+                                var secureBox = box as TileEntitySecureLootContainer;
+                                var hasAccess = secureBox == null || !secureBox.IsLocked() || secureBox.IsUserAllowed(PlatformManager.InternalLocalUserIdentifier);
+                                if (hasAccess)
                                 {
-                                    var stackGrid = __instance.GetItemStackGrid();
-                                    if (stackGrid != null)
+                                    var boxPos = box.ToWorldPos();
+                                    var openerEntityId = GameManager.Instance.GetEntityIDForLockedTileEntity(tile);
+                                    var isOpenByAnyPlayer = openerEntityId > 0; // this variable can be used on server only
+                                    var isOpenByLocalPlayer = boxPos == controls.xui.lootContainer?.ToWorldPos();
+                                    if (IsServer)
                                     {
-                                        var lockedSlots = (int)stashLockedSlots.GetValue(__instance);
-                                        XUiM_LootContainer.StashItems(stackGrid, box, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, __instance.MoveStartBottomRight);
+                                        if (!isOpenByAnyPlayer || isOpenByLocalPlayer)
+                                        {
+                                            Spread();
+                                        }
+                                        else if (LocalPlayerUI.GetUIForPlayer(player) != null)
+                                        {
+                                            GameManager.ShowTooltip(player, Localization.Get("ttNoInteractItem"), string.Empty, "ui_denied");
+                                        }
+                                    }
+                                    else if (isOpenByLocalPlayer)
+                                    {
+                                        Spread();
+                                    }
+                                    else if (!SpreadingContainers.Contains(boxPos) && box.ContainsAnyItem(loot, lockedSlots))
+                                    {
+                                        // send "TELockServer", wait until response processed in "TEAccessClient" and then call Spread()
+                                        var containerId = box.entityId;
+                                        SpreadingContainers.Add(boxPos);
+                                        Helper.DoWhen(Spread, () => !SpreadingContainers.Contains(boxPos), 0.05f, 2f, null, () => SpreadingContainers.Remove(boxPos));
+                                        GameManager.Instance.TELockServer(0, box.ToWorldPos(), containerId, player.entityId, null);
+                                    }
+
+                                    void Spread()
+                                    {
+                                        XUiM_LootContainer.StashItems(loot, box, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, startFromBottom);
+                                        if (!IsServer && !isOpenByLocalPlayer)
+                                        {
+                                            GameManager.Instance.TEUnlockServer(0, box.ToWorldPos(), box.entityId, _allowContainerDestroy: false);
+                                        }
                                     }
                                 }
                             }
                         }
-                    };
+                    }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Processes the success response from TEUnlockServer() when spreading the loot.
+        /// </summary>
+        public class GameManager_TEAccessClient
+        {
+            public static bool Prefix(Vector3i _blockPos)
+            {
+                if (!IsServer && XUiC_ContainerStandardControls_Init.SpreadingContainers.Contains(_blockPos))
+                {
+                    XUiC_ContainerStandardControls_Init.SpreadingContainers.Remove(_blockPos);
+                    return false;
+                }
+                return true;
             }
         }
     }

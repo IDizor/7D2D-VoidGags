@@ -13,6 +13,8 @@ namespace VoidGags
     public partial class VoidGags : IModApi
     {
         public static string ModFolder;
+        public static string FeaturesFolder;
+        public static bool IsServer;
         private static List<string> AdditionalXmlPatches = new List<string>();
         private static Queue<Action> OnGameLoadedActions = new Queue<Action>();
         
@@ -24,6 +26,14 @@ namespace VoidGags
         {
             Debug.Log("Loading mod: " + GetType().ToString());
             ModFolder = Path.GetDirectoryName(Assembly.GetAssembly(typeof(VoidGags)).Location);
+            FeaturesFolder = Path.Combine(ModFolder, "Features");
+
+            if (!Directory.Exists(FeaturesFolder))
+            {
+                Log.Exception(new Exception($"Mod {nameof(VoidGags)}: \"Features\" folder not found. Please reinstall the mod."));
+                return;
+            }
+
             var harmony = new Harmony(GetType().ToString());
 
             CheckUndeadLegacy();
@@ -42,8 +52,17 @@ namespace VoidGags
             if (Settings.ArrowsBoltsDistraction) ApplyPatches_ArrowsBoltsDistraction(harmony);
             if (Settings.RocksGrenadesDistraction) ApplyPatches_RocksGrenadesDistraction(harmony);
             if (Settings.ExplosionAttractionFix) ApplyPatches_ExplosionAttractionFix(harmony);
-            if (Settings.ScrapDrinksToEmptyJars) ApplyPatches_ScrapDrinksToEmptyJars(harmony);
+            //if (Settings.ScrapDrinksToEmptyJars) ApplyPatches_ScrapDrinksToEmptyJars(harmony); // Obsolete (used in A20)
             if (Settings.DigThroughTheGrass) ApplyPatches_DigThroughTheGrass(harmony);
+            if (Settings.LessFogWhenFlying) ApplyPatches_LessFogWhenFlying(harmony);
+            if (Settings.SocialZombies) ApplyPatches_SocialZombies(harmony);
+            if (Settings.PreventDestroyOnClose) ApplyPatches_PreventDestroyOnClose(harmony);
+            if (Settings.MainLootTierBonus) ApplyPatches_MainLootTierBonus(harmony);
+            if (Settings.PiercingShots) ApplyPatches_PiercingShots(harmony);
+
+            OnGameLoadedActions.Enqueue(() => {
+                IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
+            });
         }
 
         /// <summary>
@@ -52,7 +71,7 @@ namespace VoidGags
         /// <param name="patchName">Folder name with XML files.</param>
         public void UseXmlPatches(string patchName)
         {
-            if (!Directory.Exists($"{ModFolder}\\{patchName}"))
+            if (!Directory.Exists($"{FeaturesFolder}\\{patchName}"))
             {
                 Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Missing XML patch folder '{patchName}'."));
             }
@@ -98,20 +117,18 @@ namespace VoidGags
                 {
                     foreach (var patchName in AdditionalXmlPatches)
                     {
-                        var configPath = $"{ModFolder}\\{patchName}\\{cachingXmlName.Replace('/','\\')}.xml";
-                        var configDir = $"{ModFolder}\\{patchName}";
+                        var configPath = $"{FeaturesFolder}\\{patchName}\\{cachingXmlName.Replace('/','\\')}.xml";
+                        var configDir = $"{FeaturesFolder}\\{patchName}";
                         if (File.Exists(configPath))
                         {
-                            var patchXml = new XmlFile(configDir, cachingXmlName, (ex) => {
-                                //Debug.LogException(ex);
-                            });
-                            if (Helper.WaitFor(() => patchXml.Loaded))
+                            try
                             {
+                                var patchXml = new XmlFile(configDir, cachingXmlName, _loadAsync: false, _throwExc: true);
                                 XmlPatcher.PatchXml(_origXml, patchXml, patchName);
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Failed to apply XML patch '{patchName}' for the file '{cachingXmlName}.xml'"));
+                                Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Failed to apply XML patch '{patchName}' for the file '{cachingXmlName}.xml'", ex));
                             }
                         }
                     }

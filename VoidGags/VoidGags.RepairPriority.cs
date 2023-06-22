@@ -11,17 +11,10 @@ namespace VoidGags
         public void ApplyPatches_RepairPriority(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingQueue), "AddItemToRepair"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) =>
                 XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.RepairHasTopPriority)}");
-        }
-
-        private struct XUiC_CraftingQueue_AddItemToRepair_Params
-        {
-            public XUiC_CraftingQueue __instance;
-            public XUiController[] ___queueItems;
-            public bool __result;
         }
 
         /// <summary>
@@ -29,6 +22,13 @@ namespace VoidGags
         /// </summary>
         public class XUiC_CraftingQueue_AddItemToRepair
         {
+            public struct APostfix
+            {
+                public XUiC_CraftingQueue __instance;
+                public XUiController[] ___queueItems;
+                public bool __result;
+            }
+
             public static void Postfix(XUiC_CraftingQueue __instance, ref XUiController[] ___queueItems, ref bool __result)
             {
                 if (__result)

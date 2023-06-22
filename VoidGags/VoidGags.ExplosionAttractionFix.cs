@@ -11,7 +11,7 @@ namespace VoidGags
         public void ApplyPatches_ExplosionAttractionFix(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(AIDirector), "OnSoundPlayedAtPosition"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((AIDirector_OnSoundPlayedAtPosition_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((AIDirector_OnSoundPlayedAtPosition.APrefix p) =>
                 AIDirector_OnSoundPlayedAtPosition.Prefix(ref p._entityThatCausedSound, p._position, p.__instance))));
 
             harmony.Patch(AccessTools.Method(typeof(GameManager), "explode"),
@@ -21,18 +21,18 @@ namespace VoidGags
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ExplosionAttractionFix)}");
         }
 
-        private struct AIDirector_OnSoundPlayedAtPosition_Params
-        {
-            public int _entityThatCausedSound;
-            public Vector3 _position;
-            public AIDirector __instance;
-        }
-
         /// <summary>
         /// Makes zombies to check explosion location, and not the player location.
         /// </summary>
         public class AIDirector_OnSoundPlayedAtPosition
         {
+            public struct APrefix
+            {
+                public int _entityThatCausedSound;
+                public Vector3 _position;
+                public AIDirector __instance;
+            }
+
             public static void Prefix(ref int _entityThatCausedSound, Vector3 _position, AIDirector __instance)
             {
                 if (GameManager_explode.IsExplosion)
@@ -46,12 +46,12 @@ namespace VoidGags
 
                     foreach (var entityEnemy in distractionTargets)
                     {
-                        if (entityEnemy.distraction != null)
+                        if (entityEnemy.distraction != null && entityEnemy.distraction.position != _position)
                         {
                             continue;
                         }
 
-                        if (targetsToWakeUp.Contains(entityEnemy))
+                        if (entityEnemy.IsSleeping && targetsToWakeUp.Contains(entityEnemy))
                         {
                             entityEnemy.ConditionalTriggerSleeperWakeUp();
                         }

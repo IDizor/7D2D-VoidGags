@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 
@@ -12,26 +11,25 @@ namespace VoidGags
     {
         public void ApplyPatches_HelmetLightFirst(Harmony harmony)
         {
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "GetActivatableItemPool"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> __result) => EntityAlive_GetActivatableItemPool.Postfix(ref __result))));
+            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "CollectActivatableItems"), null,
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> _pool) => EntityAlive_CollectActivatableItems.Postfix(_pool))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.HelmetLightByDefault)}");
         }
 
         /// <summary>
-        /// Uses helmet light mod as default when pressing F.
+        /// Use helmet light mod by default when F pressed.
         /// </summary>
-        public class EntityAlive_GetActivatableItemPool
+        public class EntityAlive_CollectActivatableItems
         {
-            public static void Postfix(ref List<ItemValue> __result)
+            public static void Postfix(List<ItemValue> _pool)
             {
-                if (__result != null && __result.Count > 1)
+                if (_pool != null && _pool.Count > 1)
                 {
-                    var lightMod = __result.FirstOrDefault(i => i.ItemClass?.Name == "modArmorHelmetLight");
-                    if (lightMod != null)
+                    var index = _pool.FindIndex(i => i.ItemClass?.Name == "modArmorHelmetLight");
+                    if (index > 0)
                     {
-                        __result.Remove(lightMod);
-                        __result.Insert(0, lightMod);
+                        (_pool[index], _pool[0]) = (_pool[0], _pool[index]);
                     }
                 }
             }

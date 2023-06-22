@@ -12,17 +12,10 @@ namespace VoidGags
         public void ApplyPatches_DigThroughTheGrass(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(ItemActionDynamic), "hitTarget"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionDynamic_hitTarget_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionDynamic_hitTarget.APostfix p) =>
                 ItemActionDynamic_hitTarget.Postfix(p.__instance, p._actionData, p.hitInfo))));
 
             Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.DigThroughTheGrass)}");
-        }
-
-        private struct ItemActionDynamic_hitTarget_Params
-        {
-            public ItemActionDynamic __instance;
-            public ItemActionData _actionData;
-            public WorldRayHitInfo hitInfo;
         }
 
         /// <summary>
@@ -34,33 +27,43 @@ namespace VoidGags
             public static FastTags ShovelTag = FastTags.Parse("shovel");
             public static FastTags MiningToolTag = FastTags.Parse("miningTool");
 
+            public struct APostfix
+            {
+                public ItemActionDynamic __instance;
+                public ItemActionData _actionData;
+                public WorldRayHitInfo hitInfo;
+            }
+
             public static void Postfix(ItemActionDynamic __instance, ItemActionData _actionData, WorldRayHitInfo hitInfo)
             {
-                var block = hitInfo.hit.blockValue.Block;
-                if (__instance is ItemActionDynamicMelee meleeAction && block.IsTerrainDecoration && block.MaxDamage < 4)
+                if (_actionData.invData.itemValue?.ItemClass != null)
                 {
-                    var itemTags = _actionData.invData.itemValue.ItemClass.ItemTags;
-                    if ((itemTags.Test_AnySet(ShovelTag) || itemTags.Test_AnySet(MiningToolTag)) && !itemTags.Test_AnySet(AxeTag))
+                    var block = hitInfo.hit.blockValue.Block;
+                    if (__instance is ItemActionDynamicMelee meleeAction && block.IsTerrainDecoration && block.MaxDamage < 4)
                     {
-                        var isCrop = false;
-                        if (block.FilterTags != null &&
-                            block.FilterTags.Any(tag => tag.Same("SC_crops")))
+                        var itemTags = _actionData.invData.itemValue.ItemClass.ItemTags;
+                        if ((itemTags.Test_AnySet(ShovelTag) || itemTags.Test_AnySet(MiningToolTag)) && !itemTags.Test_AnySet(AxeTag))
                         {
-                            if (block.GetBlockName().ToLower().Contains("mushroom"))
+                            var isCrop = false;
+                            if (block.FilterTags != null &&
+                                block.FilterTags.Any(tag => tag.Same("SC_crops")))
                             {
-                                isCrop = true;
+                                if (block.GetBlockName().ToLower().Contains("mushroom"))
+                                {
+                                    isCrop = true;
+                                }
+                                else
+                                {
+                                    var surfaceBlock = GameManager.Instance.World.GetBlock(hitInfo.hit.blockPos + new Vector3i(0, -1, 0));
+                                    isCrop = surfaceBlock.Block.GetBlockName().StartsWith("farmPlot");
+                                }
                             }
-                            else
+                            if (!isCrop)
                             {
-                                var surfaceBlock = GameManager.Instance.World.GetBlock(hitInfo.hit.blockPos + new Vector3i(0, -1, 0));
-                                isCrop = surfaceBlock.Block.GetBlockName().StartsWith("farmPlot");
+                                var itemActionDynamicData = (ItemActionDynamicMelee.ItemActionDynamicMeleeData)_actionData;
+                                itemActionDynamicData.StaminaUsage = 0;
+                                meleeAction.Raycast(itemActionDynamicData);
                             }
-                        }
-                        if (!isCrop)
-                        {
-                            var itemActionDynamicData = (ItemActionDynamicMelee.ItemActionDynamicMeleeData)_actionData;
-                            itemActionDynamicData.StaminaUsage = 0;
-                            meleeAction.Raycast(itemActionDynamicData);
                         }
                     }
                 }

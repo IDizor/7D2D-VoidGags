@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Platform;
 using UnityEngine;
 
@@ -44,11 +44,12 @@ namespace VoidGags
         /// <summary>
         /// Gets call stack methods order.
         /// </summary>
-        public static string GetCallStackPath()
+        public static string GetCallStackPath(int limit = 5)
         {
             var stackTrace = new System.Diagnostics.StackTrace();
             var path = string.Join(" <-- ", stackTrace.GetFrames()
                 .Skip(3)
+                .Take(limit)
                 .Select(f => f.GetMethod())
                 .Select(m => m.DeclaringType.Name + "." + m.Name + "()"));
             return path;
@@ -107,7 +108,17 @@ namespace VoidGags
             var entities = new List<Entity>();
             Bounds bb = new Bounds(pos, new Vector3(radius + 1f, radius + 1f, radius + 1f) * 2f);
             GameManager.Instance.World.GetEntitiesInBounds(typeof(TEntity), bb, entities);
-            return entities.Where(e => (e.position - pos).magnitude < radius).Cast<TEntity>().ToList();
+            if (entities.Count == 0)
+            {
+                return new List<TEntity>();
+            }
+
+            return entities.Select(e => ((e.position - pos).magnitude, e))
+                .Where(x => x.magnitude < radius)
+                .OrderBy(x => x.magnitude)
+                .Select(x => x.e)
+                .Cast<TEntity>()
+                .ToList();
         }
 
         /// <summary>
@@ -142,32 +153,63 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Waits for the function to return true.
+        /// Performs the specified action with a delay.
         /// </summary>
-        public static bool WaitFor(Func<bool> checkFunc, int checkIntervalMs = 2, int timeoutMs = 3000)
+        public static void DeferredAction(float seconds, Action action)
         {
-            var startTime = DateTime.Now;
-            while (!checkFunc())
+            if (seconds <= 0f)
             {
-                if ((DateTime.Now - startTime).TotalMilliseconds > timeoutMs)
-                {
-                    return false;
-                }
-                Task.Delay(checkIntervalMs).Wait();
+                action();
+                return;
             }
-            return true;
+
+            GameManager.Instance.StartCoroutine(Job());
+
+            IEnumerator Job()
+            {
+                yield return new WaitForSeconds(seconds);
+                action();
+            }
         }
 
         /// <summary>
-        /// Runs the specified action with a delay.
+        /// Performs the specified action once condition is met.
         /// </summary>
-        public static Task DeferredAction(int delayMs, Action action)
+        public static void DoWhen(Action action, Func<bool> condition, float checkInterval = 0.02f, float timeout = 3f, Func<bool> failureCondition = null, Action failureAction = null)
         {
-            return Task.Factory.StartNew(() =>
+            var endTime = Time.time + timeout;
+            GameManager.Instance.StartCoroutine(Job());
+
+            IEnumerator Job()
             {
-                Task.Delay(delayMs).Wait();
-                action();
-            }, TaskCreationOptions.LongRunning);
+                while (true)
+                {
+                    if (condition())
+                    {
+                        action();
+                        break;
+                    }
+                    if (failureCondition != null && failureCondition())
+                    {
+                        failureAction?.Invoke();
+                        break;
+                    }
+                    if (Time.time > endTime)
+                    {
+                        failureAction?.Invoke();
+                        break;
+                    }
+                    yield return new WaitForSeconds(checkInterval);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks whether specified position is in the trader area.
+        /// </summary>
+        public static bool IsTraderArea(Vector3i pos)
+        {
+            return GameManager.Instance.World.IsWithinTraderArea(pos);
         }
     }
 }
