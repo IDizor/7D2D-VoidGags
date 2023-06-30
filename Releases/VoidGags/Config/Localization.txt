@@ -1,0 +1,2 @@
+Key,File,Type,NoTranslate,english,russian,schinese
+lblSpreadLoot,UI,Tooltip,Auto-spread the loot to nearby containers.,Auto-spread the loot to nearby containers.,Разложить содержимое по ближайшим контейнерам.,自动将战利品传播到附近的容器。

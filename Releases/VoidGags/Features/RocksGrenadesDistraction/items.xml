@@ -1,0 +1,48 @@
+<dizor>
+
+  <append xpath="/items/item[@name='thrownAmmoPipeBomb']">
+    <property name="DistractionTags" value="zombie,requires_contact"/>
+    <effect_group name="decoy" tiered="false">
+      <passive_effect name="DistractionRadius" operation="base_set" value="15"/>
+      <passive_effect name="DistractionLifetime" operation="base_set" value="1"/>
+      <passive_effect name="DistractionStrength" operation="base_set" value="100"/>
+    </effect_group>
+  </append>
+
+  <append xpath="/items/item[@name='thrownGrenadeContact']">
+    <property name="DistractionTags" value="zombie,requires_contact"/>
+    <effect_group name="decoy" tiered="false">
+      <passive_effect name="DistractionRadius" operation="base_set" value="25"/>
+      <passive_effect name="DistractionLifetime" operation="base_set" value="1"/>
+      <passive_effect name="DistractionStrength" operation="base_set" value="100"/>
+    </effect_group>
+  </append>
+
+  <append xpath="/items/item[@name='thrownGrenade']">
+    <property name="DistractionTags" value="zombie,requires_contact"/>
+    <effect_group name="decoy" tiered="false">
+      <passive_effect name="DistractionRadius" operation="base_set" value="25"/>
+      <passive_effect name="DistractionLifetime" operation="base_set" value="1"/>
+      <passive_effect name="DistractionStrength" operation="base_set" value="100"/>
+    </effect_group>
+  </append>
+
+  <append xpath="/items/item[@name='thrownDynamite']">
+    <property name="DistractionTags" value="zombie,requires_contact"/>
+    <effect_group name="decoy" tiered="false">
+      <passive_effect name="DistractionRadius" operation="base_set" value="7"/>
+      <passive_effect name="DistractionLifetime" operation="base_set" value="1"/>
+      <passive_effect name="DistractionStrength" operation="base_set" value="80"/>
+    </effect_group>
+  </append>
+
+  <append xpath="/items/item[@name='thrownAmmoMolotovCocktail']">
+    <property name="DistractionTags" value="zombie,requires_contact"/>
+    <effect_group name="decoy" tiered="false">
+      <passive_effect name="DistractionRadius" operation="base_set" value="30"/>
+      <passive_effect name="DistractionLifetime" operation="base_set" value="1"/>
+      <passive_effect name="DistractionStrength" operation="base_set" value="100"/>
+    </effect_group>
+  </append>
+
+</dizor>
