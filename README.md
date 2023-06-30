@@ -55,10 +55,16 @@ The features list / `VoidGags.config` file content:
   // Not damaged zombies will check the explosion location, and not the player location.
   "ExplosionAttractionFix": true,
 
-  // Scrap any drink like water/murky/tea/coffee/etc to an empty jar.
-  "ScrapDrinksToEmptyJars": true,
-
   // Dig with a shovel or pickaxe through the grass/plants.
-  "DigThroughTheGrass": true
+  "DigThroughTheGrass": true,
+
+  // Less fog when flying at high altitude for better vision.
+  "LessFogWhenFlying": true,
+
+  // Zombies can wake each other and share their intention to attack or to check some location.
+  "SocialZombies": false,
+
+  // Bullets, iron arrows and bolts can break weak blocks and hit objects behind.
+  "PiercingShots": true
 }
 ```
