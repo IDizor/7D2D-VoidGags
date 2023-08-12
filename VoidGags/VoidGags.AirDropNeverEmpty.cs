@@ -20,7 +20,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootContainer_Spawn.APostfix p) => LootContainer_Spawn.Postfix(
                     p.__instance, ref p.__result, p.random, p._maxItems, p.playerLevelPercentage, p.rareLootChance, p.player, p.containerTags, p.uniqueItems, p.ignoreLootProb))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.AirDropIsNeverEmpty)}");
+            LogPatchApplied(nameof(Settings.AirDropIsNeverEmpty));
         }
 
         /// <summary>

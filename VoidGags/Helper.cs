@@ -101,6 +101,14 @@ namespace VoidGags
         }
 
         /// <summary>
+        /// Finds controllers in all window groups.
+        /// </summary>
+        public static List<TController> FindControllersByType<TController>() where TController : XUiController
+        {
+            return PlayerLocal.PlayerUI?.xui.WindowGroups?.SelectMany(wg => wg.Controller.GetChildrenByType<TController>()).ToList() ?? new List<TController>();
+        }
+
+        /// <summary>
         /// Gets entities of specified type from the position.
         /// </summary>
         public static List<TEntity> GetEntities<TEntity>(Vector3 pos, float radius) where TEntity : Entity
@@ -200,6 +208,23 @@ namespace VoidGags
                         break;
                     }
                     yield return new WaitForSeconds(checkInterval);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Performs the specified action periodically while condition is true.
+        /// </summary>
+        public static void DoWhile(Action action, Func<bool> whileCondition, float interval = 0.02f)
+        {
+            GameManager.Instance.StartCoroutine(Job());
+
+            IEnumerator Job()
+            {
+                while (whileCondition.Invoke())
+                {
+                    action();
+                    yield return new WaitForSeconds(interval);
                 }
             }
         }

@@ -13,7 +13,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(SkyManager), "SetFogDensity"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((float density) => SkyManager_SetFogDensity.Prefix(ref density))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.LessFogWhenFlying)}");
+            LogPatchApplied(nameof(Settings.LessFogWhenFlying));
         }
 
         /// <summary>

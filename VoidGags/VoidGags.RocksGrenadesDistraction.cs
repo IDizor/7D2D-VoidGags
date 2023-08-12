@@ -16,7 +16,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityItem_tickDistraction.APrefix p) =>
                 EntityItem_tickDistraction.Prefix(p.__instance, p.___distractionLifetime, p.___distractionRadiusSq, p.___nextDistractionTick))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.RocksGrenadesDistraction)}");
+            LogPatchApplied(nameof(Settings.RocksGrenadesDistraction));
         }
 
         /// <summary>

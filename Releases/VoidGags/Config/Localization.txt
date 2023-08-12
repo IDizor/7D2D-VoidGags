@@ -1,2 +1,4 @@
 Key,File,Type,NoTranslate,english,russian,schinese
 lblSpreadLoot,UI,Tooltip,Auto-spread the loot to nearby containers.,Auto-spread the loot to nearby containers.,Разложить содержимое по ближайшим контейнерам.,自动将战利品传播到附近的容器。
+lblSpreadReceiver,UI,Tooltip,This container is used for loot auto-spreading. Click to ignore this container.,This container is used for loot auto-spreading. Click to ignore this container.,"Этот контейнер используется для распределения вещей. Нажмите, чтобы запретить.",这个容器是用来分发东西的。 点击禁止。
+lblSpreadIgnorer,UI,Tooltip,This container is ignored when auto-spreading the loot. Click to allow this container.,This container is ignored when auto-spreading the loot. Click to allow this container.,"Этот контейнер запрещен для распределения вещей. Нажмите, чтобы разрешить.",自动传播战利品时，该容器将被忽略。 单击以允许此容器。

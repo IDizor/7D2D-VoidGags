@@ -18,7 +18,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(GameManager), "TEUnlockServer"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool _allowContainerDestroy) => GameManager_TEUnlockServer.Prefix(ref _allowContainerDestroy))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.PreventDestroyOnClose)}");
+            LogPatchApplied(nameof(Settings.PreventDestroyOnClose));
         }
 
         /// <summary>

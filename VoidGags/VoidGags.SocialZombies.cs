@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using static XUiC_DropDown;
+using VoidGags.NetPackages;
 
 namespace VoidGags
 {
@@ -15,11 +17,11 @@ namespace VoidGags
         public void ApplyPatches_SocialZombies(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(EntityAlive), "ProcessDamageResponseLocal"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_ProcessDamageResponseLocal_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_ProcessDamageResponseLocal.APrefix p) =>
                 EntityAlive_ProcessDamageResponseLocal.Prefix(p._dmResponse, p.__instance, ref p.___soundDeath, ref p.___soundRandom, ref p.___soundAttack, ref p.___soundAttack, ref p.___soundHurt))));
 
             harmony.Patch(AccessTools.Method(typeof(EntityAlive), "GetSoundDeath"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_GetSoundDeath_Params p) =>
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_GetSoundDeath.APrefix p) =>
                 EntityAlive_GetSoundDeath.Prefix(p.__instance, ref p.__result))));
 
             harmony.Patch(AccessTools.Method(typeof(EntityEnemy), "DamageEntity"),
@@ -27,7 +29,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityEnemy __instance) => EntityEnemy_DamageEntity.Postfix(__instance))));
 
             harmony.Patch(AccessTools.Method(typeof(Entity), "PlayOneShot"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Entity_PlayOneShot_Params p) => Entity_PlayOneShot.Postfix(p.__instance, p.clipName))));
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Entity_PlayOneShot.APostfix p) => Entity_PlayOneShot.Postfix(p.__instance, p.clipName))));
 
             harmony.Patch(AccessTools.Method(typeof(EntityAlive), "ConditionalTriggerSleeperWakeUp"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_ConditionalTriggerSleeperWakeUp.Prefix(__instance))));
@@ -41,30 +43,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(EntityAlive), "SetAttackTarget"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_SetAttackTarget.Prefix(__instance))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.SocialZombies)}");
-        }
-
-        private struct EntityAlive_ProcessDamageResponseLocal_Params
-        {
-            public DamageResponse _dmResponse;
-            public EntityAlive __instance;
-            public string ___soundDeath;
-            public string ___soundRandom;
-            public string ___soundAttack;
-            public string ___soundAlert;
-            public string ___soundHurt;
-        }
-
-        private struct EntityAlive_GetSoundDeath_Params
-        {
-            public EntityAlive __instance;
-            public string __result;
-        }
-
-        private struct Entity_PlayOneShot_Params
-        {
-            public Entity __instance;
-            public string clipName;
+            LogPatchApplied(nameof(Settings.SocialZombies));
         }
 
         /// <summary>
@@ -140,16 +119,17 @@ namespace VoidGags
                                         {
                                             if (isLast)
                                             {
-                                                // call original method to allow its patches run
+                                                // call original method to allow its patches to run
                                                 //Debug.LogError($"{Time.time:0.00} SetInvestigatePosition");
-                                                loafer.SetInvestigatePosition(investigatingPosition, 1000, true);
+                                                loafer.SetInvestigatePosition(investigatingPosition, 600, true);
                                             }
                                             else
                                             {
                                                 // call pseudo method
                                                 //Debug.LogWarning($"{Time.time:0.00} InvestigatePosition");
-                                                InvestigatePosition(loafer, investigatingPosition, 1000);
+                                                InvestigatePosition(loafer, investigatingPosition, 600);
                                             }
+                                            SingletonMonoBehaviour<ConnectionManager>.Instance.SendToClientsOrServer(NetPackageManager.GetPackage<NetPackageSetInvestigatePos>().Setup(loafer.entityId, investigatingPosition, 600));
                                         }
                                     }
                                 }
@@ -177,6 +157,17 @@ namespace VoidGags
         /// </summary>
         public class EntityAlive_ProcessDamageResponseLocal
         {
+            public struct APrefix
+            {
+                public DamageResponse _dmResponse;
+                public EntityAlive __instance;
+                public string ___soundDeath;
+                public string ___soundRandom;
+                public string ___soundAttack;
+                public string ___soundAlert;
+                public string ___soundHurt;
+            }
+
             public static void Prefix(DamageResponse _dmResponse, EntityAlive __instance,
                 ref string ___soundDeath, ref string ___soundRandom, ref string ___soundAttack, ref string ___soundAlert, ref string ___soundHurt)
             {
@@ -192,6 +183,12 @@ namespace VoidGags
         /// </summary>
         public class EntityAlive_GetSoundDeath
         {
+            public struct APrefix
+            {
+                public EntityAlive __instance;
+                public string __result;
+            }
+
             public static bool Prefix(EntityAlive __instance, ref string __result)
             {
                 if (__instance is EntityEnemy)
@@ -230,6 +227,12 @@ namespace VoidGags
         /// </summary>
         public class Entity_PlayOneShot
         {
+            public struct APostfix
+            {
+                public Entity __instance;
+                public string clipName;
+            }
+
             public static void Postfix(Entity __instance, string clipName)
             {
                 if (__instance is EntityEnemy enemy && clipName == enemy.soundSense)

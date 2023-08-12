@@ -14,7 +14,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(EntityAlive), "CollectActivatableItems"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> _pool) => EntityAlive_CollectActivatableItems.Postfix(_pool))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.HelmetLightByDefault)}");
+            LogPatchApplied(nameof(Settings.HelmetLightByDefault));
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingWindowGroup), "AddItemToQueue", new Type[] { typeof(Recipe), typeof(int) }),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((Recipe _recipe) => XUiC_CraftingWindowGroup_AddItemToQueue_2.Prefix(_recipe)), Priority.Normal));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ScrapDrinksToEmptyJars)}");
+            LogPatchApplied(nameof(Settings.ScrapDrinksToEmptyJars));
         }
 
         /// <summary>

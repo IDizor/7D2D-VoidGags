@@ -16,7 +16,7 @@ namespace VoidGags
         public static string FeaturesFolder;
         public static bool IsServer;
         private static List<string> AdditionalXmlPatches = new List<string>();
-        private static Queue<Action> OnGameLoadedActions = new Queue<Action>();
+        private static List<Action> OnGameLoadedActions = new List<Action>();
         
         /// <summary>
         /// Mod initialization.
@@ -30,7 +30,7 @@ namespace VoidGags
 
             if (!Directory.Exists(FeaturesFolder))
             {
-                Log.Exception(new Exception($"Mod {nameof(VoidGags)}: \"Features\" folder not found. Please reinstall the mod."));
+                LogModException("\"Features\" folder not found. Please reinstall the mod.");
                 return;
             }
 
@@ -59,8 +59,14 @@ namespace VoidGags
             if (Settings.PreventDestroyOnClose) ApplyPatches_PreventDestroyOnClose(harmony);
             if (Settings.MainLootTierBonus) ApplyPatches_MainLootTierBonus(harmony);
             if (Settings.PiercingShots) ApplyPatches_PiercingShots(harmony);
+            if (Settings.HighlightCompatibleMods) ApplyPatches_HighlightCompatibleMods(harmony);
+            /* if () is not needed for this */ ApplyPatches_MasterWorkChance(harmony);
+            if (Settings.StealthOnLadders) ApplyPatches_StealthOnLadders(harmony);
+            if (Settings.PreventPillaring) ApplyPatches_PreventPillaring(harmony);
+            if (Settings.UnrevealedTradeRoutesOnly) ApplyPatches_UnrevealedTradeRoutesOnly(harmony);
+            if (Settings.NoScreamersFromOutside) ApplyPatches_NoScreamersFromOutside(harmony);
 
-            OnGameLoadedActions.Enqueue(() => {
+            OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
             });
         }
@@ -73,7 +79,7 @@ namespace VoidGags
         {
             if (!Directory.Exists($"{FeaturesFolder}\\{patchName}"))
             {
-                Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Missing XML patch folder '{patchName}'."));
+                LogModException($"Missing XML patch folder '{patchName}'.");
             }
             AdditionalXmlPatches.Add(patchName);
         }
@@ -81,18 +87,15 @@ namespace VoidGags
         /// <summary>
         /// Method that called once the game is loaded.
         /// </summary>
-        [HarmonyPatch(typeof(GameManager))]
-        [HarmonyPatch("PlayerSpawnedInWorld")]
-        public class GameManager_PlayerSpawnedInWorld
+        [HarmonyPatch(typeof(EntityPlayerLocal))]
+        [HarmonyPatch("PostInit")]
+        public class EntityPlayerLocal_PostInit
         {
-            public static void Postfix(RespawnType _respawnReason)
+            public static void Postfix()
             {
-                if (_respawnReason == RespawnType.LoadedGame)
+                foreach (var action in OnGameLoadedActions)
                 {
-                    while (OnGameLoadedActions.Count > 0)
-                    {
-                        OnGameLoadedActions.Dequeue()();
-                    }
+                    action();
                 }
             }
         }
@@ -128,12 +131,32 @@ namespace VoidGags
                             }
                             catch (Exception ex)
                             {
-                                Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Failed to apply XML patch '{patchName}' for the file '{cachingXmlName}.xml'", ex));
+                                LogModException($"Failed to apply XML patch '{patchName}' for the file '{cachingXmlName}.xml'. {ex.Message}");
                             }
                         }
                     }
                 }
             }
+        }
+
+        internal static void LogPatchApplied(string patchName)
+        {
+            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {patchName}");
+        }
+
+        internal static void LogModException(string message)
+        {
+            Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: {message}"));
+        }
+
+        internal static void LogModWarning(string message)
+        {
+            Debug.LogWarning($"Mod {nameof(VoidGags)}: {message}");
+        }
+
+        internal static void LogModInfo(string message)
+        {
+            Debug.Log($"Mod {nameof(VoidGags)}: {message}");
         }
     }
 }

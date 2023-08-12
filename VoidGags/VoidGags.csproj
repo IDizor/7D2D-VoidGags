@@ -69,6 +69,9 @@
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
@@ -87,6 +90,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
+    <Compile Include="NetPackages\NetPackageMasterWorkChance.cs" />
+    <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
+    <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />
     <Compile Include="VoidGags.ArrowsBoltsDistraction.cs" />
     <Compile Include="VoidGags.RocksGrenadesDistraction.cs" />
@@ -97,6 +103,12 @@
     <Compile Include="VoidGags.LessFogWhenFlying.cs" />
     <Compile Include="VoidGags.PreventDestroyOnClose.cs" />
     <Compile Include="VoidGags.MainLootTierBonus.cs" />
+    <Compile Include="VoidGags.MasterWorkChance.cs" />
+    <Compile Include="VoidGags.PreventPillaring.cs" />
+    <Compile Include="VoidGags.HighlightCompatibleMods.cs" />
+    <Compile Include="VoidGags.NoScreamersFromOutside.cs" />
+    <Compile Include="VoidGags.UnrevealedTradeRoutesOnly.cs" />
+    <Compile Include="VoidGags.StealthOnLadders.cs" />
     <Compile Include="VoidGags.SocialZombies.cs" />
     <Compile Include="VoidGags.UL.cs" />
     <Compile Include="VoidGags.ExperienceByMaxHP.cs" />

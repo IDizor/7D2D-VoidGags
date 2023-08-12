@@ -15,7 +15,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_Init.APostfix p) =>
                 XUiC_RecipeStack_Init.Postfix(p.__instance, p.___background))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.CraftingQueueRightClickToMove)}");
+            LogPatchApplied(nameof(Settings.CraftingQueueRightClickToMove));
         }
 
         /// <summary>

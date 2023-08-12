@@ -1,8 +1,7 @@
 ﻿using System;
-using HarmonyLib;
 using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
-using static XUiM_LootContainer;
 
 namespace VoidGags
 {
@@ -26,7 +25,7 @@ namespace VoidGags
             var grid = controls.Parent?.Parent?.GetChildByType<XUiC_ItemStackGrid>();
             if (grid == null)
             {
-                Debug.LogError($"Mod {nameof(VoidGags)}: Failed to retrieve 'XUiC_ItemStackGrid' from the 'XUiC_ContainerStandardControls'.");
+                VoidGags.LogModException("Failed to find 'XUiC_ItemStackGrid' from the 'XUiC_ContainerStandardControls'.");
             }
             return grid;
         }
@@ -71,9 +70,9 @@ namespace VoidGags
                 && entity.bodyDamage.CurrentStun != EnumEntityStunType.Getup;
         }
 
-        public static bool ContainsAnyItem(this IInventory inventory, XUiC_ItemStackGrid itemGrid, int lockedSlots)
+        public static bool ContainsAnyItem(this TileEntityLootContainer container, XUiC_ItemStackGrid itemGrid, int lockedSlots)
         {
-            if (itemGrid == null || inventory == null)
+            if (itemGrid == null || container == null)
             {
                 return false;
             }
@@ -86,7 +85,7 @@ namespace VoidGags
                 if (!xUiC_ItemStack.StackLock)
                 {
                     var itemStack = xUiC_ItemStack.ItemStack;
-                    if (!itemStack.IsEmpty() && inventory.HasItem(itemStack.itemValue))
+                    if (!itemStack.IsEmpty() && container.HasItem(itemStack.itemValue))
                     {
                         return true;
                     }
@@ -94,6 +93,16 @@ namespace VoidGags
             }
 
             return false;
+        }
+
+        public static int GetCurrentHP(this BlockValue block)
+        {
+            return block.Block.MaxDamage - block.damage;
+        }
+
+        public static Vector3i Invert(this Vector3i vector)
+        {
+            return vector * -1;
         }
     }
 }

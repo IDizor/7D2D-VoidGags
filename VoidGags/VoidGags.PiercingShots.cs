@@ -20,7 +20,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ProjectileMoveScript_checkCollision.APrefix p) =>
                 ProjectileMoveScript_checkCollision.Prefix(p.__instance, p.___bOnIdealPos, p.___idealPosition, p.___previousPosition, p.___hmOverride, p.___radius, p.___firingEntity))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.PiercingShots)}");
+            LogPatchApplied(nameof(Settings.PiercingShots));
         }
 
         /// <summary>
@@ -58,15 +58,16 @@ namespace VoidGags
                         if (GameUtils.IsBlockOrTerrain(Voxel.voxelRayHitInfo.tag))
                         {
                             var block = ItemActionAttack.GetBlockHit(world, Voxel.voxelRayHitInfo);
-                            if (!block.isair && block.Block != null && block.Block.MaxDamage <= 10 && destroyedBlockPos != Voxel.voxelRayHitInfo.hit.blockPos
+                            if (!block.isair && block.Block != null && block.GetCurrentHP() <= 10 && destroyedBlockPos != Voxel.voxelRayHitInfo.hit.blockPos
                                 && !Helper.IsTraderArea(Voxel.voxelRayHitInfo.hit.blockPos))
                             {
                                 if (Settings.ArrowsBoltsDistraction)
                                 {
                                     var hitInfo = Voxel.voxelRayHitInfo.Clone();
+                                    var shotStartPos = holdingEntity.position;
                                     Helper.DeferredAction(0.1f, () =>
                                     {
-                                        ItemActionAttack_Hit.ProcessBlockHitAttraction(GameManager.Instance.World, hitInfo, block);
+                                        ItemActionAttack_Hit.ProcessBlockHitAttraction(hitInfo, block, shotStartPos);
                                     });
                                 }
                                 block.Block.DamageBlock(world, 0, Voxel.voxelRayHitInfo.hit.blockPos, block, block.Block.MaxDamage, -1);
@@ -144,15 +145,16 @@ namespace VoidGags
                     {
                         var block = ItemActionAttack.GetBlockHit(world, Voxel.voxelRayHitInfo);
                         var projectileName = __instance.itemProjectile?.Name;
-                        if (!block.isair && block.Block != null && block.Block.MaxDamage <= 5 && projectileName != null && !projectileName.EndsWith("Stone") && !Helper.IsTraderArea(Voxel.voxelRayHitInfo.hit.blockPos))
+                        if (!block.isair && block.Block != null && block.GetCurrentHP() <= 5 && projectileName != null && !projectileName.EndsWith("Stone") && !Helper.IsTraderArea(Voxel.voxelRayHitInfo.hit.blockPos))
                         {
                             //Debug.LogWarning($"destroyedBlockPos {Voxel.voxelRayHitInfo.hit.blockPos}, hit = {Voxel.voxelRayHitInfo.hit.pos}, collider.transform.tag = '{Voxel.phyxRaycastHit.collider?.transform?.tag}'");
                             if (Settings.ArrowsBoltsDistraction)
                             {
                                 var hitInfo = Voxel.voxelRayHitInfo.Clone();
+                                var shotStartPos = ___firingEntity == null ? Vector3.zero : ___firingEntity.position;
                                 Helper.DeferredAction(0.1f, () =>
                                 {
-                                    ItemActionAttack_Hit.ProcessBlockHitAttraction(world, hitInfo, block);
+                                    ItemActionAttack_Hit.ProcessBlockHitAttraction(hitInfo, block, shotStartPos);
                                 });
                             }
                             block.Block.DamageBlock(world, 0, Voxel.voxelRayHitInfo.hit.blockPos, block, block.Block.MaxDamage, -1);

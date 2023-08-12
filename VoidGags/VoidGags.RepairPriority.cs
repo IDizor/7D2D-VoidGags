@@ -14,7 +14,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) =>
                 XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.RepairHasTopPriority)}");
+            LogPatchApplied(nameof(Settings.RepairHasTopPriority));
         }
 
         /// <summary>

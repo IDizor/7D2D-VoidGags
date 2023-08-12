@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using VoidGags.NetPackages;
 
 namespace VoidGags
 {
@@ -18,7 +19,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Prefix())),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Postfix())));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ExplosionAttractionFix)}");
+            LogPatchApplied(nameof(Settings.ExplosionAttractionFix));
         }
 
         /// <summary>
@@ -40,7 +41,6 @@ namespace VoidGags
                     _entityThatCausedSound = -1;
                     var wakeRadius = 15f;
                     var distractionRadius = 50f;
-                    var distractionStrength = 100f;
                     var distractionTargets = Helper.GetEntities<EntityEnemy>(_position, distractionRadius);
                     var targetsToWakeUp = Helper.GetEntities<EntityEnemy>(_position, wakeRadius);
 
@@ -58,14 +58,11 @@ namespace VoidGags
 
                         if (!entityEnemy.IsSleeping)
                         {
-                            float num = entityEnemy.distractionResistance - distractionStrength;
-                            if (num <= 0f || num < __instance.random.RandomFloat * 100f)
-                            {
-                                int ticks = entityEnemy.CalcInvestigateTicks((int)(30f + __instance.random.RandomFloat * 30f) * 20, null);
-                                Vector2 vector = __instance.random.RandomInsideUnitCircle * 7f; // circle * radius
-                                var randomizedPos = _position + new Vector3(vector.x, 0f, vector.y);
-                                entityEnemy.SetInvestigatePosition(randomizedPos, ticks);
-                            }
+                            int ticks = entityEnemy.CalcInvestigateTicks((int)(30f + __instance.random.RandomFloat * 30f) * 20, null);
+                            Vector2 vector = __instance.random.RandomInsideUnitCircle * 7f; // circle * radius
+                            var randomizedPos = _position + new Vector3(vector.x, 0f, vector.y);
+                            entityEnemy.SetInvestigatePosition(randomizedPos, ticks);
+                            SingletonMonoBehaviour<ConnectionManager>.Instance.SendToClientsOrServer(NetPackageManager.GetPackage<NetPackageSetInvestigatePos>().Setup(entityEnemy.entityId, randomizedPos, ticks));
                         }
                     }
                     distractionTargets.Clear();

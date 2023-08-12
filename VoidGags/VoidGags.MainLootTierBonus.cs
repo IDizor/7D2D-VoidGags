@@ -17,7 +17,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootManager_LootContainerOpened_2.APrefix p) => LootManager_LootContainerOpened_2.Prefix(p._tileEntity, p._entityIdThatOpenedIt, p._containerTags))),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => LootManager_LootContainerOpened_2.Postfix())));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.MainLootTierBonus)}");
+            LogPatchApplied(nameof(Settings.MainLootTierBonus));
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Checks if opened container can be considered as a main loot container and allow to apply bonus for it.
+        /// Checks if opened container can be considered as a main loot container and allows to apply bonus to it.
         /// </summary>
         public class LootManager_LootContainerOpened_2
         {
@@ -80,7 +80,6 @@ namespace VoidGags
                         var player = (EntityPlayer)world.GetEntity(_entityIdThatOpenedIt);
                         var prefab = player.prefab?.prefab;
                         PoiTier = Mathf.Max(0, prefab?.DifficultyTier ?? 0);
-
                         Debug.LogWarning($"Container: {blockName}, Tags: [{_containerTags}], POI Tier: {PoiTier}");
                     }
                     else

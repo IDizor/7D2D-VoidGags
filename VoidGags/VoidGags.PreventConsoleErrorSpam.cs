@@ -14,7 +14,7 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(GUIWindowConsole), "openConsole"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GUIWindowConsole_openConsole.Prefix())));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.PreventConsoleErrorSpam)}");
+            LogPatchApplied(nameof(Settings.PreventConsoleErrorSpam));
         }
 
         /// <summary>

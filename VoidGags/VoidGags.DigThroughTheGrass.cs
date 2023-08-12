@@ -15,7 +15,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionDynamic_hitTarget.APostfix p) =>
                 ItemActionDynamic_hitTarget.Postfix(p.__instance, p._actionData, p.hitInfo))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.DigThroughTheGrass)}");
+            LogPatchApplied(nameof(Settings.DigThroughTheGrass));
         }
 
         /// <summary>

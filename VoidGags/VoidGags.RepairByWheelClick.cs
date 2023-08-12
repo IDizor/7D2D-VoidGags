@@ -14,7 +14,7 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) =>
                 XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.MouseWheelClickFastRepair)}");
+            LogPatchApplied(nameof(Settings.MouseWheelClickFastRepair));
         }
 
         /// <summary>

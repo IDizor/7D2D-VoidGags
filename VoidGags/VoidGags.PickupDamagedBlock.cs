@@ -29,7 +29,7 @@ namespace VoidGags
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogError($"Mod {nameof(VoidGags)}: Failed to patch UndeadLegacy type method '{ttp.Type.Name}.{ttp.MethodName}()'. {ex.Message}");
+                            LogModException($"Failed to patch UndeadLegacy type method '{ttp.Type.Name}.{ttp.MethodName}()'. {ex.Message}");
                         }
                     }
                 }
@@ -52,13 +52,13 @@ namespace VoidGags
                         new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => World_GetBlock.Postfix(ref _blockValue))));
                 }
 
-                Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.PickupDamagedItems)}");
+                LogPatchApplied(nameof(Settings.PickupDamagedItems));
             }
             else
             {
                 if (Settings.PickupDamagedItems_Percentage != 100)
                 {
-                    Debug.LogError($"Mod {nameof(VoidGags)}: Invalid value for setting '{nameof(Settings.PickupDamagedItems_Percentage)}'.");
+                    LogModException($"Invalid value for setting '{nameof(Settings.PickupDamagedItems_Percentage)}'.");
                 }
             }
         }

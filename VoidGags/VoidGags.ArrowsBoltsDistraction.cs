@@ -1,5 +1,8 @@
-﻿using HarmonyLib;
+﻿using System;
+using GamePath;
+using HarmonyLib;
 using UnityEngine;
+using VoidGags.NetPackages;
 using static ItemActionAttack;
 
 namespace VoidGags
@@ -13,9 +16,9 @@ namespace VoidGags
         {
             harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), "Hit"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit.APostfix p) =>
-                ItemActionAttack_Hit.Postfix(p.hitInfo, p._damageType, p._attackDetails, p.damagingItemValue))));
+                ItemActionAttack_Hit.Postfix(p.hitInfo, p._attackerEntityId, p._damageType, p._attackDetails, p.damagingItemValue))));
 
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ArrowsBoltsDistraction)}");
+            LogPatchApplied(nameof(Settings.ArrowsBoltsDistraction));
         }
 
         /// <summary>
@@ -28,20 +31,23 @@ namespace VoidGags
             public struct APostfix
             {
                 public WorldRayHitInfo hitInfo;
+                public int _attackerEntityId;
                 public EnumDamageTypes _damageType;
                 public AttackHitInfo _attackDetails;
                 public ItemValue damagingItemValue;
             }
 
-            public static void Postfix(WorldRayHitInfo hitInfo, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
+            public static void Postfix(WorldRayHitInfo hitInfo, int _attackerEntityId, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
             {
                 if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
                 {
-                    ProcessBlockHitAttraction(GameManager.Instance.World, hitInfo, _attackDetails.blockBeingDamaged);
+                    EntityAlive entityAlive = GameManager.Instance.World.GetEntity(_attackerEntityId) as EntityAlive;
+                    var shotStartPos = entityAlive == null ? Vector3.zero : entityAlive.position;
+                    ProcessBlockHitAttraction(hitInfo, _attackDetails.blockBeingDamaged, shotStartPos);
                 }
             }
 
-            public static void ProcessBlockHitAttraction(World world, WorldRayHitInfo hitInfo, BlockValue damagedBlock)
+            public static void ProcessBlockHitAttraction(WorldRayHitInfo hitInfo, BlockValue damagedBlock, Vector3 shotStartPos)
             {
                 if (!damagedBlock.isair)
                 {
@@ -84,7 +90,8 @@ namespace VoidGags
                             distractionRadius = 20f;
                         }
 
-                        var distractionStrength = 80f;
+                        var world = GameManager.Instance.World;
+                        var random = world.GetGameRandom();
                         var distractionTargets = Helper.GetEntities<EntityEnemy>(hitInfo.hit.pos, distractionRadius);
                         var lastBlockPos = hitInfo.lastBlockPos.ToVector3Center();
                         var hitPos = hitInfo.hit.pos;
@@ -102,18 +109,27 @@ namespace VoidGags
                                         var noiceOcclusion = Helper.CalculateNoiseOcclusion(lastBlockPos, enemy.position, 0.027f);
                                         var occlusion = noiceOcclusion * Mathf.Pow(distractionRadius / 10f, 0.2f); // apply material/radius adjustment
                                         //Debug.LogWarning($"occlusion : {noiceOcclusion:0.000} -> {occlusion:0.000}, distractionRadius = {distractionRadius:0.00}");
+                                        var wasSleeping = enemy.IsSleeping;
                                         if (occlusion >= 0.87f && enemy.IsSleeping)
                                         {
+                                            //Debug.LogError($"ConditionalTriggerSleeperWakeUp() : {enemy.EntityName}");
                                             enemy.ConditionalTriggerSleeperWakeUp();
                                         }
-                                        if (occlusion >= 0.3f && !enemy.IsSleeping)
+                                        if (!enemy.IsSleeping && (wasSleeping || occlusion >= 0.3f))
                                         {
-                                            float num = enemy.distractionResistance - distractionStrength;
-                                            if (num <= 0f || num < world.GetGameRandom().RandomFloat * 100f)
+                                            var investigatePos = hitPos;
+                                            if (wasSleeping && shotStartPos != Vector3.zero)
                                             {
-                                                enemy.SetInvestigatePosition(lastBlockPos, 1000);
-                                                //Debug.LogWarning($"InvestigatePosition set.");
+                                                investigatePos = shotStartPos;
+                                                if ((shotStartPos - hitPos).magnitude > 3f)
+                                                {
+                                                    investigatePos = Vector3.Lerp(hitPos, shotStartPos, 0.2f + random.RandomFloat / 4f);
+                                                    //Debug.LogWarning($"InvestigatePosition lerped: {Helper.WorldPosToCompasText(new Vector3i(investigatePos))}");
+                                                }
                                             }
+                                            enemy.SetInvestigatePosition(investigatePos, 600, isAlert: true);
+                                            SingletonMonoBehaviour<ConnectionManager>.Instance.SendToClientsOrServer(NetPackageManager.GetPackage<NetPackageSetInvestigatePos>().Setup(enemy.entityId, investigatePos, 600));
+                                            //Debug.LogWarning($"SetInvestigatePosition() {enemy.EntityName} : {Helper.WorldPosToCompasText(new Vector3i(enemy.position))} --> {Helper.WorldPosToCompasText(new Vector3i(investigatePos))}");
                                         }
                                     }
                                 }

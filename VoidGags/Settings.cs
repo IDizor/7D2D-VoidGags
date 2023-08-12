@@ -22,6 +22,7 @@ namespace VoidGags
         public static bln MouseWheelClickFastRepair = true;
         public static bln RepairHasTopPriority = true;
         public static bln LockedSlotsSystem = true;
+        public static flt AutoSpreadLootRadius = 10f;
         public static bln ScrapTimeAndSalvageOperations = true;
         public static bln PreventConsoleErrorSpam = false;
         public static bln ArrowsBoltsDistraction = true;
@@ -35,6 +36,12 @@ namespace VoidGags
         public static int PreventDestroyOnClose_KeyCode = (int)KeyCode.LeftShift;
         public static bln MainLootTierBonus = false; // hidden feature, disabled by default
         public static bln PiercingShots = true;
+        public static bln HighlightCompatibleMods = true;
+        public static flt MasterWorkChance = 10f;
+        public static bln StealthOnLadders = true;
+        public static bln PreventPillaring = true;
+        public static bln UnrevealedTradeRoutesOnly = true;
+        public static bln NoScreamersFromOutside = true;
 
         static Settings()
         {
@@ -55,7 +62,7 @@ namespace VoidGags
                 }
                 catch
                 {
-                    Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: Failed to parse config file."));
+                    VoidGags.LogModException("Failed to parse config file.");
                 }
             }
             else

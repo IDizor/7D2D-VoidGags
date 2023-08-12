@@ -1,6 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using HarmonyLib;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace VoidGags
 {
@@ -19,11 +21,11 @@ namespace VoidGags
                     new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Prefix(killedEntity))),
                     new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Postfix(killedEntity))));
 
-                Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {nameof(Settings.ExperienceRewardByMaxHP)}");
+                LogPatchApplied(nameof(Settings.ExperienceRewardByMaxHP));
             }
             else
             {
-                Debug.LogError($"Mod {nameof(VoidGags)}: Invalid value for setting '{nameof(Settings.ExperienceRewardByMaxHP_Multiplier)}'.");
+                LogModException($"Invalid value for setting '{nameof(Settings.ExperienceRewardByMaxHP_Multiplier)}'.");
             }
         }
 
