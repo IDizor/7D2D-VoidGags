@@ -22,6 +22,7 @@ namespace VoidGags
         public static bln MouseWheelClickFastRepair = true;
         public static bln RepairHasTopPriority = true;
         public static bln LockedSlotsSystem = true;
+        public static bln LockedSlotsSystem_AutoSpreadButton = true;
         public static flt AutoSpreadLootRadius = 10f;
         public static bln ScrapTimeAndSalvageOperations = true;
         public static bln PreventConsoleErrorSpam = false;

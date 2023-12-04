@@ -25,6 +25,11 @@ namespace VoidGags
 
             UseXmlPatches(nameof(Settings.LockedSlotsSystem));
 
+            if (Settings.LockedSlotsSystem_AutoSpreadButton)
+            {
+                UseXmlPatches(nameof(Settings.LockedSlotsSystem_AutoSpreadButton));
+            }
+
             harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), "ParseAttribute"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_ParseAttribute.APrefix p) =>
                 XUiC_ItemStack_ParseAttribute.Prefix(ref p.__result, p._name, p._value))));
@@ -254,7 +259,6 @@ namespace VoidGags
             public static bool Active = false;
             public static Vector3i? CurrentContainerPos = null;
             public static Vector3i? LocalOpenEntityPos = null;
-            static FieldInfo stashLockedSlots = AccessTools.Field(typeof(XUiC_ContainerStandardControls), "stashLockedSlots");
             static MethodInfo closeInventoryLater = AccessTools.Method(typeof(XUiC_LootWindow), "closeInventoryLater");
 
             public static void Postfix(XUiC_ContainerStandardControls __instance)
@@ -271,22 +275,23 @@ namespace VoidGags
                     if (!Active)
                     {
                         Active = true;
+                        var parentWindowController = sender.GetParentWindow().Controller;
                         var controls = sender.GetParentByType<XUiC_ContainerStandardControls>();
                         var localOpenContainer = controls.xui.lootContainer;
                         var isWorkstation = localOpenContainer == null && controls.xui.currentWorkstation?.Length > 0;
                         var workstation = isWorkstation ? GetWorkstation(controls.xui.currentWorkstation) : null;
                         LocalOpenEntityPos = isWorkstation ? workstation?.ToWorldPos() : localOpenContainer?.ToWorldPos();
                         var localOpenEntityId = isWorkstation ? workstation?.entityId : localOpenContainer?.EntityId;
-
+                        
                         var loot = controls.GetItemStackGrid();
-                        var lockedSlots = (int)stashLockedSlots.GetValue(controls);
+                        var lockedSlots = controls.xui.playerUI.entityPlayer.bag.LockedSlots;
                         var startFromBottom = controls.MoveStartBottomRight;
-
+                        
                         if (LocalOpenEntityPos.HasValue)
                         {
                             if (localOpenContainer != null && !IgnoredContainers.Contains(LocalOpenEntityPos.Value))
                             {
-                                XUiM_LootContainer.StashItems(loot, localOpenContainer, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, startFromBottom);
+                                XUiM_LootContainer.StashItems(parentWindowController, loot, localOpenContainer, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, startFromBottom);
                             }
                             if (!IsServer)
                             {
@@ -298,7 +303,7 @@ namespace VoidGags
                         var player = Helper.PlayerLocal;
                         var tiles = Helper.GetTileEntities(player.position, Settings.AutoSpreadLootRadius);
                         var timeLimit = Time.time + 5f;
-
+                        
                         foreach (var tile in tiles)
                         {
                             var tilePos = tile.ToWorldPos();
@@ -357,7 +362,7 @@ namespace VoidGags
 
                                         void Spread()
                                         {
-                                            XUiM_LootContainer.StashItems(loot, box, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, startFromBottom);
+                                            XUiM_LootContainer.StashItems(parentWindowController, loot, box, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, startFromBottom);
                                         }
 
                                         void LeaveBox()

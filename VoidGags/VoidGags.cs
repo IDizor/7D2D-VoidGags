@@ -79,7 +79,7 @@ namespace VoidGags
         {
             if (!Directory.Exists($"{FeaturesFolder}\\{patchName}"))
             {
-                LogModException($"Missing XML patch folder '{patchName}'.");
+                LogModException($"Missing XML patch folder '{patchName}'. Make sure the 'Features' folder is up to date.");
             }
             AdditionalXmlPatches.Add(patchName);
         }
