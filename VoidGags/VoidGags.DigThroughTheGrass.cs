@@ -23,9 +23,9 @@ namespace VoidGags
         /// </summary>
         public class ItemActionDynamic_hitTarget
         {
-            public static FastTags AxeTag = FastTags.Parse("axe");
-            public static FastTags ShovelTag = FastTags.Parse("shovel");
-            public static FastTags MiningToolTag = FastTags.Parse("miningTool");
+            public static FastTags<TagGroup.Global> AxeTag = FastTags<TagGroup.Global>.Parse("axe");
+            public static FastTags<TagGroup.Global> ShovelTag = FastTags<TagGroup.Global>.Parse("shovel");
+            public static FastTags<TagGroup.Global> MiningToolTag = FastTags<TagGroup.Global>.Parse("miningTool");
 
             public struct APostfix
             {

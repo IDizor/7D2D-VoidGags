@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System;
+using HarmonyLib;
 using UnityEngine;
 
 namespace VoidGags
@@ -8,17 +9,25 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_RepairByWheelClick(Harmony harmony)
+        static KeyCode fastRepairHotKey = KeyCode.Mouse2;
+
+        public void ApplyPatches_FastRepair(Harmony harmony)
         {
+            if (!Enum.TryParse(Settings.FastRepair_HotKey, out fastRepairHotKey))
+            {
+                LogModException($"Invalid value for setting '{nameof(Settings.FastRepair_HotKey)}'.");
+                return;
+            }
+
             harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), "Update"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) =>
                 XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
 
-            LogPatchApplied(nameof(Settings.MouseWheelClickFastRepair));
+            LogPatchApplied(nameof(Settings.FastRepair));
         }
 
         /// <summary>
-        /// Repairs current weapon/tool in hands by mouse wheel click.
+        /// Repairs current weapon/tool in hands by the hot key.
         /// </summary>
         public class XUiC_Toolbelt_Update
         {
@@ -33,7 +42,7 @@ namespace VoidGags
 
             public static void Postfix(XUiC_Toolbelt __instance, XUiController[] ___itemControllers, int ___currentHoldingIndex)
             {
-                if (Input.GetMouseButton(2)) // Middle button pressed (wheel)
+                if (Input.GetKey(fastRepairHotKey))
                 {
                     if (!RepairingFlag)
                     {

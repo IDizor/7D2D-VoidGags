@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using HarmonyLib;
+﻿using HarmonyLib;
 
 namespace VoidGags
 {
@@ -11,8 +10,8 @@ namespace VoidGags
         public void ApplyPatches_StealthOnLadders(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), "MoveByInput"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Prefix(p.__instance, ref p.___isLadderAttached, out p.__state))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Postfix(p.__instance, ref p.___isLadderAttached, p.__state))));
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Prefix(p.__instance, out p.__state))),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Postfix(p.__instance, p.__state))));
 
             harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), "GetSpeedModifier"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_GetSpeedModifier.APostfix p) => EntityPlayerLocal_GetSpeedModifier.Postfix(p.__instance, ref p.__result, p.___isLadderAttached))));
@@ -31,23 +30,38 @@ namespace VoidGags
             public struct AParams
             {
                 public EntityPlayerLocal __instance;
-                public bool ___isLadderAttached;
                 public bool __state;
             }
 
-            public static void Prefix(EntityPlayerLocal __instance, ref bool ___isLadderAttached, out bool __state)
+            static bool isCrouchingJump;
+            static bool isCrouchingLocked;
+
+            public static void Prefix(EntityPlayerLocal __instance, out bool __state)
             {
-                __state = ___isLadderAttached;
-                if (__instance.AttachedToEntity == null)
+                __state = __instance.isLadderAttached; // remember the ladder attached state
+                isCrouchingJump = __instance.IsCrouching && (__instance.Jumping || __instance.movementInput.jump);
+                isCrouchingLocked = __instance.CrouchingLocked;
+
+                if (__instance.AttachedToEntity == null && !__instance.movementInput.jump)
                 {
-                    ___isLadderAttached = false;
+                    // set isLadderAttached to false during the original method execution
+                    __instance.isLadderAttached = false;
                 }
             }
 
-            public static void Postfix(EntityPlayerLocal __instance, ref bool ___isLadderAttached, bool __state)
+            public static void Postfix(EntityPlayerLocal __instance, bool __state)
             {
                 if (__instance.AttachedToEntity == null)
-                    ___isLadderAttached = __state;
+                {
+                    // restore the ladder attached state
+                    __instance.isLadderAttached = __state;
+                }
+
+                if (isCrouchingJump)
+                {
+                    __instance.CrouchingLocked = isCrouchingLocked;
+                    __instance.Crouching = true;
+                }
             }
         }
 
@@ -77,8 +91,6 @@ namespace VoidGags
         /// </summary>
         public class PlayerStealth_CalcVolume
         {
-            static readonly FieldInfo isLadderAttached = AccessTools.Field(typeof(EntityPlayerLocal), "isLadderAttached");
-
             public struct APostfix
             {
                 public float __result;
@@ -89,7 +101,7 @@ namespace VoidGags
             {
                 if (__result > 0 && ___player.IsCrouching && ___player is EntityPlayerLocal player)
                 {
-                    if ((bool)isLadderAttached.GetValue(player))
+                    if (player.isLadderAttached)
                     {
                         __result *= 0.5f;
                     }

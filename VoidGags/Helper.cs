@@ -32,7 +32,7 @@ namespace VoidGags
         /// <returns></returns>
         public static MethodBase GetCallerMethod(int index = 0)
         {
-            index += 3;
+            index += 4;
             var stackTrace = new System.Diagnostics.StackTrace();
             if (stackTrace.FrameCount < index)
             {
@@ -48,10 +48,10 @@ namespace VoidGags
         {
             var stackTrace = new System.Diagnostics.StackTrace();
             var path = string.Join(" <-- ", stackTrace.GetFrames()
-                .Skip(3)
+                .Skip(4)
                 .Take(limit)
                 .Select(f => f.GetMethod())
-                .Select(m => m.DeclaringType.Name + "." + m.Name + "()"));
+                .Select(m => m.DeclaringType.Name + "." + m.Name));
             return path;
         }
 

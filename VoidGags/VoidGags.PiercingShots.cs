@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 using static ItemActionRanged;
 
@@ -28,8 +27,6 @@ namespace VoidGags
         /// </summary>
         public class ItemActionRanged_fireShot
         {
-            static readonly MethodInfo getDirectionOffset = AccessTools.Method(typeof(ItemActionRanged), "getDirectionOffset");
-
             public struct APrefix
             {
                 public ItemActionRanged __instance;
@@ -45,7 +42,7 @@ namespace VoidGags
                 ItemValue itemValue = _actionData.invData.itemValue;
                 float range = __instance.GetRange(_actionData);
                 Ray lookRay = holdingEntity.GetLookRay();
-                lookRay.direction = (Vector3)getDirectionOffset.Invoke(__instance, new object[] { _actionData, lookRay.direction, _shotIdx });
+                lookRay.direction = __instance.getDirectionOffset(_actionData, lookRay.direction, _shotIdx);
                 int hitMask = ((___hitmaskOverride == 0) ? 8 : ___hitmaskOverride);
                 
                 var repeat = false;
@@ -86,7 +83,6 @@ namespace VoidGags
         public class ProjectileMoveScript_checkCollision
         {
             static bool skip = false;
-            static readonly FieldInfo timeShotStarted = AccessTools.Field(typeof(ProjectileMoveScript), "timeShotStarted"); // float
             //static readonly List<string> loggedProjectiles = new List<string>();
 
             public struct APrefix
@@ -110,8 +106,7 @@ namespace VoidGags
                 {
                     return true;
                 }
-                var projectileTime = Time.time - (float)timeShotStarted.GetValue(__instance);
-                if (projectileTime > 1f)
+                if (__instance.stateTime > 1f)
                 {
                     return true;
                 }

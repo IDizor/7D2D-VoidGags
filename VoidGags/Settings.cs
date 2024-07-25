@@ -7,29 +7,30 @@ using Newtonsoft.Json;
 using UnityEngine;
 using bln = System.Boolean;
 using flt = System.Single;
+using str = System.String;
 
 namespace VoidGags
 {
     internal static class Settings
     {
-        public static bln AirDropIsNeverEmpty = true;
+        public static bln SkipNewsScreen = false;
         public static bln CraftingQueueRightClickToMove = true;
         public static bln ExperienceRewardByMaxHP = true;
         public static flt ExperienceRewardByMaxHP_Multiplier = 1.0f;
         public static bln HelmetLightByDefault = true;
         public static bln PickupDamagedItems = true;
         public static int PickupDamagedItems_Percentage = 80;
-        public static bln MouseWheelClickFastRepair = true;
-        public static bln RepairHasTopPriority = true;
+        public static bln FastRepair = true;
+        public static str FastRepair_HotKey = nameof(KeyCode.Mouse2);
+        public static bln RepairingHasTopPriority = true;
         public static bln LockedSlotsSystem = true;
         public static bln LockedSlotsSystem_AutoSpreadButton = true;
-        public static flt AutoSpreadLootRadius = 10f;
+        public static flt LockedSlotsSystem_AutoSpreadRadius = 10f;
         public static bln ScrapTimeAndSalvageOperations = true;
         public static bln PreventConsoleErrorSpam = false;
         public static bln ArrowsBoltsDistraction = true;
-        public static bln RocksGrenadesDistraction = true;
+        public static bln GrenadesDistraction = true;
         public static bln ExplosionAttractionFix = true;
-        public static bln ScrapDrinksToEmptyJars = true;
         public static bln DigThroughTheGrass = true;
         public static bln LessFogWhenFlying = true;
         public static bln SocialZombies = false;
@@ -39,7 +40,9 @@ namespace VoidGags
         public static bln PiercingShots = true;
         public static bln HighlightCompatibleMods = true;
         public static flt MasterWorkChance = 10f;
+        public static int MasterWorkChance_MaxQuality = 5;
         public static bln StealthOnLadders = true;
+        public static bln ExhaustingLadders = true;
         public static bln PreventPillaring = true;
         public static bln UnrevealedTradeRoutesOnly = true;
         public static bln NoScreamersFromOutside = true;

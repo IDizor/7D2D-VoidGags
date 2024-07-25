@@ -1,6 +1,4 @@
-﻿using System;
-using GamePath;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 using VoidGags.NetPackages;
 using static ItemActionAttack;
@@ -26,7 +24,7 @@ namespace VoidGags
         /// </summary>
         public class ItemActionAttack_Hit
         {
-            public static FastTags PerkArcheryTag = FastTags.Parse("perkArchery");
+            public static FastTags<TagGroup.Global> PerkArcheryTag = FastTags<TagGroup.Global>.Parse("perkArchery");
 
             public struct APostfix
             {

@@ -1,17 +1,19 @@
 <dizor>
 
-  <!-- windowBackpack -->
-  <set xpath="/windows/window[@name='windowBackpack']/panel[@name='header']/rect/combobox[@name='cbxLockedSlots']/@pos">-135,-7</set>
-  <set xpath="/windows/window[@name='windowBackpack']/panel[@name='header']/rect/combobox[@name='cbxLockedSlots']/@width">115</set>
-
-  <!-- windowVehicleStorage -->
+  <!-- windowVehicleStorage : add button to toggle lock mode -->
   <append xpath="/windows/window[@name='windowVehicleStorage']/panel[@name='header']/rect[@controller='ContainerStandardControls']">
-    <combobox depth="3" name="cbxLockedSlots" pos="15,-7" width="150" height="30" tooltip_key="xuiStashLockedSlots" type="ComboBoxInt" value_min="0" value_max="{container_slots}" value_wrap="false" value_increment="1" />
+    <button depth="3" name="btnToggleLockMode" sprite="ui_game_symbol_lock" tooltip_key="xuiStashLockModeToggle" pos="154, -22" style="icon32px, press, hover" pivot="center" sound="[paging_click]" selected="{userlockmode}" />
   </append>
 
-  <!-- windowLooting -->
-  <append xpath="/windows/window[@name='windowLooting']/panel[@name='header']/rect[@controller='ContainerStandardControls']">
-    <combobox depth="3" name="cbxLockedSlots" pos="15,-7" width="150" height="30" tooltip_key="xuiStashLockedSlots" type="ComboBoxInt" value_min="0" value_max="{container_slots}" value_wrap="false" value_increment="1" visible="{is_drone}" />
+  <!-- windowVehicleStorage : replace item stack with new 'vg_vehicle_item_stack' -->
+  <remove xpath="/windows/window[@name='windowVehicleStorage']/grid[@name='queue']/item_stack" />
+  <append xpath="/windows/window[@name='windowVehicleStorage']/grid[@name='queue']">
+    <vg_vehicle_item_stack name="0"/>
   </append>
+
+  <!-- windowLooting ->
+  <append xpath="/windows/window[@name='windowLooting']/panel[@name='header']/rect[@controller='ContainerStandardControls']">
+    <button depth="3" name="btnToggleLockMode" sprite="ui_game_symbol_lock" tooltip_key="xuiStashLockModeToggle" pos="154, -22" style="icon32px, press, hover" pivot="center" sound="[paging_click]" selected="{userlockmode}" visible="{is_drone}" />
+  </append-->
 
 </dizor>

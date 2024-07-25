@@ -43,7 +43,7 @@ namespace VoidGags
         /// </summary>
         public class LootManager_LootContainerOpened_2
         {
-            public static FastTags Safes = FastTags.Parse("safes");
+            public static FastTags<TagGroup.Global> Safes = FastTags<TagGroup.Global>.Parse("safes");
 
             public static bool ApplyBonus = false;
             public static int PoiTier = 0;
@@ -52,10 +52,10 @@ namespace VoidGags
             {
                 public TileEntityLootContainer _tileEntity;
                 public int _entityIdThatOpenedIt;
-                public FastTags _containerTags;
+                public FastTags<TagGroup.Global> _containerTags;
             }
 
-            public static void Prefix(TileEntityLootContainer _tileEntity, int _entityIdThatOpenedIt, FastTags _containerTags)
+            public static void Prefix(TileEntityLootContainer _tileEntity, int _entityIdThatOpenedIt, FastTags<TagGroup.Global> _containerTags)
             {
                 if (_tileEntity.GetChunk() != null) // no chunk no block
                 {

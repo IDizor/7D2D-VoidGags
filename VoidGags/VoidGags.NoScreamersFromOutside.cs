@@ -27,15 +27,17 @@ namespace VoidGags
         /// </summary>
         public class AIDirectorChunkEventComponent_SpawnScouts
         {
+            const float spawnRadius = 150;
+
             public static bool Prefix(Vector3 targetPos)
             {
                 if (SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
                 {
                     // check active quests from clients
                     var activeQuests = NetPackageQuestEvent_ProcessPackage.ActiveQuests;
-                    if (activeQuests.Any(q => (targetPos - q.PrefabCenter).magnitude < 100))
+                    if (activeQuests.Any(q => (targetPos - q.PrefabCenter).magnitude < spawnRadius))
                     {
-                        LogModWarning("Spawn of zombie Screamer is prevented. There is an active quest nearby.");
+                        LogModWarning("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
                         return false;
                     }
 
@@ -47,9 +49,9 @@ namespace VoidGags
                             if (player.QuestJournal.ActiveQuest?.CurrentState == Quest.QuestState.InProgress)
                             {
                                 var pos = new Vector3(targetPos.x, player.position.y, targetPos.z);
-                                if ((player.position - pos).magnitude < 70)
+                                if ((player.position - pos).magnitude < spawnRadius)
                                 {
-                                    LogModWarning("Spawn of zombie Screamer is prevented. There is an active quest nearby.");
+                                    LogModWarning("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
                                     return false;
                                 }
                             }

@@ -12,6 +12,7 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
+        public static Mod ModInstance;
         public static string ModFolder;
         public static string FeaturesFolder;
         public static bool IsServer;
@@ -24,6 +25,7 @@ namespace VoidGags
         /// <param name="_modInstance"></param>
         public void InitMod(Mod _modInstance)
         {
+            ModInstance = _modInstance;
             Debug.Log("Loading mod: " + GetType().ToString());
             ModFolder = Path.GetDirectoryName(Assembly.GetAssembly(typeof(VoidGags)).Location);
             FeaturesFolder = Path.Combine(ModFolder, "Features");
@@ -39,20 +41,19 @@ namespace VoidGags
             CheckUndeadLegacy();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            if (Settings.AirDropIsNeverEmpty) ApplyPatches_AirDropIsNeverEmpty(harmony);
+            if (Settings.SkipNewsScreen) ApplyPatches_SkipNewsScreen(harmony);
             if (Settings.CraftingQueueRightClickToMove) ApplyPatches_CraftingQueueMove(harmony);
             if (Settings.ExperienceRewardByMaxHP) ApplyPatches_ExperienceByMaxHP(harmony);
             if (Settings.HelmetLightByDefault) ApplyPatches_HelmetLightFirst(harmony);
             if (Settings.PickupDamagedItems) ApplyPatches_PickupDamagedBlock(harmony);
-            if (Settings.MouseWheelClickFastRepair) ApplyPatches_RepairByWheelClick(harmony);
-            if (Settings.RepairHasTopPriority) ApplyPatches_RepairPriority(harmony);
+            if (Settings.FastRepair) ApplyPatches_FastRepair(harmony);
+            if (Settings.RepairingHasTopPriority) ApplyPatches_RepairingPriority(harmony);
             if (Settings.LockedSlotsSystem) ApplyPatches_LockedSlotsSystem(harmony);
             if (Settings.ScrapTimeAndSalvageOperations) ApplyPatches_ScrapTime(harmony);
             if (Settings.PreventConsoleErrorSpam) ApplyPatches_PreventConsoleErrorSpam(harmony);
             if (Settings.ArrowsBoltsDistraction) ApplyPatches_ArrowsBoltsDistraction(harmony);
-            if (Settings.RocksGrenadesDistraction) ApplyPatches_RocksGrenadesDistraction(harmony);
+            if (Settings.GrenadesDistraction) ApplyPatches_GrenadesDistraction(harmony);
             if (Settings.ExplosionAttractionFix) ApplyPatches_ExplosionAttractionFix(harmony);
-            //if (Settings.ScrapDrinksToEmptyJars) ApplyPatches_ScrapDrinksToEmptyJars(harmony); // Obsolete (used in A20)
             if (Settings.DigThroughTheGrass) ApplyPatches_DigThroughTheGrass(harmony);
             if (Settings.LessFogWhenFlying) ApplyPatches_LessFogWhenFlying(harmony);
             if (Settings.SocialZombies) ApplyPatches_SocialZombies(harmony);
@@ -62,6 +63,7 @@ namespace VoidGags
             if (Settings.HighlightCompatibleMods) ApplyPatches_HighlightCompatibleMods(harmony);
             /* if () is not needed for this */ ApplyPatches_MasterWorkChance(harmony);
             if (Settings.StealthOnLadders) ApplyPatches_StealthOnLadders(harmony);
+            if (Settings.ExhaustingLadders) ApplyPatches_ExhaustingLadders(harmony);
             if (Settings.PreventPillaring) ApplyPatches_PreventPillaring(harmony);
             if (Settings.UnrevealedTradeRoutesOnly) ApplyPatches_UnrevealedTradeRoutesOnly(harmony);
             if (Settings.NoScreamersFromOutside) ApplyPatches_NoScreamersFromOutside(harmony);
@@ -127,7 +129,7 @@ namespace VoidGags
                             try
                             {
                                 var patchXml = new XmlFile(configDir, cachingXmlName, _loadAsync: false, _throwExc: true);
-                                XmlPatcher.PatchXml(_origXml, patchXml, patchName);
+                                XmlPatcher.PatchXml(_origXml, patchXml.XmlDoc.Root, patchXml, ModInstance);
                             }
                             catch (Exception ex)
                             {
@@ -147,6 +149,11 @@ namespace VoidGags
         internal static void LogModException(string message)
         {
             Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: {message}"));
+        }
+
+        internal static void LogModError(string message)
+        {
+            Debug.LogError($"Mod {nameof(VoidGags)}: {message}");
         }
 
         internal static void LogModWarning(string message)

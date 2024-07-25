@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using HarmonyLib;
-using UnityEngine;
 
 namespace VoidGags
 {
@@ -45,7 +44,7 @@ namespace VoidGags
                         harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), new HarmonyMethod(prefix));
                     }
                     
-                    harmony.Patch(AccessTools.Method(typeof(Block), "OnBlockActivated", new Type[] { typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityAlive) }),
+                    harmony.Patch(AccessTools.Method(typeof(Block), "OnBlockActivated", new Type[] { typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal) }),
                         new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue))));
                     
                     harmony.Patch(AccessTools.Method(typeof(World), "GetBlock", new Type[] { typeof(Vector3i) }), null,

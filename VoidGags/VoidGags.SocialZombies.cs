@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
-using static XUiC_DropDown;
 using VoidGags.NetPackages;
 
 namespace VoidGags
@@ -51,11 +49,6 @@ namespace VoidGags
         /// </summary>
         public static class SocialZombiesHelper
         {
-            public static FieldInfo InvestigatePos = AccessTools.Field(typeof(EntityAlive), "investigatePos"); // Vector3
-            public static FieldInfo InvestigatePositionTicks = AccessTools.Field(typeof(EntityAlive), "investigatePositionTicks"); // int
-            public static FieldInfo IsInvestigateAlert = AccessTools.Field(typeof(EntityAlive), "isInvestigateAlert"); // bool
-            public static FieldInfo AttackTargetTime = AccessTools.Field(typeof(EntityAlive), "attackTargetTime"); // int
-
             public static void AttractZombiesAround(EntityAlive entity, float delay = 0.5f, float radius = 6f, Func<float> delayForEach = null)
             {
                 if (entity == null)
@@ -77,7 +70,7 @@ namespace VoidGags
                         if (entity != null && !entity.IsDead())
                         {
                             var attackTarget = entity.GetAttackTarget();
-                            var attackTime = attackTarget == null ? 0 : (int)AttackTargetTime.GetValue(entity);
+                            var attackTime = attackTarget == null ? 0 : entity.attackTargetTime;
                             var isInvestigating = entity.IsInvestigating();
                             var investigatingPosition = entity.InvestigatePosition;
                             var delays = delayForEach == null ? null : loafers.Select(_ => delayForEach()).ToList();
@@ -145,9 +138,9 @@ namespace VoidGags
             /// </summary>
             private static void InvestigatePosition(EntityAlive entity, Vector3 pos, int ticks)
             {
-                InvestigatePos.SetValue(entity, pos);
-                InvestigatePositionTicks.SetValue(entity, ticks);
-                IsInvestigateAlert.SetValue(entity, true);
+                entity.investigatePos = pos;
+                entity.investigatePositionTicks = ticks;
+                entity.isInvestigateAlert = true;
             }
         }
 

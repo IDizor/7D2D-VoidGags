@@ -10,6 +10,7 @@
     <RootNamespace>VoidGags</RootNamespace>
     <AssemblyName>VoidGags</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -33,8 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\0Harmony.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\Mods\0_TFP_Harmony\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -95,10 +95,9 @@
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />
     <Compile Include="VoidGags.ArrowsBoltsDistraction.cs" />
-    <Compile Include="VoidGags.RocksGrenadesDistraction.cs" />
+    <Compile Include="VoidGags.GrenadesDistraction.cs" />
     <Compile Include="VoidGags.PreventConsoleErrorSpam.cs" />
     <Compile Include="VoidGags.ExplosionAttractionFix.cs" />
-    <Compile Include="VoidGags.ScrapDrinksToEmptyJars.cs" />
     <Compile Include="VoidGags.DigThroughTheGrass.cs" />
     <Compile Include="VoidGags.LessFogWhenFlying.cs" />
     <Compile Include="VoidGags.PreventDestroyOnClose.cs" />
@@ -107,19 +106,20 @@
     <Compile Include="VoidGags.PreventPillaring.cs" />
     <Compile Include="VoidGags.HighlightCompatibleMods.cs" />
     <Compile Include="VoidGags.NoScreamersFromOutside.cs" />
+    <Compile Include="VoidGags.ExhaustingLadders.cs" />
     <Compile Include="VoidGags.UnrevealedTradeRoutesOnly.cs" />
     <Compile Include="VoidGags.StealthOnLadders.cs" />
     <Compile Include="VoidGags.SocialZombies.cs" />
     <Compile Include="VoidGags.UL.cs" />
     <Compile Include="VoidGags.ExperienceByMaxHP.cs" />
     <Compile Include="VoidGags.CraftingQueueMove.cs" />
-    <Compile Include="VoidGags.RepairByWheelClick.cs" />
-    <Compile Include="VoidGags.RepairPriority.cs" />
+    <Compile Include="VoidGags.FastRepair.cs" />
+    <Compile Include="VoidGags.RepairingPriority.cs" />
     <Compile Include="VoidGags.HelmetLightFirst.cs" />
     <Compile Include="VoidGags.ScrapTime.cs" />
     <Compile Include="VoidGags.PickupDamagedBlock.cs" />
     <Compile Include="VoidGags.LockedSlotsSystem.cs" />
-    <Compile Include="VoidGags.AirDropNeverEmpty.cs" />
+    <Compile Include="VoidGags.SkipNewsScreen.cs" />
     <Compile Include="VoidGags.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -129,7 +129,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /y "$(TargetPath)" "$(SolutionDir)\Releases\$(TargetName)\"
-copy /y "$(TargetPath)" "D:\Games\Steam\steamapps\common\7 Days To Die\Mods\VoidGags\"
-::copy /y "$(TargetPath)" "G:\Games\7DTD-UL\Mods\VoidGags\"</PostBuildEvent>
+copy /y "$(TargetPath)" "D:\Games\Steam\steamapps\common\7 Days To Die\Mods\$(ProjectName)\"
+::copy /y "$(TargetPath)" "G:\Games\7DTD-UL\Mods\$(ProjectName)\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

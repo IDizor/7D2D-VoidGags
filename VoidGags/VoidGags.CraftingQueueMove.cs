@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using HarmonyLib;
-using UnityEngine;
+﻿using HarmonyLib;
 
 namespace VoidGags
 {
@@ -36,8 +34,7 @@ namespace VoidGags
                     ___background.OnRightPress += new XUiEvent_OnPressEventHandler((controller, _) => {
                         if (__instance.GetRecipe() != null)
                         {
-                            var craftingQueueFieldInfo = typeof(XUiC_CraftingQueue).GetField("queueItems", BindingFlags.NonPublic | BindingFlags.Instance);
-                            var craftingQueue = (XUiController[])craftingQueueFieldInfo.GetValue(__instance.Owner);
+                            var craftingQueue = __instance.Owner.queueItems;
                             XUiC_RecipeStack tempItem = null;
 
                             if (craftingQueue != null && craftingQueue.Length > 1)

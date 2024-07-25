@@ -21,8 +21,8 @@ namespace VoidGags
         /// </summary>
         public class SkyManager_SetFogDensity
         {
-            const float minDensity = 0.13f;
-            const float maxDensity = 0.3f;
+            const float minDensity = 0.127f;
+            const float maxDensity = 0.30f;
             const float range = maxDensity - minDensity;
             const float bestVisionHeight = 100f;
 

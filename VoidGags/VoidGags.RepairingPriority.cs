@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using UnityEngine;
 
 namespace VoidGags
 {
@@ -8,13 +7,13 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_RepairPriority(Harmony harmony)
+        public void ApplyPatches_RepairingPriority(Harmony harmony)
         {
             harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingQueue), "AddItemToRepair"), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) =>
                 XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
 
-            LogPatchApplied(nameof(Settings.RepairHasTopPriority));
+            LogPatchApplied(nameof(Settings.RepairingHasTopPriority));
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using HarmonyLib;
+﻿using HarmonyLib;
 
 namespace VoidGags
 {
@@ -25,8 +24,7 @@ namespace VoidGags
         public class RenderDisplacedCube_update0
         {
             public static bool Allowed = true;
-            static readonly FieldInfo isLadderAttached = AccessTools.Field(typeof(EntityPlayerLocal), "isLadderAttached");
-
+            
             public struct APrefix
             {
                 public Vector3i _focusBlockPos;
@@ -39,7 +37,7 @@ namespace VoidGags
                     || _player.onGround
                     || _player.IsInWater()
                     || _focusBlockPos.y >= _player.position.y
-                    || _player is EntityPlayerLocal && (bool)isLadderAttached.GetValue(_player);
+                    || _player is EntityPlayerLocal && ((EntityPlayerLocal)_player).isLadderAttached;
             }
         }
 
@@ -51,7 +49,7 @@ namespace VoidGags
             public static bool Prefix(ref bool __result)
             {
                 var caller = Helper.GetCallerMethod();
-                if (caller.Name.EndsWith("::update0>") || (caller.Name == nameof(BlockToolSelection.ExecuteUseAction) && caller.DeclaringType.Name == nameof(BlockToolSelection)))
+                if (caller.Name.Contains(":update0(") || (caller.Name == nameof(BlockToolSelection.ExecuteUseAction) && caller.DeclaringType.Name == nameof(BlockToolSelection)))
                 {
                     if (!RenderDisplacedCube_update0.Allowed)
                     {
@@ -61,7 +59,12 @@ namespace VoidGags
                 }
                 /*else
                 {
-                    Debug.LogError($"!CanPlaceBlockAt, {Helper.GetCallStackPath()}");
+                    var ps = Helper.GetCallStackPath(5).Replace(" <-- ", "~").Split('~');
+                    UnityEngine.Debug.LogError($"!CanPlaceBlockAt, {caller.DeclaringType.Name}.{caller.Name}");
+                    foreach (var p in ps)
+                    {
+                        UnityEngine.Debug.LogWarning($"{p}");
+                    }
                 }*/
                 return true;
             }

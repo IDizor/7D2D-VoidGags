@@ -52,7 +52,7 @@ namespace VoidGags
                     {
                         __result = new List<Vector2>();
                     }
-                    var waypoints = ObjectiveGoto_GetPosition.Player.Waypoints?.List;
+                    var waypoints = ObjectiveGoto_GetPosition.Player.Waypoints?.Collection.list;
                     if (waypoints != null)
                     {
                         var prefabDecorator = GameManager.Instance.World.ChunkClusters[0].ChunkProvider.GetDynamicPrefabDecorator();

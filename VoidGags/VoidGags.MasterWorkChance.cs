@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Audio;
 using HarmonyLib;
 using UniLinq;
@@ -17,22 +15,31 @@ namespace VoidGags
         {
             if (Settings.MasterWorkChance <= 20 && Settings.MasterWorkChance > 0)
             {
-                MasterWorkChanceValue = 0.01f * Settings.MasterWorkChance;
+                if (Settings.MasterWorkChance_MaxQuality < 1 || Settings.MasterWorkChance_MaxQuality > 6)
+                {
+                    LogModException($"Invalid value for setting '{nameof(Settings.MasterWorkChance_MaxQuality)}'. Should be in range 1..6.");
+                    return;
+                }
 
-                harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), "outputStack"),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_outputStack.APrefix p) => XUiC_RecipeStack_outputStack.Prefix(p.__instance, p.___originalItem))),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_RecipeStack_outputStack.Postfix())));
+                if (Settings.MasterWorkChance_MaxQuality > 1)
+                {
+                    MasterWorkChanceValue = 0.01f * Settings.MasterWorkChance;
 
-                harmony.Patch(AccessTools.Method(typeof(TileEntityWorkstation), "HandleRecipeQueue"),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((TileEntityWorkstation __instance) => TileEntityWorkstation_HandleRecipeQueue.Prefix(__instance))),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => TileEntityWorkstation_HandleRecipeQueue.Postfix())));
+                    harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), nameof(XUiC_RecipeStack.outputStack)),
+                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_outputStack.APrefix p) => XUiC_RecipeStack_outputStack.Prefix(p.__instance, p.___originalItem))),
+                        new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_RecipeStack_outputStack.Postfix())));
 
-                harmony.Patch(AccessTools.Constructor(typeof(ItemValue), new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(string[]), typeof(float) }),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemValue_ctor.APrefix p) => ItemValue_ctor.Prefix(ref p.minQuality, ref p.maxQuality))));
+                    harmony.Patch(AccessTools.Method(typeof(TileEntityWorkstation), nameof(TileEntityWorkstation.HandleRecipeQueue)),
+                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((TileEntityWorkstation __instance) => TileEntityWorkstation_HandleRecipeQueue.Prefix(__instance))),
+                        new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => TileEntityWorkstation_HandleRecipeQueue.Postfix())));
 
-                OnGameLoadedActions.Add(RequestMasterWorkChanceServerValue);
+                    harmony.Patch(AccessTools.Constructor(typeof(ItemValue), new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(string[]), typeof(float) }),
+                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemValue_ctor.APrefix p) => ItemValue_ctor.Prefix(ref p.minQuality, ref p.maxQuality))));
 
-                LogPatchApplied(nameof(Settings.MasterWorkChance));
+                    OnGameLoadedActions.Add(RequestMasterWorkChanceServerValue);
+
+                    LogPatchApplied(nameof(Settings.MasterWorkChance));
+                }
             }
             else if (Settings.MasterWorkChance != 0)
             {
@@ -46,7 +53,8 @@ namespace VoidGags
         {
             if (!SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
             {
-                SingletonMonoBehaviour<ConnectionManager>.Instance.SendToServer(NetPackageManager.GetPackage<NetPackageMasterWorkChance>().Setup(0));
+                SingletonMonoBehaviour<ConnectionManager>.Instance.SendToServer(NetPackageManager.GetPackage<NetPackageMasterWorkChance>()
+                    .Setup(Settings.MasterWorkChance, Settings.MasterWorkChance_MaxQuality));
             }
         }
 
@@ -87,8 +95,6 @@ namespace VoidGags
         /// </summary>
         public class TileEntityWorkstation_HandleRecipeQueue
         {
-            static readonly FieldInfo lockedTileEntities = AccessTools.Field(typeof(GameManager), "lockedTileEntities");
-
             public static void Prefix(TileEntityWorkstation __instance)
             {
                 if (__instance.Queue != null && __instance.Queue.Length > 0)
@@ -96,8 +102,8 @@ namespace VoidGags
                     RecipeQueueItem recipeQueueItem = __instance.Queue[__instance.Queue.Length - 1];
                     if (recipeQueueItem != null && recipeQueueItem.Multiplier > 0 && recipeQueueItem.Recipe != null && recipeQueueItem.Recipe.GetOutputItemClass().ShowQualityBar)
                     {
-                        var lockedTiles = (Dictionary<TileEntity, int>)lockedTileEntities.GetValue(GameManager.Instance);
-                        if (!lockedTiles.Any(l => l.Key.entityId == __instance.entityId)) // if workstation is not opened by any player
+                        var lockedTiles = GameManager.Instance.lockedTileEntities;
+                        if (!lockedTiles.Any(l => ((TileEntity)l.Key).entityId == __instance.entityId)) // if workstation is not opened by any player
                         {
                             var recipe = recipeQueueItem.Recipe;
                             var crafterId = recipeQueueItem.StartingEntityId;
@@ -134,7 +140,7 @@ namespace VoidGags
             {
                 if (minQuality == maxQuality && maxQuality > 0 && maxQuality < 6)
                 {
-                    if (MaxTierCanCraft > 0 && MaxTierCanCraft < 6 && MaxTierCanCraft <= maxQuality)
+                    if (MaxTierCanCraft > 0 && MaxTierCanCraft < Settings.MasterWorkChance_MaxQuality && MaxTierCanCraft <= maxQuality)
                     {
                         if (GameManager.Instance.World.GetGameRandom().RandomFloat <= MasterWorkChanceValue)
                         {
