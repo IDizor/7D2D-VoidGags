@@ -10,7 +10,7 @@
     <RootNamespace>VoidGags</RootNamespace>
     <AssemblyName>VoidGags</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
+    <Compile Include="ModStorage.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkChance.cs" />
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />

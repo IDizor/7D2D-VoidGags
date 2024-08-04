@@ -49,8 +49,15 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiController __instance) => XUiController_RefreshBindings.Postfix(__instance))));
 
             harmony.Patch(AccessTools.Method(typeof(Bag), nameof(Bag.AddItem)),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Bag_AddItem.AParams p) => Bag_AddItem.Prefix(p.__instance, ref p.__state))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Bag_AddItem.AParams p) => Bag_AddItem.Postfix(p.__instance, p.__state))));
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => Bag_AddItem.Prefix())),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => Bag_AddItem.Postfix())));
+
+            harmony.Patch(AccessTools.Method(typeof(TileEntityLootContainer), nameof(TileEntityLootContainer.AddItem)),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => Bag_AddItem.Prefix())), // we can use prefix and postfix from Bag_AddItem
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => Bag_AddItem.Postfix())));
+
+            harmony.Patch(AccessTools.Method(typeof(ItemStack), nameof(ItemStack.IsEmpty), Array.Empty<Type>()), null,
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack_IsEmpty.APostfix p) => ItemStack_IsEmpty.Postfix(p.__instance, ref p.__result))));
 
             harmony.Patch(AccessTools.Method(typeof(XUiC_ContainerStandardControls), nameof(XUiC_ContainerStandardControls.Init)), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ContainerStandardControls __instance) => XUiC_ContainerStandardControls_Init.Postfix(__instance))));
@@ -78,6 +85,8 @@ namespace VoidGags
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEDeniedAccessClient.Prefix(_blockPos))));
 
             OnGameLoadedActions.Add(XUiC_ContainerStandardControls_Init.LoadIgnoredContainers);
+            OnGameLoadedActions.Add(() => ModStorage.BackpackLockedSlots = XUiC_ItemStackGrid_OnOpen.LoadLockedSlots(GetPlayerIdToStoreLockedSlots()));
+            OnGameLoadedActions.Add(() => ModStorage.DroneLockedSlots = null);
 
             LogPatchApplied(nameof(Settings.LockedSlotsSystem));
 
@@ -89,8 +98,9 @@ namespace VoidGags
             }
         }
 
-        private static string LockedSlotsSavesDirectory => FeaturesFolder + $"\\{nameof(Settings.LockedSlotsSystem)}\\Saves";
+        private static string LockedSlotsSavesDirectory => FeaturesFolderPath + $"\\{nameof(Settings.LockedSlotsSystem)}\\Saves";
         public static List<Vector3i> IgnoredContainers = new();
+        public static bool[] EmptyLockedSlots => new bool[200];
 
         /// <summary>
         /// Reads colors for slots.
@@ -119,7 +129,7 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Custom getter for LockedSlots for vehicle storage.
+        /// Custom getter for LockedSlots for vehicle/drone storage.
         /// </summary>
         public class XUiC_ContainerStandardControls_LockedSlots_Getter
         {
@@ -131,22 +141,27 @@ namespace VoidGags
 
             public static void Postfix(XUiC_ContainerStandardControls __instance, ref bool[] __result)
             {
+                if (__instance.IsBackpack)
+                {
+                    __result = ModStorage.BackpackLockedSlots;
+                    return;
+                }
                 var isVehicle = __instance.GetParentByType<XUiC_VehicleStorageWindowGroup>() != null;
                 if (isVehicle)
                 {
-                    var entityId = __instance.GetVehicleEntityId();
-                    if (entityId != null && XUiC_ContainerStandardControls_Init.EntityLockedSlots.TryGetValue(entityId, out bool[] slots))
-                    {
-                        __result = slots;
-                        return;
-                    }
-                    __result = Array.Empty<bool>();
+                    __result = __instance.xui.vehicle?.bag?.LockedSlots ?? EmptyLockedSlots;
+                    return;
+                }
+                var isDrone = __instance.xui.lootContainer?.lootListName == "roboticDrone";
+                if (isDrone)
+                {
+                    __result = ModStorage.DroneLockedSlots ?? EmptyLockedSlots;
                 }
             }
         }
 
         /// <summary>
-        /// Custom setter for LockedSlots for vehicle storage.
+        /// Custom setter for LockedSlots for vehicle/drone storage.
         /// </summary>
         public class XUiC_ContainerStandardControls_LockedSlots_Setter
         {
@@ -158,22 +173,35 @@ namespace VoidGags
 
             public static bool Prefix(XUiC_ContainerStandardControls __instance, bool[] value)
             {
+                if (__instance.IsBackpack)
+                {
+                    __instance.xui.playerUI.entityPlayer.bag.LockedSlots = value.ToArray();
+                    __instance.xui.PlayerInventory.Backpack.LockedSlots = value.ToArray();
+                    ModStorage.BackpackLockedSlots = value;
+                    XUiC_ContainerStandardControls_Init.SaveLockedSlots(__instance);
+                    return true;
+                }
                 var isVehicle = __instance.GetParentByType<XUiC_VehicleStorageWindowGroup>() != null;
                 if (isVehicle)
                 {
-                    var entityId = __instance.GetVehicleEntityId();
-                    if (entityId != null)
+                    if (__instance.xui.vehicle?.bag != null)
                     {
-                        XUiC_ContainerStandardControls_Init.EntityLockedSlots[entityId] = value ?? Array.Empty<bool>();
+                        __instance.xui.vehicle.bag.LockedSlots = value ?? EmptyLockedSlots;
                         return false;
                     }
+                }
+                var isDrone = __instance.xui.lootContainer?.lootListName == "roboticDrone";
+                if (isDrone)
+                {
+                    ModStorage.DroneLockedSlots = value ?? EmptyLockedSlots;
+                    return false;
                 }
                 return true;
             }
         }
 
         /// <summary>
-        /// Update locked slots on UI for opened vehicle storage.
+        /// Update locked slots on UI for opened vehicle/drone storage.
         /// </summary>
         public class XUiC_ItemStackGrid_OnOpen
         {
@@ -184,35 +212,48 @@ namespace VoidGags
                 {
                     var controls = vehicleWindows.containerWindow.controls;
                     var entityId = controls.GetVehicleEntityId();
-                    if (entityId != null)
+                    var bag = controls.xui.vehicle?.bag;
+                    if (bag != null)
                     {
-                        LoadLockedSlots(entityId);
-                        var lockedSlots = XUiC_ContainerStandardControls_Init.EntityLockedSlots[entityId];
-                        controls.ApplyLockedSlotStates?.Invoke(lockedSlots);
+                        if (!string.IsNullOrEmpty(entityId))
+                        {
+                            if (bag.LockedSlots == null || bag.LockedSlots.Length == 0)
+                            {
+                                bag.LockedSlots = LoadLockedSlots(entityId);
+                            }
+                        }
+                        controls.ApplyLockedSlotStates?.Invoke(controls.xui.vehicle.bag.LockedSlots);
                     }
+                    return;
+                }
+                var isDrone = __instance.xui.lootContainer?.lootListName == "roboticDrone";
+                if (isDrone)
+                {
+                    var lootWindow = __instance.GetParentByType<XUiC_LootWindow>();
+                    if (lootWindow?.controls != null)
+                    {
+                        if (ModStorage.DroneLockedSlots == null)
+                        {
+                            ModStorage.DroneLockedSlots = LoadLockedSlots("roboticDrone");
+                        }
+                        lootWindow.controls.ApplyLockedSlotStates?.Invoke(ModStorage.DroneLockedSlots);
+                    }
+                    return;
                 }
             }
 
-            static void LoadLockedSlots(string entityId)
+            public static bool[] LoadLockedSlots(string entityId)
             {
-                if (!string.IsNullOrEmpty(entityId))
+                var worldSeed = Helper.WorldSeed;
+                if (!string.IsNullOrEmpty(worldSeed))
                 {
-                    var entityLockedSlots = XUiC_ContainerStandardControls_Init.EntityLockedSlots;
-                    if (!entityLockedSlots.ContainsKey(entityId))
+                    var configFile = Path.Combine(LockedSlotsSavesDirectory, $"{worldSeed}-{entityId}.txt");
+                    if (File.Exists(configFile))
                     {
-                        var worldSeed = Helper.WorldSeed;
-                        if (!string.IsNullOrEmpty(worldSeed))
-                        {
-                            var configFile = Path.Combine(LockedSlotsSavesDirectory, $"{worldSeed}-{entityId}.txt");
-                            if (File.Exists(configFile))
-                            {
-                                entityLockedSlots[entityId] = JsonConvert.DeserializeObject<bool[]>(File.ReadAllText(configFile));
-                                return;
-                            }
-                            entityLockedSlots[entityId] = Array.Empty<bool>();
-                        }
+                        return JsonConvert.DeserializeObject<bool[]>(File.ReadAllText(configFile));
                     }
                 }
+                return EmptyLockedSlots;
             }
         }
 
@@ -231,45 +272,94 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Prevent adding new items to empty locked slots in the backpack.
+        /// Keep all UI grids to prevent adding new items to empty locked slots in the backpack/vehicle/drone.
         /// </summary>
         public class Bag_AddItem
         {
-            public struct AParams
+            public static List<XUiC_ItemStackGrid> UiGrids = null;
+
+            public static void Prefix()
             {
-                public Bag __instance;
-                public List<int> __state;
+                UiGrids = Helper.PlayerLocal.PlayerUI?.activeItemStackGrids;
+                /*foreach (var g in UiGrids)
+                {
+                    LogModWarning($"Grid: {g.GetType().Name}, {g.Parent.GetType().Name}, {g.Parent.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.Parent?.GetType().Name}");
+                }*/
             }
 
-            public static void Prefix(Bag __instance, ref List<int> __state)
+            public static void Postfix()
             {
-                var items = __instance.items;
-                var lockedSlots = __instance.LockedSlots;
-                if (items != null && lockedSlots != null && lockedSlots.Length >= items.Length)
+                UiGrids = null;
+            }
+        }
+
+        /// <summary>
+        /// Return false for locked slots when adding new items.
+        /// </summary>
+        public class ItemStack_IsEmpty
+        {
+            public struct APostfix
+            {
+                public ItemStack __instance;
+                public bool __result;
+            }
+
+            public static void Postfix(ItemStack __instance, ref bool __result)
+            {
+                if (__result && Bag_AddItem.UiGrids != null)
                 {
-                    __state = new();
-                    for (int i = 0; i < items.Length; i++)
+                    foreach (var grid in Bag_AddItem.UiGrids)
                     {
-                        // temporary make locked slots not empty
-                        if (lockedSlots[i] && items[i].IsEmpty())
+                        if (grid is XUiC_Backpack backpack)
                         {
-                            items[i].count = 1;
-                            items[i].itemValue.type = 1;
-                            __state.Add(i);
+                            var bag = backpack.xui.PlayerInventory?.backpack;
+                            if (bag != null)
+                            {
+                                var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
+                                if (i >= 0 && ModStorage.BackpackLockedSlots[i])
+                                {
+                                    __result = false;
+                                    return;
+                                }
+                            }
+                        }
+                        if (grid is XUiC_VehicleContainer vehicleContainer)
+                        {
+                            var bag = vehicleContainer.xui.vehicle?.bag;
+                            if (bag != null)
+                            {
+                                var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
+                                if (i >= 0 && bag.LockedSlots[i])
+                                {
+                                    __result = false;
+                                    return;
+                                }
+                            }
+                        }
+                        if (grid is XUiC_LootContainer loot)
+                        {
+                            var isDrone = loot.xui.lootContainer?.lootListName == "roboticDrone";
+                            if (isDrone && ModStorage.DroneLockedSlots != null)
+                            {
+                                var i = Array.FindIndex(loot.GetSlots(), item => item != null && ReferenceEquals(item, __instance));
+                                if (i >= 0 && i < ModStorage.DroneLockedSlots.Length && ModStorage.DroneLockedSlots[i])
+                                {
+                                    __result = false;
+                                    return;
+                                }
+                            }
                         }
                     }
-                }
-            }
-
-            public static void Postfix(Bag __instance, List<int> __state)
-            {
-                if (__state?.Count > 0)
-                {
-                    // restore empty locked slots
-                    foreach (var i in __state)
+                    // check if it tries to add an item to the player bag
+                    var playerBag = Helper.PlayerLocal?.bag;
+                    if (playerBag != null)
                     {
-                        __instance.items[i].count = 0;
-                        __instance.items[i].itemValue.type = 0;
+                        var i = Array.FindIndex(playerBag.items, item => item != null && ReferenceEquals(item, __instance));
+                        if (i >= 0 && ModStorage.BackpackLockedSlots[i])
+                        {
+                            __result = false;
+                            return;
+                        }
                     }
                 }
             }
@@ -280,16 +370,16 @@ namespace VoidGags
         /// </summary>
         public class XUiC_ContainerStandardControls_Init
         {
-            public static Dictionary<string, bool[]> EntityLockedSlots = new();
             public static bool Active = false;
             public static Vector3i? CurrentContainerPos = null;
             public static Vector3i? LocalOpenEntityPos = null;
             
             public static void Postfix(XUiC_ContainerStandardControls __instance)
             {
-                // assign methods for locked slots for vehicles
+                // assign methods for locked slots for vehicles/drones
                 var isVehicle = __instance.GetParentByType<XUiC_VehicleStorageWindowGroup>() != null;
-                if (isVehicle)
+                var isLootWindow = __instance.GetParentByType<XUiC_LootWindow>() != null; // for robotic drones
+                if (isVehicle || isLootWindow)
                 {
                     __instance.ApplyLockedSlotStates ??= (bool[] _lockedSlots) => ApplyLockedSlotStates(__instance, _lockedSlots);
                     __instance.UpdateLockedSlotStates ??= (XUiC_ContainerStandardControls _csc) => UpdateLockedSlots(_csc);
@@ -351,25 +441,6 @@ namespace VoidGags
                         {
                             UpdateLockedSlots(controls);
                             SaveLockedSlots(controls);
-                        }
-                    }
-
-                    static void SaveLockedSlots(XUiC_ContainerStandardControls controls)
-                    {
-                        if (controls.xui.vehicle != null)
-                        {
-                            var entityId = controls.GetVehicleEntityId();
-                            if (EntityLockedSlots.ContainsKey(entityId))
-                            {
-                                var worldSeed = Helper.WorldSeed;
-                                if (!string.IsNullOrEmpty(worldSeed))
-                                {
-                                    var lockedSlots = controls.LockedSlots ?? Array.Empty<bool>();
-                                    Directory.CreateDirectory(LockedSlotsSavesDirectory);
-                                    File.WriteAllText(Path.Combine(LockedSlotsSavesDirectory, $"{worldSeed}-{entityId}.txt"), lockedSlots.Serialize());
-                                    LogModInfo($"Locked slots for {entityId} saved.");
-                                }
-                            }
                         }
                     }
                 }
@@ -530,6 +601,44 @@ namespace VoidGags
 
             // auxiliary methods
 
+            public static void SaveLockedSlots(XUiC_ContainerStandardControls controls)
+            {
+                if (controls.IsBackpack)
+                {
+                    var lockedSlots = ModStorage.BackpackLockedSlots ?? EmptyLockedSlots;
+                    SaveToFile(GetPlayerIdToStoreLockedSlots(), lockedSlots);
+                    return;
+                }
+                var isVehicle = controls.xui.vehicle != null;
+                if (isVehicle)
+                {
+                    var vehicleBag = controls.xui.vehicle.bag;
+                    if (vehicleBag != null)
+                    {
+                        var lockedSlots = vehicleBag.LockedSlots ?? EmptyLockedSlots;
+                        SaveToFile(controls.GetVehicleEntityId(), lockedSlots);
+                    }
+                    return;
+                }
+                var isDrone = controls.xui.lootContainer?.lootListName == "roboticDrone";
+                if (isDrone)
+                {
+                    var lockedSlots = ModStorage.DroneLockedSlots ?? EmptyLockedSlots;
+                    SaveToFile("roboticDrone", lockedSlots);
+                }
+
+                static void SaveToFile(string entityId, bool[] lockedSlots)
+                {
+                    var worldSeed = Helper.WorldSeed;
+                    if (!string.IsNullOrEmpty(worldSeed))
+                    {
+                        Directory.CreateDirectory(LockedSlotsSavesDirectory);
+                        File.WriteAllText(Path.Combine(LockedSlotsSavesDirectory, $"{worldSeed}-{entityId}.txt"), lockedSlots.Serialize());
+                        LogModInfo($"Locked slots for {entityId} saved.");
+                    }
+                }
+            }
+
             public static void CloseInventory()
             {
                 var playerUI = LocalPlayerUI.GetUIForPlayer(Helper.PlayerLocal);
@@ -629,10 +738,17 @@ namespace VoidGags
             {
                 if (_bindingName == "userlockmode")
                 {
-                    var parent = __instance.GetParentByType<XUiC_VehicleContainer>();
-                    if (parent != null)
+                    var vehicleContainer = __instance.GetParentByType<XUiC_VehicleContainer>();
+                    if (vehicleContainer != null)
                     {
-                        _value = (parent.controls?.LockModeEnabled ?? false).ToString();
+                        _value = (vehicleContainer.controls?.LockModeEnabled ?? false).ToString();
+                        __result = true;
+                        return false;
+                    }
+                    var lootWindow = __instance.GetParentByType<XUiC_LootWindow>();
+                    if (lootWindow != null)
+                    {
+                        _value = (lootWindow.controls?.LockModeEnabled ?? false).ToString();
                         __result = true;
                         return false;
                     }
@@ -660,7 +776,7 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Turn off lock mode on vehicle container close.
+        /// Turn off lock mode on vehicle/drone container close.
         /// </summary>
         public class XUiC_ItemStackGrid_OnClose
         {
@@ -673,6 +789,16 @@ namespace VoidGags
                     if (controls.LockModeEnabled)
                     {
                         controls.LockModeToggled?.Invoke();
+                    }
+                    return;
+                }
+                var isDrone = __instance.xui.lootContainer?.lootListName == "roboticDrone";
+                if (isDrone)
+                {
+                    var lootWindow = __instance.GetParentByType<XUiC_LootWindow>();
+                    if (lootWindow?.controls?.LockModeEnabled == true)
+                    {
+                        lootWindow.controls.LockModeToggled?.Invoke();
                     }
                 }
             }
@@ -710,12 +836,18 @@ namespace VoidGags
                     __result = true;
                     return false;
                 }
-                /*if (_bindingName == "is_drone")
+                if (_bindingName == "is_drone")
                 {
                     _value = (__instance.xui.lootContainer != null && __instance.xui.lootContainer.GetChunk() == null && __instance.xui.lootContainer.lootListName == "roboticDrone").ToString();
                     __result = true;
                     return false;
-                }*/
+                }
+                if (_bindingName == "userlockmode")
+                {
+                    _value = (__instance.controls?.LockModeEnabled ?? false).ToString();
+                    __result = true;
+                    return false;
+                }
                 return true;
             }
         }
@@ -764,6 +896,11 @@ namespace VoidGags
                     }
                 }
             }
+        }
+
+        public static string GetPlayerIdToStoreLockedSlots()
+        {
+            return $"player-{Helper.PlayerId}";
         }
     }
 }

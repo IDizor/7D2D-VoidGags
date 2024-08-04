@@ -14,10 +14,10 @@ namespace VoidGags
     {
         public static Mod ModInstance;
         public static string ModFolder;
-        public static string FeaturesFolder;
+        public static string FeaturesFolderPath;
         public static bool IsServer;
-        private static List<string> AdditionalXmlPatches = new List<string>();
-        private static List<Action> OnGameLoadedActions = new List<Action>();
+        private static List<string> AdditionalXmlPatches = new();
+        private static List<Action> OnGameLoadedActions = new();
         
         /// <summary>
         /// Mod initialization.
@@ -28,9 +28,9 @@ namespace VoidGags
             ModInstance = _modInstance;
             Debug.Log("Loading mod: " + GetType().ToString());
             ModFolder = Path.GetDirectoryName(Assembly.GetAssembly(typeof(VoidGags)).Location);
-            FeaturesFolder = Path.Combine(ModFolder, "Features");
+            FeaturesFolderPath = Path.Combine(ModFolder, "Features");
 
-            if (!Directory.Exists(FeaturesFolder))
+            if (!Directory.Exists(FeaturesFolderPath))
             {
                 LogModException("\"Features\" folder not found. Please reinstall the mod.");
                 return;
@@ -74,14 +74,13 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Adds the specified XML patch for further applying.
+        /// Adds the specified XML patches for further applying.
         /// </summary>
-        /// <param name="patchName">Folder name with XML files.</param>
         public void UseXmlPatches(string patchName)
         {
-            if (!Directory.Exists($"{FeaturesFolder}\\{patchName}"))
+            if (!Directory.Exists($"{FeaturesFolderPath}\\{patchName}\\Config"))
             {
-                LogModException($"Missing XML patch folder '{patchName}'. Make sure the 'Features' folder is up to date.");
+                LogModException($"Unable to apply XML patches for '{patchName}'. Incorrect folders structure. Make sure the 'Features' folder is up to date.");
             }
             AdditionalXmlPatches.Add(patchName);
         }
@@ -103,38 +102,42 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Applies feature-specific additional XML patches.
+        /// Adds features as separate mods to apply their XML patches.
         /// </summary>
-        [HarmonyPatch(typeof(WorldStaticData))]
-        [HarmonyPatch("cacheSingleXml")]
-        public class WorldStaticData_cacheSingleXml
+        [HarmonyPatch(typeof(ModManager))]
+        [HarmonyPatch(nameof(ModManager.GetLoadedMods))]
+        public class ModManager_GetLoadedMods
         {
-            public static void Prefix(object _loadInfo, XmlFile _origXml)
+            public static void Postfix(ref List<Mod> __result)
             {
-                if (AdditionalXmlPatches.Count == 0)
+                if (AdditionalXmlPatches.Count > 0)
                 {
-                    return;
-                }
-
-                var cachingXmlName = (string)AccessTools.Field(_loadInfo.GetType(), "XmlName").GetValue(_loadInfo);
-
-                if (!string.IsNullOrEmpty(cachingXmlName))
-                {
-                    foreach (var patchName in AdditionalXmlPatches)
+                    for (int i = 0; i < __result.Count; i++)
                     {
-                        var configPath = $"{FeaturesFolder}\\{patchName}\\{cachingXmlName.Replace('/','\\')}.xml";
-                        var configDir = $"{FeaturesFolder}\\{patchName}";
-                        if (File.Exists(configPath))
+                        var mod = __result[i];
+                        if (mod.Path.EndsWith(nameof(VoidGags)))
                         {
-                            try
+                            var updatedModsList = new List<Mod>(__result);
+                            for (int j = 0; j < AdditionalXmlPatches.Count; j++)
                             {
-                                var patchXml = new XmlFile(configDir, cachingXmlName, _loadAsync: false, _throwExc: true);
-                                XmlPatcher.PatchXml(_origXml, patchXml.XmlDoc.Root, patchXml, ModInstance);
+                                var featureName = AdditionalXmlPatches[j];
+                                var feature = new Mod
+                                {
+                                    Name = mod.Name + "." + featureName,
+                                    Author = mod.Author,
+                                    Version = mod.Version,
+                                    VersionString = mod.VersionString,
+                                    LoadState = mod.LoadState,
+                                    AntiCheatCompatible = mod.AntiCheatCompatible,
+                                    SkipLoadingWithAntiCheat = mod.SkipLoadingWithAntiCheat,
+                                    DisplayName = mod.DisplayName + "." + featureName,
+                                    FolderName = mod.FolderName + $"/{FeaturesFolderPath}/{featureName}",
+                                    Path = $"{FeaturesFolderPath}/{featureName}",
+                                };
+                                updatedModsList.Insert(i + j + 1, feature);
                             }
-                            catch (Exception ex)
-                            {
-                                LogModException($"Failed to apply XML patch '{patchName}' for the file '{cachingXmlName}.xml'. {ex.Message}");
-                            }
+                            __result = updatedModsList;
+                            return;
                         }
                     }
                 }

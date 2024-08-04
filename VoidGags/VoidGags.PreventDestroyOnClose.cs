@@ -12,25 +12,25 @@ namespace VoidGags
         {
             if (Settings.PreventDestroyOnClose_KeyCode > 0)
             {
-                GameManager_TEUnlockServer.PreventKey = (KeyCode)Settings.PreventDestroyOnClose_KeyCode;
+                GameManager_TEUnlockServer.PreventAutoDestroyKey = (KeyCode)Settings.PreventDestroyOnClose_KeyCode;
             }
 
-            harmony.Patch(AccessTools.Method(typeof(GameManager), "TEUnlockServer"),
+            harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEUnlockServer)),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool _allowContainerDestroy) => GameManager_TEUnlockServer.Prefix(ref _allowContainerDestroy))));
 
             LogPatchApplied(nameof(Settings.PreventDestroyOnClose));
         }
 
         /// <summary>
-        /// Hold left Shift on the keyboard to prevent the loot container from being destroyed when closed.
+        /// Hold the Left Shift to prevent the loot container from being auto-destroyed once closed.
         /// </summary>
         public class GameManager_TEUnlockServer
         {
-            public static KeyCode PreventKey = KeyCode.LeftShift;
+            public static KeyCode PreventAutoDestroyKey = KeyCode.LeftShift;
             
             public static void Prefix(ref bool _allowContainerDestroy)
             {
-                if (Input.GetKey(PreventKey))
+                if (Input.GetKey(PreventAutoDestroyKey))
                 {
                     _allowContainerDestroy = false;
                 }
