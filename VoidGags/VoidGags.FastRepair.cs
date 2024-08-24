@@ -47,7 +47,6 @@ namespace VoidGags
                     if (!RepairingFlag)
                     {
                         RepairingFlag = true;
-
                         if (___currentHoldingIndex != __instance.xui.PlayerInventory.Toolbelt.DUMMY_SLOT_IDX)
                         {
                             var currentItem = (XUiC_ItemStack)___itemControllers[___currentHoldingIndex];

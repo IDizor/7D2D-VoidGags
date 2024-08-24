@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
-using UnityEngine;
 
 namespace VoidGags
 {
@@ -11,7 +10,7 @@ namespace VoidGags
     {
         public void ApplyPatches_HelmetLightFirst(Harmony harmony)
         {
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "CollectActivatableItems"), null,
+            harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.CollectActivatableItems)), null,
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> _pool) => EntityAlive_CollectActivatableItems.Postfix(_pool))));
 
             LogPatchApplied(nameof(Settings.HelmetLightByDefault));

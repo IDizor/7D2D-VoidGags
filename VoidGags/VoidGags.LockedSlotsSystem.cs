@@ -81,6 +81,13 @@ namespace VoidGags
             harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEAccessClient)),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEAccessClient.Prefix(_blockPos))));
 
+            harmony.Patch(AccessTools.Method(typeof(ItemActionEntryEquip), nameof(ItemActionEntryEquip.OnActivated)),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ItemActionEntryEquip_OnActivated.Prefix())),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ItemActionEntryEquip_OnActivated.Postfix())));
+
+            harmony.Patch(AccessTools.Method(typeof(XUiM_PlayerInventory), nameof(XUiM_PlayerInventory.AddItem), new Type[] { typeof(ItemStack) }),
+                new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool __result) => XUiM_PlayerInventory_AddItem.Prefix(ref __result))));
+
             harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEDeniedAccessClient)),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEDeniedAccessClient.Prefix(_blockPos))));
 
@@ -846,6 +853,42 @@ namespace VoidGags
                 {
                     _value = (__instance.controls?.LockModeEnabled ?? false).ToString();
                     __result = true;
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Keep "Equip" item action state.
+        /// </summary>
+        public class ItemActionEntryEquip_OnActivated
+        {
+            public static bool Active = false;
+
+            public static void Prefix()
+            {
+                Active = true;
+            }
+
+            public static void Postfix()
+            {
+                Active = false;
+            }
+        }
+
+        /// <summary>
+        /// Returns false that means item was not added to the empty/not-filled-up stack.
+        /// It is expected that the item from the toolbelt will be placed to the same slot where
+        /// the equipping item was in the backpack (<see cref="ItemActionEntryEquip.OnActivated"/>).
+        /// </summary>
+        public class XUiM_PlayerInventory_AddItem
+        {
+            public static bool Prefix(ref bool __result)
+            {
+                if (ItemActionEntryEquip_OnActivated.Active)
+                {
+                    __result = false;
                     return false;
                 }
                 return true;

@@ -35,7 +35,6 @@ namespace VoidGags
         public static bln LessFogWhenFlying = true;
         public static bln SocialZombies = false;
         public static bln PreventDestroyOnClose = true;
-        public static int PreventDestroyOnClose_KeyCode = (int)KeyCode.LeftShift;
         public static bln MainLootTierBonus = false; // hidden feature, disabled by default
         public static bln PiercingShots = true;
         public static bln HighlightCompatibleMods = true;
@@ -46,6 +45,9 @@ namespace VoidGags
         public static bln PreventPillaring = true;
         public static bln UnrevealedTradeRoutesOnly = true;
         public static bln NoScreamersFromOutside = true;
+        public static bln FoodWaterBars = true;
+        public static bln GeneratorSwitchFirst = true;
+        public static bln ArrowsBoltsAutoPickUp = true;
 
         static Settings()
         {

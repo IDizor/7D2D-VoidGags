@@ -1,7 +1,7 @@
 <dizor>
 
-  <!-- remove lock icon -->
-  <remove xpath="/controls/backpack_item_stack/rect/sprite[@name='iconSlotLock']" />
+  <!-- hide lock icon -->
+  <setattribute xpath="/controls/backpack_item_stack/rect/sprite[@name='iconSlotLock']" name="visible">false</setattribute>
 
   <!-- create new item stack for vehicles -->
   <!-- 
@@ -38,6 +38,7 @@
         <button name="rectSlotLock" depth="15" style="press, hover" width="65" height="65" visible="{userlockmode}" sprite="" hoverscale="1" use_selection_box="true">
           <sprite depth="16" name="button" width="24" height="24" sprite="{# userlockedslot ? 'ui_game_symbol_lock' : 'ui_game_symbol_unlock' }" pos="50, -14" style="icon32px" pivot="center" color="{# userlockedslot ? '222,206,163' : '255,255,255' }" />
         </button>
+        <sprite depth="15" name="iconSlotLock" width="20" height="20" sprite="ui_game_symbol_lock" pos="50, -14" style="icon32px" pivot="center" visible="false" color="[lightGrey]" />
       </rect>
     </vg_vehicle_item_stack>
   </append>
@@ -73,6 +74,7 @@
         <button name="rectSlotLock" depth="15" style="press, hover" width="65" height="65" visible="{userlockmode}" sprite="" hoverscale="1" use_selection_box="true">
           <sprite depth="16" name="button" width="24" height="24" sprite="{# userlockedslot ? 'ui_game_symbol_lock' : 'ui_game_symbol_unlock' }" pos="50, -14" style="icon32px" pivot="center" color="{# userlockedslot ? '222,206,163' : '255,255,255' }" />
         </button>
+        <sprite depth="15" name="iconSlotLock" width="20" height="20" sprite="ui_game_symbol_lock" pos="50, -14" style="icon32px" pivot="center" visible="false" color="[lightGrey]" />
       </rect>
     </vg_loot_item_stack>
   </append>

@@ -51,8 +51,25 @@ namespace VoidGags
                 .Skip(4)
                 .Take(limit)
                 .Select(f => f.GetMethod())
-                .Select(m => m.DeclaringType.Name + "." + m.Name));
+                .Select(m => $"{m.DeclaringType.Name}.{m.Name}()"));
+
             return path;
+        }
+
+        /// <summary>
+        /// Gets call stack methods array.
+        /// </summary>
+        public static string[] GetCallStackArray(int limit = 10)
+        {
+            var stackTrace = new System.Diagnostics.StackTrace();
+            var array = stackTrace.GetFrames()
+                .Skip(4)
+                .Take(limit)
+                .Select(f => f.GetMethod())
+                .Select(m => $"{m.DeclaringType.Name}.{m.Name}()")
+                .ToArray();
+
+            return array;
         }
 
         /// <summary>

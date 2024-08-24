@@ -94,6 +94,8 @@
     <Compile Include="NetPackages\NetPackageMasterWorkChance.cs" />
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
+    <Compile Include="VoidGags.ArrowsBoltsAutoPickUp.cs" />
+    <Compile Include="VoidGags.GeneratorSwitchFirst.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />
     <Compile Include="VoidGags.ArrowsBoltsDistraction.cs" />
     <Compile Include="VoidGags.GrenadesDistraction.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="VoidGags.ExplosionAttractionFix.cs" />
     <Compile Include="VoidGags.DigThroughTheGrass.cs" />
     <Compile Include="VoidGags.LessFogWhenFlying.cs" />
+    <Compile Include="VoidGags.FoodWaterBars.cs" />
     <Compile Include="VoidGags.PreventDestroyOnClose.cs" />
     <Compile Include="VoidGags.MainLootTierBonus.cs" />
     <Compile Include="VoidGags.MasterWorkChance.cs" />

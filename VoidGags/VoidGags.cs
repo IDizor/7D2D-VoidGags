@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using HarmonyLib;
+using UniLinq;
 using UnityEngine;
+using static VoidGags.VoidGags;
+using static World;
 
 namespace VoidGags
 {
@@ -67,6 +70,9 @@ namespace VoidGags
             if (Settings.PreventPillaring) ApplyPatches_PreventPillaring(harmony);
             if (Settings.UnrevealedTradeRoutesOnly) ApplyPatches_UnrevealedTradeRoutesOnly(harmony);
             if (Settings.NoScreamersFromOutside) ApplyPatches_NoScreamersFromOutside(harmony);
+            if (Settings.FoodWaterBars) ApplyPatches_FoodWaterBars(harmony);
+            if (Settings.GeneratorSwitchFirst) ApplyPatches_GeneratorSwitchFirst(harmony);
+            if (Settings.ArrowsBoltsAutoPickUp) ApplyPatches_ArrowsBoltsAutoPickUp(harmony);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
@@ -89,7 +95,7 @@ namespace VoidGags
         /// Method that called once the game is loaded.
         /// </summary>
         [HarmonyPatch(typeof(EntityPlayerLocal))]
-        [HarmonyPatch("PostInit")]
+        [HarmonyPatch(nameof(EntityPlayerLocal.PostInit))]
         public class EntityPlayerLocal_PostInit
         {
             public static void Postfix()
@@ -110,6 +116,12 @@ namespace VoidGags
         {
             public static void Postfix(ref List<Mod> __result)
             {
+                var caller = Helper.GetCallerMethod();
+                if (caller.DeclaringType.Name.Contains("GearsSettingsManager")) // "Gears" mod compatibility fix
+                {
+                    return;
+                }
+
                 if (AdditionalXmlPatches.Count > 0)
                 {
                     for (int i = 0; i < __result.Count; i++)
@@ -131,7 +143,7 @@ namespace VoidGags
                                     AntiCheatCompatible = mod.AntiCheatCompatible,
                                     SkipLoadingWithAntiCheat = mod.SkipLoadingWithAntiCheat,
                                     DisplayName = mod.DisplayName + "." + featureName,
-                                    FolderName = mod.FolderName + $"/{FeaturesFolderPath}/{featureName}",
+                                    FolderName = mod.FolderName + $"/Features/{featureName}",
                                     Path = $"{FeaturesFolderPath}/{featureName}",
                                 };
                                 updatedModsList.Insert(i + j + 1, feature);

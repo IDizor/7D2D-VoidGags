@@ -1,0 +1,9 @@
+<dizor>
+
+  <!-- windowLooting : add clickable icons to container window -->
+  <append xpath="/windows/window[@name='windowLooting']/panel[@name='header']">
+    <button depth="4" name="btnPreventAutoDestroy" sprite="ui_game_symbol_x" tooltip_key="lblPreventAutoDestroy" pos="21, -27" size="18, 18" style="press, hover" pivot="center" sound="[paging_click]" visible="{# is_auto_destroyable and !prevent_auto_destroy}" defaultcolor="[red]"   hovercolor="[red]"   hoverscale="1.2" />
+    <button depth="4" name="btnAllowAutoDestroy"   sprite="server_cheat"     tooltip_key="lblAllowAutoDestroy"   pos="21, -27" size="20, 20" style="press, hover" pivot="center" sound="[paging_click]" visible="{# is_auto_destroyable and prevent_auto_destroy}"  defaultcolor="[green]" hovercolor="[green]" hoverscale="1.2" />
+  </append>
+
+</dizor>
