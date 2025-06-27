@@ -24,8 +24,10 @@ namespace VoidGags.NetPackages
         public override void write(PooledBinaryWriter _bw)
         {
             base.write(_bw);
-            _bw.Write(chance);
-            _bw.Write(maxQuality);
+            //_bw.Write(chance);
+            //_bw.Write(maxQuality);
+            PooledBinaryWriter_Methods.WriteFloat.Invoke(_bw, [chance]);
+            PooledBinaryWriter_Methods.WriteInt.Invoke(_bw, [maxQuality]);
         }
 
         public override void ProcessPackage(World _world, GameManager _callbacks)

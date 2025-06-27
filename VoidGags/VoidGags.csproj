@@ -10,7 +10,7 @@
     <RootNamespace>VoidGags</RootNamespace>
     <AssemblyName>VoidGags</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>11.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -94,6 +94,7 @@
     <Compile Include="NetPackages\NetPackageMasterWorkChance.cs" />
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
+    <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
     <Compile Include="VoidGags.ArrowsBoltsAutoPickUp.cs" />
     <Compile Include="VoidGags.GeneratorSwitchFirst.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />

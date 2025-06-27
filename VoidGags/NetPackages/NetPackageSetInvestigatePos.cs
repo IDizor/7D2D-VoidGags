@@ -28,11 +28,16 @@ namespace VoidGags.NetPackages
         public override void write(PooledBinaryWriter _bw)
         {
             base.write(_bw);
-            _bw.Write(entityId);
-            _bw.Write(pos.x);
-            _bw.Write(pos.y);
-            _bw.Write(pos.z);
-            _bw.Write(ticks);
+            //_bw.Write(entityId);
+            //_bw.Write(pos.x);
+            //_bw.Write(pos.y);
+            //_bw.Write(pos.z);
+            //_bw.Write(ticks);
+            PooledBinaryWriter_Methods.WriteInt.Invoke(_bw, [entityId]);
+            PooledBinaryWriter_Methods.WriteFloat.Invoke(_bw, [pos.x]);
+            PooledBinaryWriter_Methods.WriteFloat.Invoke(_bw, [pos.y]);
+            PooledBinaryWriter_Methods.WriteFloat.Invoke(_bw, [pos.z]);
+            PooledBinaryWriter_Methods.WriteInt.Invoke(_bw, [ticks]);
         }
 
         public override void ProcessPackage(World _world, GameManager _callbacks)

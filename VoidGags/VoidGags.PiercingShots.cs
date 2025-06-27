@@ -17,7 +17,7 @@ namespace VoidGags
 
             harmony.Patch(AccessTools.Method(typeof(ProjectileMoveScript), "checkCollision"),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ProjectileMoveScript_checkCollision.APrefix p) =>
-                ProjectileMoveScript_checkCollision.Prefix(p.__instance, p.___bOnIdealPos, p.___idealPosition, p.___previousPosition, p.___hmOverride, p.___radius, p.___firingEntity))));
+                ProjectileMoveScript_checkCollision.Prefix(p.__instance, p.___isOnIdealPos, p.___idealPosition, p.___previousPosition, p.___hitMask, p.___radius, p.___firingEntity))));
 
             LogPatchApplied(nameof(Settings.PiercingShots));
         }
@@ -88,15 +88,15 @@ namespace VoidGags
             public struct APrefix
             {
                 public ProjectileMoveScript __instance;
-                public bool ___bOnIdealPos;
+                public bool ___isOnIdealPos;
                 public Vector3 ___idealPosition;
                 public Vector3 ___previousPosition;
-                public int ___hmOverride;
+                public int ___hitMask;
                 public float ___radius;
                 public Entity ___firingEntity;
             }
 
-            public static bool Prefix(ProjectileMoveScript __instance, bool ___bOnIdealPos, Vector3 ___idealPosition, Vector3 ___previousPosition, int ___hmOverride, float ___radius, Entity ___firingEntity)
+            public static bool Prefix(ProjectileMoveScript __instance, bool ___isOnIdealPos, Vector3 ___idealPosition, Vector3 ___previousPosition, int ___hitMask, float ___radius, Entity ___firingEntity)
             {
                 if (skip)
                 {
@@ -111,7 +111,7 @@ namespace VoidGags
                     return true;
                 }
                 var world = GameManager.Instance.World;
-                Vector3 vector = ((!___bOnIdealPos) ? ___idealPosition : (__instance.transform.position + Origin.position));
+                Vector3 vector = ((!___isOnIdealPos) ? ___idealPosition : (__instance.transform.position + Origin.position));
                 Vector3 vector2 = vector - ___previousPosition;
                 float magnitude = vector2.magnitude;
                 if (magnitude < 0.04f)
@@ -126,7 +126,7 @@ namespace VoidGags
                     Debug.LogWarning(s);
                 }
                 */
-                int hitMask = ((___hmOverride == 0) ? 80 : ___hmOverride);
+                
                 Ray ray = new Ray(___previousPosition, vector2.normalized);
 
                 var repeat = false;
@@ -135,7 +135,7 @@ namespace VoidGags
                 do
                 {
                     repeat = false;
-                    bool num = Voxel.Raycast(world, ray, magnitude, -538750981, hitMask, ___radius);
+                    bool num = Voxel.Raycast(world, ray, magnitude, -538750981, ___hitMask, ___radius);
                     if (num && GameUtils.IsBlockOrTerrain(Voxel.voxelRayHitInfo.tag) && destroyedBlockPos != Voxel.voxelRayHitInfo.hit.blockPos && ___firingEntity != null && !___firingEntity.isEntityRemote)
                     {
                         var block = ItemActionAttack.GetBlockHit(world, Voxel.voxelRayHitInfo);
@@ -164,7 +164,7 @@ namespace VoidGags
                 {
                     skip = true;
                     Helper.DoWhen(Unskip, () => {
-                        bool success = Voxel.Raycast(world, ray, magnitude, -538750981, hitMask, ___radius);
+                        bool success = Voxel.Raycast(world, ray, magnitude, -538750981, ___hitMask, ___radius);
                         return !success || hitPos != Voxel.voxelRayHitInfo.hit.pos;
                     }, 0.02f, 0.3f, failureAction: Unskip);
                     return false;
