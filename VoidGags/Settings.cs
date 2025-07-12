@@ -48,6 +48,8 @@ namespace VoidGags
         public static bln FoodWaterBars = true;
         public static bln GeneratorSwitchFirst = true;
         public static bln ArrowsBoltsAutoPickUp = true;
+        public static bln EnqueueCraftWhenNoFuel = true;
+        public static int OddNightSoundsVolume = 30;
 
         static Settings()
         {

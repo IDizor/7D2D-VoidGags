@@ -95,6 +95,8 @@
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
     <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
+    <Compile Include="VoidGags.OddNightSoundsVolume.cs" />
+    <Compile Include="VoidGags.EnqeueCraftWithNoFuel.cs" />
     <Compile Include="VoidGags.ArrowsBoltsAutoPickUp.cs" />
     <Compile Include="VoidGags.GeneratorSwitchFirst.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />

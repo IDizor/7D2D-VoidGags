@@ -59,7 +59,7 @@ namespace VoidGags
         }
 
         /// <summary>
-        /// Keep Player ID and Max Tier in the static fields while this method is running (craft in hands or open workstations).
+        /// Keep Player ID in the static field while this method is running (craft in hands or open workstations).
         /// </summary>
         public class XUiC_RecipeStack_outputStack
         {
@@ -76,8 +76,6 @@ namespace VoidGags
                     var recipe = __instance.GetRecipe();
                     if (recipe != null && recipe.GetOutputItemClass().ShowQualityBar)
                     {
-                        var player = GameManager.Instance.World.Players.list.FirstOrDefault(p => p.entityId == __instance.StartingEntityId);
-                        ItemValue_ctor.MaxTierCanCraft = player == null ? 0 : (int)EffectManager.GetValue(PassiveEffects.CraftingTier, null, 1f, player, recipe, recipe.tags);
                         ItemValue_ctor.PlayerId = __instance.StartingEntityId;
                     }
                 }
@@ -86,12 +84,11 @@ namespace VoidGags
             public static void Postfix()
             {
                 ItemValue_ctor.PlayerId = -1;
-                ItemValue_ctor.MaxTierCanCraft = 0;
             }
         }
 
         /// <summary>
-        /// Keep Player ID and Max Tier in the static fields while this method is running (craft in workstations in background).
+        /// Keep Player ID in the static field while this method is running (craft in workstations in background).
         /// </summary>
         public class TileEntityWorkstation_HandleRecipeQueue
         {
@@ -105,10 +102,7 @@ namespace VoidGags
                         var lockedTiles = GameManager.Instance.lockedTileEntities;
                         if (!lockedTiles.Any(l => ((TileEntity)l.Key).entityId == __instance.entityId)) // if workstation is not opened by any player
                         {
-                            var recipe = recipeQueueItem.Recipe;
                             var crafterId = recipeQueueItem.StartingEntityId;
-                            var player = crafterId > 0 ? GameManager.Instance.World.Players.list.FirstOrDefault(p => p.entityId == crafterId) : null;
-                            ItemValue_ctor.MaxTierCanCraft = player == null ? 0 : (int)EffectManager.GetValue(PassiveEffects.CraftingTier, null, 1f, player, recipe, recipe.tags);
                             ItemValue_ctor.PlayerId = crafterId;
                         }
                     }
@@ -117,7 +111,6 @@ namespace VoidGags
 
             public static void Postfix()
             {
-                ItemValue_ctor.MaxTierCanCraft = 0;
                 ItemValue_ctor.PlayerId = -1;
             }
         }
@@ -127,7 +120,6 @@ namespace VoidGags
         /// </summary>
         public class ItemValue_ctor
         {
-            public static int MaxTierCanCraft = 0;
             public static int PlayerId = -1;
 
             public struct APrefix
@@ -138,27 +130,24 @@ namespace VoidGags
 
             public static void Prefix(ref int minQuality, ref int maxQuality)
             {
-                if (minQuality == maxQuality && maxQuality > 0 && maxQuality < 6)
+                if (minQuality == maxQuality && maxQuality > 0 && maxQuality < 6 && Settings.MasterWorkChance_MaxQuality > maxQuality)
                 {
-                    if (MaxTierCanCraft > 0 && MaxTierCanCraft < Settings.MasterWorkChance_MaxQuality && MaxTierCanCraft <= maxQuality)
+                    if (GameManager.Instance.World.GetGameRandom().RandomFloat <= MasterWorkChanceValue)
                     {
-                        if (GameManager.Instance.World.GetGameRandom().RandomFloat <= MasterWorkChanceValue)
-                        {
-                            minQuality++;
-                            maxQuality++;
+                        minQuality++;
+                        maxQuality++;
                             
-                            if (PlayerId > 0)
+                        if (PlayerId > 0)
+                        {
+                            var localPlayer = GameManager.Instance?.World?.GetPrimaryPlayer();
+                            if (localPlayer?.entityId == PlayerId)
                             {
-                                var localPlayer = GameManager.Instance?.World?.GetPrimaryPlayer();
-                                if (localPlayer?.entityId == PlayerId)
-                                {
-                                    PlayMasterWorkSound();
-                                }
-                                else
-                                {
-                                    SingletonMonoBehaviour<ConnectionManager>.Instance.SendPackage(NetPackageManager.GetPackage<NetPackageMasterWorkCreated>()
-                                        .Setup(PlayerId), _onlyClientsAttachedToAnEntity: true, _attachedToEntityId: PlayerId);
-                                }
+                                PlayMasterWorkSound();
+                            }
+                            else
+                            {
+                                SingletonMonoBehaviour<ConnectionManager>.Instance.SendPackage(NetPackageManager.GetPackage<NetPackageMasterWorkCreated>()
+                                    .Setup(PlayerId), _onlyClientsAttachedToAnEntity: true, _attachedToEntityId: PlayerId);
                             }
                         }
                     }
@@ -167,8 +156,11 @@ namespace VoidGags
 
             public static void PlayMasterWorkSound()
             {
-                Manager.PlayInsidePlayerHead("ui_skill_purchase");
-                Manager.PlayInsidePlayerHead("ui_mag_read_set");
+                Manager.PlayInsidePlayerHead("ui_challenge_redeem");
+                Manager.PlayInsidePlayerHead("recipe_unlocked");
+                Helper.DeferredAction(0.1f, () => Manager.PlayInsidePlayerHead("recipe_unlocked"));
+                Helper.DeferredAction(0.2f, () => Manager.PlayInsidePlayerHead("recipe_unlocked"));
+                Helper.DeferredAction(0.3f, () => Manager.PlayInsidePlayerHead("recipe_unlocked"));
             }
         }
     }

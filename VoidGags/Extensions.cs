@@ -115,5 +115,11 @@ namespace VoidGags
             }
             return null;
         }
+
+        public static bool HasFuelAndCanStart(this XUiC_WorkstationFuelGrid workstation)
+        {
+            return !workstation.WorkstationData.GetIsBesideWater()
+                && (workstation.hasAnyFuel() || workstation.WorkstationData.GetBurnTimeLeft() > 0f);
+        }
     }
 }

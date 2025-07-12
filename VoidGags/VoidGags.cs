@@ -21,7 +21,9 @@ namespace VoidGags
         public static bool IsServer;
         private static List<string> AdditionalXmlPatches = new();
         private static List<Action> OnGameLoadedActions = new();
-        
+
+        public static bool IsDedicatedServer => GameManager.IsDedicatedServer;
+
         /// <summary>
         /// Mod initialization.
         /// </summary>
@@ -73,6 +75,8 @@ namespace VoidGags
             if (Settings.FoodWaterBars) ApplyPatches_FoodWaterBars(harmony);
             if (Settings.GeneratorSwitchFirst) ApplyPatches_GeneratorSwitchFirst(harmony);
             if (Settings.ArrowsBoltsAutoPickUp) ApplyPatches_ArrowsBoltsAutoPickUp(harmony);
+            if (Settings.EnqueueCraftWhenNoFuel) ApplyPatches_EnqueueCraftWhenNoFuel(harmony);
+            if (Settings.OddNightSoundsVolume != 100) ApplyPatches_OddNightSoundsVolume(harmony);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;

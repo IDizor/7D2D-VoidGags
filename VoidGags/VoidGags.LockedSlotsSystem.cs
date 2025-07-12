@@ -287,6 +287,8 @@ namespace VoidGags
 
             public static void Prefix()
             {
+                if (IsDedicatedServer) return;
+
                 UiGrids = Helper.PlayerLocal.PlayerUI?.activeItemStackGrids;
                 /*foreach (var g in UiGrids)
                 {
@@ -296,6 +298,8 @@ namespace VoidGags
 
             public static void Postfix()
             {
+                if (IsDedicatedServer) return;
+
                 UiGrids = null;
             }
         }
@@ -313,6 +317,8 @@ namespace VoidGags
 
             public static void Postfix(ItemStack __instance, ref bool __result)
             {
+                if (IsDedicatedServer) return;
+
                 if (__result && Bag_AddItem.UiGrids != null)
                 {
                     foreach (var grid in Bag_AddItem.UiGrids)
@@ -711,6 +717,8 @@ namespace VoidGags
 
             public static void Prefix(Vector3i _blockPos, BlockValue _blockValue)
             {
+                if (IsDedicatedServer) return;
+
                 if (_blockValue.isair || GameManager.Instance.World.GetBlock(_blockPos).isair)
                 {
                     if (IgnoredContainers.Remove(_blockPos))
