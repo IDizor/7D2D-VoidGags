@@ -1,6 +1,4 @@
-﻿using System;
-using HarmonyLib;
-using UnityEngine;
+﻿using HarmonyLib;
 
 namespace VoidGags
 {
@@ -9,12 +7,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ScrapTime(Harmony harmony)
+        public void ApplyPatches_ScrapTime()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingWindowGroup), "AddItemToQueue", new Type[] { typeof(Recipe), typeof(int) }),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Recipe _recipe) => XUiC_CraftingWindowGroup_AddItemToQueue.Prefix(_recipe)), Priority.Low));
+            LogApplyingPatch(nameof(Settings.ScrapTimeAndSalvageOperations));
 
-            LogPatchApplied(nameof(Settings.ScrapTimeAndSalvageOperations));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingWindowGroup), nameof(XUiC_CraftingWindowGroup.AddItemToQueue), [typeof(Recipe), typeof(int)]),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Recipe _recipe) => XUiC_CraftingWindowGroup_AddItemToQueue.Prefix(_recipe)), Priority.Low));
         }
 
         /// <summary>
@@ -26,7 +24,7 @@ namespace VoidGags
             {
                 if (Helper.GetCallerMethod().DeclaringType == typeof(ItemActionEntryScrap))
                 {
-                    var salvageOperations = Helper.PlayerLocal.Progression.GetProgressionValue("perkSalvageOperations");
+                    var salvageOperations = Helper.PlayerLocal.PerkSalvageOperations();
                     _recipe.craftingTime *= 1f - (0.6666f * salvageOperations.Level / salvageOperations.ProgressionClass.MaxLevel);
                 }
             }

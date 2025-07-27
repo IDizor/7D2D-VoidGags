@@ -8,16 +8,16 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ExhaustingLadders(Harmony harmony)
+        public void ApplyPatches_ExhaustingLadders()
         {
-            harmony.Patch(AccessTools.Method(typeof(EffectManager), "GetValue"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APrefix p) => EffectManager_GetValue.Prefix(p._passiveEffect, p._entity, ref p.tags, out p.__state))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APostfix p) => EffectManager_GetValue.Postfix(ref p.__result, p.__state))));
+            LogApplyingPatch(nameof(Settings.ExhaustingLadders));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), "OnUpdateLive"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal __instance) => EntityPlayerLocal_OnUpdateLive.Postfix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(EffectManager), nameof(EffectManager.GetValue)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APrefix p) => EffectManager_GetValue.Prefix(p._passiveEffect, p._entity, ref p.tags, out p.__state))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APostfix p) => EffectManager_GetValue.Postfix(ref p.__result, p.__state))));
 
-            LogPatchApplied(nameof(Settings.ExhaustingLadders));
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.OnUpdateLive)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal __instance) => EntityPlayerLocal_OnUpdateLive.Postfix(__instance))));
         }
 
         /// <summary>

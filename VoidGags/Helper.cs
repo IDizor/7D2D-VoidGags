@@ -253,5 +253,23 @@ namespace VoidGags
         {
             return GameManager.Instance.World.IsWithinTraderArea(pos);
         }
+
+        public static void UiTimerAction(float delay, Action action, Action cancelAction = null)
+        {
+            LocalPlayerUI playerUI = PlayerLocal?.PlayerUI;
+            if (playerUI != null)
+            {
+                playerUI.windowManager.Open("timer", _bModal: true);
+                XUiC_Timer childByType = playerUI.xui.GetChildByType<XUiC_Timer>();
+                TimerEventData timerEventData = new();
+                timerEventData.Data = null;
+                timerEventData.Event += (_) => action();
+                if (cancelAction != null)
+                {
+                    timerEventData.CloseEvent += (_) => cancelAction();
+                }
+                childByType.SetTimer(delay, timerEventData);
+            }
+        }
     }
 }

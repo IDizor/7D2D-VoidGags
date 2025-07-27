@@ -8,12 +8,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_LessFogWhenFlying(Harmony harmony)
+        public void ApplyPatches_LessFogWhenFlying()
         {
-            harmony.Patch(AccessTools.Method(typeof(SkyManager), "SetFogDensity"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((float density) => SkyManager_SetFogDensity.Prefix(ref density))));
+            LogApplyingPatch(nameof(Settings.LessFogWhenFlying));
 
-            LogPatchApplied(nameof(Settings.LessFogWhenFlying));
+            Harmony.Patch(AccessTools.Method(typeof(SkyManager), nameof(SkyManager.SetFogDensity)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((float density) => SkyManager_SetFogDensity.Prefix(ref density))));
         }
 
         /// <summary>

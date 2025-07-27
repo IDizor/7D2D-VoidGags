@@ -9,17 +9,15 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_PiercingShots(Harmony harmony)
+        public void ApplyPatches_PiercingShots()
         {
-            harmony.Patch(AccessTools.Method(typeof(ItemActionRanged), "fireShot"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionRanged_fireShot.APrefix p) =>
-                ItemActionRanged_fireShot.Prefix(p.__instance, p._shotIdx, p._actionData, p.___hitmaskOverride))));
+            LogApplyingPatch(nameof(Settings.PiercingShots));
 
-            harmony.Patch(AccessTools.Method(typeof(ProjectileMoveScript), "checkCollision"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ProjectileMoveScript_checkCollision.APrefix p) =>
-                ProjectileMoveScript_checkCollision.Prefix(p.__instance, p.___isOnIdealPos, p.___idealPosition, p.___previousPosition, p.___hitMask, p.___radius, p.___firingEntity))));
+            Harmony.Patch(AccessTools.Method(typeof(ItemActionRanged), nameof(ItemActionRanged.fireShot)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionRanged_fireShot.APrefix p) => ItemActionRanged_fireShot.Prefix(p.__instance, p._shotIdx, p._actionData, p.___hitmaskOverride))));
 
-            LogPatchApplied(nameof(Settings.PiercingShots));
+            Harmony.Patch(AccessTools.Method(typeof(ProjectileMoveScript), nameof(ProjectileMoveScript.checkCollision)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ProjectileMoveScript_checkCollision.APrefix p) => ProjectileMoveScript_checkCollision.Prefix(p.__instance, p.___isOnIdealPos, p.___idealPosition, p.___previousPosition, p.___hitMask, p.___radius, p.___firingEntity))));
         }
 
         /// <summary>

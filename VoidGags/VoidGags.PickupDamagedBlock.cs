@@ -9,8 +9,10 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_PickupDamagedBlock(Harmony harmony)
+        public void ApplyPatches_PickupDamagedBlock()
         {
+            LogApplyingPatch(nameof(Settings.PickupDamagedItems));
+
             if (Settings.PickupDamagedItems_Percentage < 100 && Settings.PickupDamagedItems_Percentage >= 0)
             {
                 PickupDamagedBlockPercentage = 0.01f * (100 - Settings.PickupDamagedItems_Percentage);
@@ -24,7 +26,7 @@ namespace VoidGags
                     {
                         try
                         {
-                            harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), new HarmonyMethod(prefix));
+                            Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), prefix: new HarmonyMethod(prefix));
                         }
                         catch (Exception ex)
                         {
@@ -41,17 +43,15 @@ namespace VoidGags
                     var prefix = SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue));
                     foreach (var ttp in typesToPatch)
                     {
-                        harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), new HarmonyMethod(prefix));
+                        Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), prefix: new HarmonyMethod(prefix));
                     }
                     
-                    harmony.Patch(AccessTools.Method(typeof(Block), "OnBlockActivated", new Type[] { typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal) }),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue))));
+                    Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockActivated), [typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal)]),
+                        prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue))));
                     
-                    harmony.Patch(AccessTools.Method(typeof(World), "GetBlock", new Type[] { typeof(Vector3i) }), null,
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => World_GetBlock.Postfix(ref _blockValue))));
+                    Harmony.Patch(AccessTools.Method(typeof(World), nameof(World.GetBlock), [typeof(Vector3i)]),
+                        postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => World_GetBlock.Postfix(ref _blockValue))));
                 }
-
-                LogPatchApplied(nameof(Settings.PickupDamagedItems));
             }
             else
             {
@@ -87,7 +87,7 @@ namespace VoidGags
         /// </summary>
         public class World_GetBlock
         {
-            public static Type[] AllowedToPickupBlockTypes = new Type[] { };
+            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation), typeof(BlockDewCollector)];
 
             public static void Postfix(ref BlockValue __result)
             {

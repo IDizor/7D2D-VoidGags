@@ -7,14 +7,14 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_OddNightSoundsVolume(Harmony harmony)
+        public void ApplyPatches_OddNightSoundsVolume()
         {
             if (Settings.OddNightSoundsVolume >= 0 && Settings.OddNightSoundsVolume < 100)
             {
-                harmony.Patch(AccessTools.Method(typeof(AudioObject), nameof(AudioObject.SetBiomeVolume)),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((AudioObject __instance, float _volume) => AudioObject_SetBiomeVolume.Prefix(__instance, ref _volume))));
+                LogApplyingPatch(nameof(Settings.OddNightSoundsVolume));
 
-                LogPatchApplied(nameof(Settings.OddNightSoundsVolume));
+                Harmony.Patch(AccessTools.Method(typeof(AudioObject), nameof(AudioObject.SetBiomeVolume)),
+                    prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((AudioObject __instance, float _volume) => AudioObject_SetBiomeVolume.Prefix(__instance, ref _volume))));
             }
             else if (Settings.OddNightSoundsVolume != 100)
             {

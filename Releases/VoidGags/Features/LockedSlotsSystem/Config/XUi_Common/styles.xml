@@ -1,7 +1,0 @@
-<dizor>
-
-  <append xpath="/styles/style[@name='itemStack']">
-    <style_entry name="locked_stack_color" value="85,120,80"/>
-  </append>
-
-</dizor>

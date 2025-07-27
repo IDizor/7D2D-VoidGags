@@ -10,13 +10,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ArrowsBoltsDistraction(Harmony harmony)
+        public void ApplyPatches_ArrowsBoltsDistraction()
         {
-            harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), "Hit"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit.APostfix p) =>
-                ItemActionAttack_Hit.Postfix(p.hitInfo, p._attackerEntityId, p._damageType, p._attackDetails, p.damagingItemValue))));
+            LogApplyingPatch(nameof(Settings.ArrowsBoltsDistraction));
 
-            LogPatchApplied(nameof(Settings.ArrowsBoltsDistraction));
+            Harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), nameof(ItemActionAttack.Hit)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit.APostfix p) => ItemActionAttack_Hit.Postfix(p.hitInfo, p._attackerEntityId, p._damageType, p._attackDetails, p.damagingItemValue))));
         }
 
         /// <summary>

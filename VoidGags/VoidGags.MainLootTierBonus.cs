@@ -8,16 +8,16 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_MainLootTierBonus(Harmony harmony)
+        public void ApplyPatches_MainLootTierBonus()
         {
-            harmony.Patch(AccessTools.Method(typeof(LootContainer), "SpawnLootItemsFromList"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((float abundance) => LootContainer_SpawnLootItemsFromList.Prefix(ref abundance))));
+            LogApplyingPatch(nameof(Settings.MainLootTierBonus));
 
-            harmony.Patch(AccessTools.Method(typeof(LootManager), "LootContainerOpened"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootManager_LootContainerOpened_2.APrefix p) => LootManager_LootContainerOpened_2.Prefix(p._tileEntity, p._entityIdThatOpenedIt, p._containerTags))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => LootManager_LootContainerOpened_2.Postfix())));
+            Harmony.Patch(AccessTools.Method(typeof(LootContainer), nameof(LootContainer.SpawnLootItemsFromList)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((float abundance) => LootContainer_SpawnLootItemsFromList.Prefix(ref abundance))));
 
-            LogPatchApplied(nameof(Settings.MainLootTierBonus));
+            Harmony.Patch(AccessTools.Method(typeof(LootManager), nameof(LootManager.LootContainerOpened)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootManager_LootContainerOpened_2.APrefix p) => LootManager_LootContainerOpened_2.Prefix(p._tileEntity, p._entityIdThatOpenedIt, p._containerTags))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => LootManager_LootContainerOpened_2.Postfix())));
         }
 
         /// <summary>

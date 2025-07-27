@@ -1,5 +1,4 @@
-﻿using System;
-using Audio;
+﻿using Audio;
 using HarmonyLib;
 using UniLinq;
 using VoidGags.NetPackages;
@@ -11,8 +10,10 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_MasterWorkChance(Harmony harmony)
+        public void ApplyPatches_MasterWorkChance()
         {
+            LogApplyingPatch(nameof(Settings.MasterWorkChance));
+
             if (Settings.MasterWorkChance <= 20 && Settings.MasterWorkChance > 0)
             {
                 if (Settings.MasterWorkChance_MaxQuality < 1 || Settings.MasterWorkChance_MaxQuality > 6)
@@ -25,20 +26,18 @@ namespace VoidGags
                 {
                     MasterWorkChanceValue = 0.01f * Settings.MasterWorkChance;
 
-                    harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), nameof(XUiC_RecipeStack.outputStack)),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_outputStack.APrefix p) => XUiC_RecipeStack_outputStack.Prefix(p.__instance, p.___originalItem))),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_RecipeStack_outputStack.Postfix())));
+                    Harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), nameof(XUiC_RecipeStack.outputStack)),
+                        prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_outputStack.APrefix p) => XUiC_RecipeStack_outputStack.Prefix(p.__instance, p.___originalItem))),
+                        postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_RecipeStack_outputStack.Postfix())));
 
-                    harmony.Patch(AccessTools.Method(typeof(TileEntityWorkstation), nameof(TileEntityWorkstation.HandleRecipeQueue)),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((TileEntityWorkstation __instance) => TileEntityWorkstation_HandleRecipeQueue.Prefix(__instance))),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => TileEntityWorkstation_HandleRecipeQueue.Postfix())));
+                    Harmony.Patch(AccessTools.Method(typeof(TileEntityWorkstation), nameof(TileEntityWorkstation.HandleRecipeQueue)),
+                        prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((TileEntityWorkstation __instance) => TileEntityWorkstation_HandleRecipeQueue.Prefix(__instance))),
+                        postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => TileEntityWorkstation_HandleRecipeQueue.Postfix())));
 
-                    harmony.Patch(AccessTools.Constructor(typeof(ItemValue), new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(string[]), typeof(float) }),
-                        new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemValue_ctor.APrefix p) => ItemValue_ctor.Prefix(ref p.minQuality, ref p.maxQuality))));
+                    Harmony.Patch(AccessTools.Constructor(typeof(ItemValue), [typeof(int), typeof(int), typeof(int), typeof(bool), typeof(string[]), typeof(float)]),
+                        prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemValue_ctor.APrefix p) => ItemValue_ctor.Prefix(ref p.minQuality, ref p.maxQuality))));
 
                     OnGameLoadedActions.Add(RequestMasterWorkChanceServerValue);
-
-                    LogPatchApplied(nameof(Settings.MasterWorkChance));
                 }
             }
             else if (Settings.MasterWorkChance != 0)

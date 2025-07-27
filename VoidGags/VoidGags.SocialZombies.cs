@@ -12,42 +12,38 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_SocialZombies(Harmony harmony)
+        public void ApplyPatches_SocialZombies()
         {
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "ProcessDamageResponseLocal"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_ProcessDamageResponseLocal.APrefix p) =>
-                EntityAlive_ProcessDamageResponseLocal.Prefix(p._dmResponse, p.__instance, ref p.___soundDeath, ref p.___soundRandom, ref p.___soundAttack, ref p.___soundAttack, ref p.___soundHurt))));
+            LogApplyingPatch(nameof(Settings.SocialZombies));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "GetSoundDeath"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_GetSoundDeath.APrefix p) =>
-                EntityAlive_GetSoundDeath.Prefix(p.__instance, ref p.__result))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.ProcessDamageResponseLocal)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_ProcessDamageResponseLocal.APrefix p) => EntityAlive_ProcessDamageResponseLocal.Prefix(p._dmResponse, p.__instance, ref p.___soundDeath, ref p.___soundRandom, ref p.___soundAttack, ref p.___soundAttack, ref p.___soundHurt))));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityEnemy), "DamageEntity"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityEnemy __instance) => EntityEnemy_DamageEntity.Prefix(__instance))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityEnemy __instance) => EntityEnemy_DamageEntity.Postfix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.GetSoundDeath)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_GetSoundDeath.APrefix p) => EntityAlive_GetSoundDeath.Prefix(p.__instance, ref p.__result))));
 
-            harmony.Patch(AccessTools.Method(typeof(Entity), "PlayOneShot"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Entity_PlayOneShot.APostfix p) => Entity_PlayOneShot.Postfix(p.__instance, p.clipName))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityEnemy), nameof(EntityEnemy.DamageEntity)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityEnemy __instance) => EntityEnemy_DamageEntity.Prefix(__instance))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityEnemy __instance) => EntityEnemy_DamageEntity.Postfix(__instance))));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "ConditionalTriggerSleeperWakeUp"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_ConditionalTriggerSleeperWakeUp.Prefix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(Entity), nameof(Entity.PlayOneShot)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Entity_PlayOneShot.APostfix p) => Entity_PlayOneShot.Postfix(p.__instance, p.clipName))));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "SetInvestigatePosition"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_SetInvestigatePosition.APrefix p) =>
-                EntityAlive_SetInvestigatePosition.Prefix(p.__instance, p.isAlert, out p.__state))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_SetInvestigatePosition.APostfix p) =>
-                EntityAlive_SetInvestigatePosition.Postfix(p.__instance, p.__state))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.ConditionalTriggerSleeperWakeUp)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_ConditionalTriggerSleeperWakeUp.Prefix(__instance))));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), "SetAttackTarget"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_SetAttackTarget.Prefix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.SetInvestigatePosition)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_SetInvestigatePosition.APrefix p) => EntityAlive_SetInvestigatePosition.Prefix(p.__instance, p.isAlert, out p.__state))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_SetInvestigatePosition.APostfix p) => EntityAlive_SetInvestigatePosition.Postfix(p.__instance, p.__state))));
 
-            LogPatchApplied(nameof(Settings.SocialZombies));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.SetAttackTarget)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive __instance) => EntityAlive_SetAttackTarget.Prefix(__instance))));
         }
 
         /// <summary>
         /// Helper class.
         /// </summary>
-        public static class SocialZombiesHelper
+        public static class SocialZombies
         {
             public static void AttractZombiesAround(EntityAlive entity, float delay = 0.5f, float radius = 6f, Func<float> delayForEach = null)
             {
@@ -135,6 +131,7 @@ namespace VoidGags
             /// <summary>
             /// Own method to set investigate position to avoid recursive Harmony patches calls.
             /// Should contain the same code as the original method <see cref="EntityAlive.SetInvestigatePosition(Vector3, int, bool)"/>.
+            /// TODO: Check the original method before new mod version release.
             /// </summary>
             private static void InvestigatePosition(EntityAlive entity, Vector3 pos, int ticks)
             {
@@ -230,7 +227,7 @@ namespace VoidGags
             {
                 if (__instance is EntityEnemy enemy && clipName == enemy.soundSense)
                 {
-                    SocialZombiesHelper.AttractZombiesAround(enemy);
+                    SocialZombies.AttractZombiesAround(enemy);
                 }
             }
         }
@@ -246,7 +243,7 @@ namespace VoidGags
                 {
                     Helper.DeferredAction(enemy.rand.RandomRange(0.1f, 1f), () =>
                     { 
-                        SocialZombiesHelper.AttractZombiesAround(enemy);
+                        SocialZombies.AttractZombiesAround(enemy);
                     });
                 }
             }
@@ -285,7 +282,7 @@ namespace VoidGags
                     Helper.DoWhen(() =>
                     {
                         var random = __instance.rand;
-                        SocialZombiesHelper.AttractZombiesAround(__instance, delayForEach: () => random.RandomRange(0.5f, 2f));
+                        SocialZombies.AttractZombiesAround(__instance, delayForEach: () => random.RandomRange(0.5f, 2f));
                     }, __instance.CanMove, 0.33f, 7f);
                 }
             }
@@ -311,7 +308,7 @@ namespace VoidGags
                         Helper.DoWhen(() =>
                         {
                             var random = enemy.rand;
-                            SocialZombiesHelper.AttractZombiesAround(enemy, delayForEach: () => random.RandomRange(0.2f, 1f));
+                            SocialZombies.AttractZombiesAround(enemy, delayForEach: () => random.RandomRange(0.2f, 1f));
                         }, enemy.CanMove, 0.33f, 7f);
                     }
                 }

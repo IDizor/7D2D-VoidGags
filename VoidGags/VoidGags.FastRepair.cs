@@ -11,19 +11,18 @@ namespace VoidGags
     {
         static KeyCode fastRepairHotKey = KeyCode.Mouse2;
 
-        public void ApplyPatches_FastRepair(Harmony harmony)
+        public void ApplyPatches_FastRepair()
         {
+            LogApplyingPatch(nameof(Settings.FastRepair));
+
             if (!Enum.TryParse(Settings.FastRepair_HotKey, out fastRepairHotKey))
             {
                 LogModException($"Invalid value for setting '{nameof(Settings.FastRepair_HotKey)}'.");
                 return;
             }
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), "Update"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) =>
-                XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
-
-            LogPatchApplied(nameof(Settings.FastRepair));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) => XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
         }
 
         /// <summary>

@@ -23,9 +23,9 @@ namespace VoidGags
         public static bln FastRepair = true;
         public static str FastRepair_HotKey = nameof(KeyCode.Mouse2);
         public static bln RepairingHasTopPriority = true;
-        public static bln LockedSlotsSystem = true;
-        public static bln LockedSlotsSystem_AutoSpreadButton = true;
-        public static flt LockedSlotsSystem_AutoSpreadRadius = 10f;
+        public static bln HighlightLockedSlots = true;
+        public static bln AutoSpreadLoot = true;
+        public static flt AutoSpreadLoot_Radius = 10f;
         public static bln ScrapTimeAndSalvageOperations = true;
         public static bln PreventConsoleErrorSpam = false;
         public static bln ArrowsBoltsDistraction = true;
@@ -50,6 +50,11 @@ namespace VoidGags
         public static bln ArrowsBoltsAutoPickUp = true;
         public static bln EnqueueCraftWhenNoFuel = true;
         public static int OddNightSoundsVolume = 30;
+        public static bln VehicleRefuelTimer = true;
+        public static bln VehicleRepairTimer = true;
+        public static bln ExplosionMining = true;
+        public static bln SprintJunkie = true;
+        public static bln JumpControl = true;
 
         static Settings()
         {

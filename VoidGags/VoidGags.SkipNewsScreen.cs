@@ -9,15 +9,15 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_SkipNewsScreen(Harmony harmony)
+        public void ApplyPatches_SkipNewsScreen()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_MainMenu), "Init"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_MainMenu_Init.Prefix())));
+            LogApplyingPatch(nameof(Settings.SkipNewsScreen));
 
-            harmony.Patch(AccessTools.Method(typeof(NewsManager), "GetNewsData"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<NewsEntry> _target) => NewsManager_GetNewsData.Prefix(_target))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_MainMenu), nameof(XUiC_MainMenu.Init)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_MainMenu_Init.Prefix())));
 
-            LogPatchApplied(nameof(Settings.SkipNewsScreen));
+            Harmony.Patch(AccessTools.Method(typeof(NewsManager), nameof(NewsManager.GetNewsData)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<NewsEntry> _target) => NewsManager_GetNewsData.Prefix(_target))));
         }
 
         /// <summary>

@@ -1,0 +1,8 @@
+<dizor>
+
+  <!-- customize locked slots -->
+  <setattribute xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='background']" name="color">{# userlockedslot ? '85,120,80' : selectionbordercolor}</setattribute>
+  <setattribute xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='highlightOverlay']" name="color">{# userlockedslot ? '85,120,80' : backgroundcolor}</setattribute>
+  <remove xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='iconSlotLock']" />
+
+</dizor>

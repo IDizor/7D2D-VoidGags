@@ -8,12 +8,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_HelmetLightFirst(Harmony harmony)
+        public void ApplyPatches_HelmetLightFirst()
         {
-            harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.CollectActivatableItems)), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> _pool) => EntityAlive_CollectActivatableItems.Postfix(_pool))));
+            LogApplyingPatch(nameof(Settings.HelmetLightByDefault));
 
-            LogPatchApplied(nameof(Settings.HelmetLightByDefault));
+            Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.CollectActivatableItems)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<ItemValue> _pool) => EntityAlive_CollectActivatableItems.Postfix(_pool))));
         }
 
         /// <summary>

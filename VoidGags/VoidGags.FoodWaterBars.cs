@@ -7,15 +7,13 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_FoodWaterBars(Harmony harmony)
+        public void ApplyPatches_FoodWaterBars()
         {
+            LogApplyingPatch(nameof(Settings.FoodWaterBars));
             UseXmlPatches(nameof(Settings.FoodWaterBars));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_HUDStatBar), nameof(XUiC_HUDStatBar.GetBindingValue)),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_HUDStatBar_GetBindingValue.APrefix p) =>
-                XUiC_HUDStatBar_GetBindingValue.Prefix(p.__instance, ref p.value, p.bindingName, ref p.__result))));
-
-            LogPatchApplied(nameof(Settings.FoodWaterBars));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_HUDStatBar), nameof(XUiC_HUDStatBar.GetBindingValue)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_HUDStatBar_GetBindingValue.APrefix p) => XUiC_HUDStatBar_GetBindingValue.Prefix(p.__instance, ref p.value, p.bindingName, ref p.__result))));
         }
 
         /// <summary>

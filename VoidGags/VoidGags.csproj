@@ -90,11 +90,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
-    <Compile Include="ModStorage.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkChance.cs" />
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
     <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
+    <Compile Include="VoidGags.AutoSpreadLoot.cs" />
+    <Compile Include="VoidGags.JumpControl.cs" />
+    <Compile Include="VoidGags.SprintJunkie.cs" />
+    <Compile Include="VoidGags.ExplosionMining.cs" />
+    <Compile Include="VoidGags.VehicleRefuelTimer.cs" />
+    <Compile Include="VoidGags.VehicleRepairTimer.cs" />
     <Compile Include="VoidGags.OddNightSoundsVolume.cs" />
     <Compile Include="VoidGags.EnqeueCraftWithNoFuel.cs" />
     <Compile Include="VoidGags.ArrowsBoltsAutoPickUp.cs" />
@@ -125,7 +130,7 @@
     <Compile Include="VoidGags.HelmetLightFirst.cs" />
     <Compile Include="VoidGags.ScrapTime.cs" />
     <Compile Include="VoidGags.PickupDamagedBlock.cs" />
-    <Compile Include="VoidGags.LockedSlotsSystem.cs" />
+    <Compile Include="VoidGags.HighlightLockedSlots.cs" />
     <Compile Include="VoidGags.SkipNewsScreen.cs" />
     <Compile Include="VoidGags.cs" />
     <Compile Include="Helper.cs" />

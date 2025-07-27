@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using HarmonyLib;
-using UnityEngine;
 
 namespace VoidGags
 {
@@ -9,13 +8,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_DigThroughTheGrass(Harmony harmony)
+        public void ApplyPatches_DigThroughTheGrass()
         {
-            harmony.Patch(AccessTools.Method(typeof(ItemActionDynamic), "hitTarget"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionDynamic_hitTarget.APostfix p) =>
-                ItemActionDynamic_hitTarget.Postfix(p.__instance, p._actionData, p.hitInfo))));
+            LogApplyingPatch(nameof(Settings.DigThroughTheGrass));
 
-            LogPatchApplied(nameof(Settings.DigThroughTheGrass));
+            Harmony.Patch(AccessTools.Method(typeof(ItemActionDynamic), nameof(ItemActionDynamic.hitTarget)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionDynamic_hitTarget.APostfix p) => ItemActionDynamic_hitTarget.Postfix(p.__instance, p._actionData, p.hitInfo))));
         }
 
         /// <summary>

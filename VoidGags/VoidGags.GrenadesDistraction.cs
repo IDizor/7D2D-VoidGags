@@ -8,15 +8,13 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_GrenadesDistraction(Harmony harmony)
+        public void ApplyPatches_GrenadesDistraction()
         {
+            LogApplyingPatch(nameof(Settings.GrenadesDistraction));
             UseXmlPatches(nameof(Settings.GrenadesDistraction));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityItem), "tickDistraction"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityItem_tickDistraction.APrefix p) =>
-                EntityItem_tickDistraction.Prefix(p.__instance, p.___distractionLifetime, p.___distractionRadiusSq, p.___nextDistractionTick))));
-
-            LogPatchApplied(nameof(Settings.GrenadesDistraction));
+            Harmony.Patch(AccessTools.Method(typeof(EntityItem), nameof(EntityItem.tickDistraction)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityItem_tickDistraction.APrefix p) => EntityItem_tickDistraction.Prefix(p.__instance, p.___distractionLifetime, p.___distractionRadiusSq, p.___nextDistractionTick))));
         }
 
         /// <summary>

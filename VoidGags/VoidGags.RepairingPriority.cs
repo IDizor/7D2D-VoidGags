@@ -7,13 +7,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_RepairingPriority(Harmony harmony)
+        public void ApplyPatches_RepairingPriority()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingQueue), "AddItemToRepair"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) =>
-                XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
+            LogApplyingPatch(nameof(Settings.RepairingHasTopPriority));
 
-            LogPatchApplied(nameof(Settings.RepairingHasTopPriority));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingQueue), nameof(XUiC_CraftingQueue.AddItemToRepair)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) => XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using HarmonyLib;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -11,17 +10,18 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ExperienceByMaxHP(Harmony harmony)
+        public void ApplyPatches_ExperienceByMaxHP()
         {
+            LogApplyingPatch(nameof(Settings.ExperienceRewardByMaxHP));
+
             if (Settings.ExperienceRewardByMaxHP_Multiplier >= 0)
             {
                 EntityPlayer_AddKillXP.ExpMultiplier = Settings.ExperienceRewardByMaxHP_Multiplier;
 
-                harmony.Patch(AccessTools.Method(typeof(EntityPlayer), "AddKillXP"),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Prefix(killedEntity))),
-                    new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Postfix(killedEntity))));
+                Harmony.Patch(AccessTools.Method(typeof(EntityPlayer), nameof(EntityPlayer.AddKillXP)),
+                    prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Prefix(killedEntity))),
+                    postfix:new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive killedEntity) => EntityPlayer_AddKillXP.Postfix(killedEntity))));
 
-                LogPatchApplied(nameof(Settings.ExperienceRewardByMaxHP));
             }
             else
             {
@@ -43,17 +43,18 @@ namespace VoidGags
                 {
                     EntityExperience.TryAdd(killedEntity.EntityName, killedEntity.EntityClass.ExperienceValue);
 
-                    var expMultiplier = killedEntity is EntityVulture ? 16f
+                    var expFor1HP = killedEntity is EntityVulture ? 18f
                         : killedEntity is EntityAnimalSnake ? 15f
-                        : killedEntity is EntityZombieDog ? 5f
+                        : killedEntity is EntityZombieDog ? 6f
                         : killedEntity is EntityEnemy ? 3f
                         : 5f;
 
                     var maxHealth = killedEntity.GetMaxHealth();
-                    var armorMultiplier = EffectManager.GetValue(PassiveEffects.PhysicalDamageResist, null, 0, killedEntity);
-                    armorMultiplier = 1 + (armorMultiplier / 100);
+                    var armor = EffectManager.GetValue(PassiveEffects.PhysicalDamageResist, null, 0, killedEntity);
+                    var armorMultiplier = 1 + (armor / 200);
+                    var expGrowthLimiter = Mathf.Pow((100f / maxHealth), 0.2f);
 
-                    float exp = maxHealth * expMultiplier * armorMultiplier + Random.Range(-maxHealth / 6, maxHealth / 4);
+                    float exp = maxHealth * expFor1HP * armorMultiplier * expGrowthLimiter + Random.Range(-maxHealth / 8, maxHealth / 8);
                     killedEntity.EntityClass.ExperienceValue = (int)(exp * ExpMultiplier);
                 }
             }

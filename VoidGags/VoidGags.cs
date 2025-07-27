@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using HarmonyLib;
-using UniLinq;
 using UnityEngine;
-using static VoidGags.VoidGags;
-using static World;
 
 namespace VoidGags
 {
@@ -15,6 +12,8 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
+        public Harmony Harmony = null;
+
         public static Mod ModInstance;
         public static string ModFolder;
         public static string FeaturesFolderPath;
@@ -41,46 +40,64 @@ namespace VoidGags
                 return;
             }
 
-            var harmony = new Harmony(GetType().ToString());
+            Harmony = new Harmony(GetType().ToString());
 
             CheckUndeadLegacy();
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            Harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            if (Settings.SkipNewsScreen) ApplyPatches_SkipNewsScreen(harmony);
-            if (Settings.CraftingQueueRightClickToMove) ApplyPatches_CraftingQueueMove(harmony);
-            if (Settings.ExperienceRewardByMaxHP) ApplyPatches_ExperienceByMaxHP(harmony);
-            if (Settings.HelmetLightByDefault) ApplyPatches_HelmetLightFirst(harmony);
-            if (Settings.PickupDamagedItems) ApplyPatches_PickupDamagedBlock(harmony);
-            if (Settings.FastRepair) ApplyPatches_FastRepair(harmony);
-            if (Settings.RepairingHasTopPriority) ApplyPatches_RepairingPriority(harmony);
-            if (Settings.LockedSlotsSystem) ApplyPatches_LockedSlotsSystem(harmony);
-            if (Settings.ScrapTimeAndSalvageOperations) ApplyPatches_ScrapTime(harmony);
-            if (Settings.PreventConsoleErrorSpam) ApplyPatches_PreventConsoleErrorSpam(harmony);
-            if (Settings.ArrowsBoltsDistraction) ApplyPatches_ArrowsBoltsDistraction(harmony);
-            if (Settings.GrenadesDistraction) ApplyPatches_GrenadesDistraction(harmony);
-            if (Settings.ExplosionAttractionFix) ApplyPatches_ExplosionAttractionFix(harmony);
-            if (Settings.DigThroughTheGrass) ApplyPatches_DigThroughTheGrass(harmony);
-            if (Settings.LessFogWhenFlying) ApplyPatches_LessFogWhenFlying(harmony);
-            if (Settings.SocialZombies) ApplyPatches_SocialZombies(harmony);
-            if (Settings.PreventDestroyOnClose) ApplyPatches_PreventDestroyOnClose(harmony);
-            if (Settings.MainLootTierBonus) ApplyPatches_MainLootTierBonus(harmony);
-            if (Settings.PiercingShots) ApplyPatches_PiercingShots(harmony);
-            if (Settings.HighlightCompatibleMods) ApplyPatches_HighlightCompatibleMods(harmony);
-            /* if () is not needed for this */ ApplyPatches_MasterWorkChance(harmony);
-            if (Settings.StealthOnLadders) ApplyPatches_StealthOnLadders(harmony);
-            if (Settings.ExhaustingLadders) ApplyPatches_ExhaustingLadders(harmony);
-            if (Settings.PreventPillaring) ApplyPatches_PreventPillaring(harmony);
-            if (Settings.UnrevealedTradeRoutesOnly) ApplyPatches_UnrevealedTradeRoutesOnly(harmony);
-            if (Settings.NoScreamersFromOutside) ApplyPatches_NoScreamersFromOutside(harmony);
-            if (Settings.FoodWaterBars) ApplyPatches_FoodWaterBars(harmony);
-            if (Settings.GeneratorSwitchFirst) ApplyPatches_GeneratorSwitchFirst(harmony);
-            if (Settings.ArrowsBoltsAutoPickUp) ApplyPatches_ArrowsBoltsAutoPickUp(harmony);
-            if (Settings.EnqueueCraftWhenNoFuel) ApplyPatches_EnqueueCraftWhenNoFuel(harmony);
-            if (Settings.OddNightSoundsVolume != 100) ApplyPatches_OddNightSoundsVolume(harmony);
+            if (Settings.SkipNewsScreen) SafePatch(ApplyPatches_SkipNewsScreen);
+            if (Settings.CraftingQueueRightClickToMove) SafePatch(ApplyPatches_CraftingQueueMove);
+            if (Settings.ExperienceRewardByMaxHP) SafePatch(ApplyPatches_ExperienceByMaxHP);
+            if (Settings.HelmetLightByDefault) SafePatch(ApplyPatches_HelmetLightFirst);
+            if (Settings.PickupDamagedItems) SafePatch(ApplyPatches_PickupDamagedBlock);
+            if (Settings.FastRepair) SafePatch(ApplyPatches_FastRepair);
+            if (Settings.RepairingHasTopPriority) SafePatch(ApplyPatches_RepairingPriority);
+            if (Settings.HighlightLockedSlots) SafePatch(ApplyPatches_HighlightLockedSlots);
+            if (Settings.AutoSpreadLoot) SafePatch(ApplyPatches_AutoSpreadLoot);
+            if (Settings.ScrapTimeAndSalvageOperations) SafePatch(ApplyPatches_ScrapTime);
+            if (Settings.PreventConsoleErrorSpam) SafePatch(ApplyPatches_PreventConsoleErrorSpam);
+            if (Settings.ArrowsBoltsDistraction) SafePatch(ApplyPatches_ArrowsBoltsDistraction);
+            if (Settings.GrenadesDistraction) SafePatch(ApplyPatches_GrenadesDistraction);
+            if (Settings.ExplosionAttractionFix) SafePatch(ApplyPatches_ExplosionAttractionFix);
+            if (Settings.DigThroughTheGrass) SafePatch(ApplyPatches_DigThroughTheGrass);
+            if (Settings.LessFogWhenFlying) SafePatch(ApplyPatches_LessFogWhenFlying);
+            if (Settings.SocialZombies) SafePatch(ApplyPatches_SocialZombies);
+            if (Settings.PreventDestroyOnClose) SafePatch(ApplyPatches_PreventDestroyOnClose);
+            if (Settings.MainLootTierBonus) SafePatch(ApplyPatches_MainLootTierBonus);
+            if (Settings.PiercingShots) SafePatch(ApplyPatches_PiercingShots);
+            if (Settings.HighlightCompatibleMods) SafePatch(ApplyPatches_HighlightCompatibleMods);
+            /* if () is not needed for this */ SafePatch(ApplyPatches_MasterWorkChance);
+            if (Settings.StealthOnLadders) SafePatch(ApplyPatches_StealthOnLadders);
+            if (Settings.ExhaustingLadders) SafePatch(ApplyPatches_ExhaustingLadders);
+            if (Settings.PreventPillaring) SafePatch(ApplyPatches_PreventPillaring);
+            if (Settings.UnrevealedTradeRoutesOnly) SafePatch(ApplyPatches_UnrevealedTradeRoutesOnly);
+            if (Settings.NoScreamersFromOutside) SafePatch(ApplyPatches_NoScreamersFromOutside);
+            if (Settings.FoodWaterBars) SafePatch(ApplyPatches_FoodWaterBars);
+            if (Settings.GeneratorSwitchFirst) SafePatch(ApplyPatches_GeneratorSwitchFirst);
+            if (Settings.ArrowsBoltsAutoPickUp) SafePatch(ApplyPatches_ArrowsBoltsAutoPickUp);
+            if (Settings.EnqueueCraftWhenNoFuel) SafePatch(ApplyPatches_EnqueueCraftWhenNoFuel);
+            if (Settings.OddNightSoundsVolume != 100) SafePatch(ApplyPatches_OddNightSoundsVolume);
+            if (Settings.VehicleRefuelTimer) SafePatch(ApplyPatches_VehicleRefuelTimer);
+            if (Settings.VehicleRepairTimer) SafePatch(ApplyPatches_VehicleRepairTimer);
+            if (Settings.ExplosionMining) SafePatch(ApplyPatches_ExplosionMining);
+            if (Settings.SprintJunkie) SafePatch(ApplyPatches_SprintJunkie);
+            if (Settings.JumpControl) SafePatch(ApplyPatches_JumpControl);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
             });
+        }
+
+        public static void SafePatch(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                LogModException("The patch was not applied properly.", e);
+            }
         }
 
         /// <summary>
@@ -160,14 +177,14 @@ namespace VoidGags
             }
         }
 
-        internal static void LogPatchApplied(string patchName)
+        internal static void LogApplyingPatch(string patchName)
         {
-            Debug.Log($"Mod {nameof(VoidGags)}: Patch applied - {patchName}");
+            Debug.Log($"Mod {nameof(VoidGags)}: Applying patch {patchName}...");
         }
 
-        internal static void LogModException(string message)
+        internal static void LogModException(string message, Exception inner = null)
         {
-            Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: {message}"));
+            Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: {message}", innerException: inner));
         }
 
         internal static void LogModError(string message)
@@ -183,6 +200,42 @@ namespace VoidGags
         internal static void LogModInfo(string message)
         {
             Debug.Log($"Mod {nameof(VoidGags)}: {message}");
+        }
+
+        private static float spLogError = 0f;
+        private static string msgError = null;
+        internal static void LogModErrorNoSpam(string message, float spamProtection = 0.1f)
+        {
+            if (Time.time - spLogError > spamProtection && msgError != message)
+            {
+                msgError = message;
+                spLogError = Time.time;
+                LogModError(message);
+            }
+        }
+
+        private static float spLogWarning = 0f;
+        private static string msgWarning = null;
+        internal static void LogModWarningNoSpam(string message, float spamProtection = 0.1f)
+        {
+            if (Time.time - spLogWarning > spamProtection && msgWarning != message)
+            {
+                msgWarning = message;
+                spLogWarning = Time.time;
+                LogModWarning(message);
+            }
+        }
+
+        private static float spLogInfo = 0f;
+        private static string msgInfo = null;
+        internal static void LogModInfoNoSpam(string message, float spamProtection = 0.1f)
+        {
+            if (Time.time - spLogInfo > spamProtection && msgInfo != message)
+            {
+                msgInfo = message;
+                spLogInfo = Time.time;
+                LogModInfo(message);
+            }
         }
     }
 }

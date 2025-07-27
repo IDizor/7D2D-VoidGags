@@ -9,21 +9,21 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_HighlightCompatibleMods(Harmony harmony)
+        public void ApplyPatches_HighlightCompatibleMods()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), "SetInfo"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack stack) => XUiC_ItemInfoWindow_SetInfo.Prefix(stack))));
+            LogApplyingPatch(nameof(Settings.HighlightCompatibleMods));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), "ShowEmptyInfo"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_ItemInfoWindow_ShowEmptyInfo.Prefix())));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), nameof(XUiC_ItemInfoWindow.SetInfo)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack stack) => XUiC_ItemInfoWindow_SetInfo.Prefix(stack))));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_InfoWindow), "OnVisibilityChanged"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_InfoWindow_OnVisibilityChanged.APostfix p) => XUiC_InfoWindow_OnVisibilityChanged.Postfix(p.__instance, p._isVisible))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), nameof(XUiC_ItemInfoWindow.ShowEmptyInfo)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_ItemInfoWindow_ShowEmptyInfo.Prefix())));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), "updateLockTypeIcon"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_updateLockTypeIcon.APrefix p) => XUiC_ItemStack_updateLockTypeIcon.Prefix(p.__instance, p.___lockType, ref p.___lockSprite, p.___lockTypeIcon))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_InfoWindow), nameof(XUiC_InfoWindow.OnVisibilityChanged)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_InfoWindow_OnVisibilityChanged.APostfix p) => XUiC_InfoWindow_OnVisibilityChanged.Postfix(p.__instance, p._isVisible))));
 
-            LogPatchApplied(nameof(Settings.HighlightCompatibleMods));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_updateLockTypeIcon.APrefix p) => XUiC_ItemStack_updateLockTypeIcon.Prefix(p.__instance, p.___lockType, ref p.___lockSprite, p.___lockTypeIcon))));
         }
 
         /// <summary>

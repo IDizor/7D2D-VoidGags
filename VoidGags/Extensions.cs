@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -120,6 +121,61 @@ namespace VoidGags
         {
             return !workstation.WorkstationData.GetIsBesideWater()
                 && (workstation.hasAnyFuel() || workstation.WorkstationData.GetBurnTimeLeft() > 0f);
+        }
+
+        public static bool GiveItem(this EntityPlayerLocal player, ItemStack item)
+        {
+            if (!player.playerUI.xui.PlayerInventory.AddItem(item))
+            {
+                player.playerUI.xui.PlayerInventory.DropItem(item);
+                return false;
+            }
+            return true;
+        }
+
+        public static List<TEntity> GetEntities<TEntity>(this Chunk chunk, Vector3 pos, float distance) where TEntity : Entity
+        {
+            var entities = new List<TEntity>();
+            if (chunk.entityLists?.Length > 0)
+            {
+                foreach (var list in chunk.entityLists)
+                {
+                    if (list?.Count > 0)
+                    {
+                        foreach (var item in list)
+                        {
+                            if (item is TEntity entity && (pos - item.position).magnitude <= distance)
+                            {
+                                entities.Add(entity);
+                            }
+                        }
+                    }
+                }
+            }
+            return entities;
+        }
+
+        public static bool Get(this PackedBoolArray array, int index)
+        {
+            if (array == null || array.Length <= index)
+                return false;
+
+            return array[index];
+        }
+
+        public static bool IsBackpack(this XUiC_ContainerStandardControls controls)
+        {
+            return controls?.Parent?.Parent?.GetType() == typeof(XUiC_BackpackWindow);
+        }
+
+        public static ProgressionValue PerkSalvageOperations(this EntityPlayer player)
+        {
+            return player.Progression.GetProgressionValue("perkSalvageOperations");
+        }
+
+        public static ProgressionValue PerkParkour(this EntityPlayer player)
+        {
+            return player.Progression.GetProgressionValue("perkParkour");
         }
     }
 }

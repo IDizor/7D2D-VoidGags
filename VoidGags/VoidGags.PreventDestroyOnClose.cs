@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using HarmonyLib;
 
 namespace VoidGags
@@ -8,28 +9,28 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_PreventDestroyOnClose(Harmony harmony)
+        public void ApplyPatches_PreventDestroyOnClose()
         {
+            LogApplyingPatch(nameof(Settings.PreventDestroyOnClose));
             UseXmlPatches(nameof(Settings.PreventDestroyOnClose));
 
-            harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEUnlockServer)),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((GameManager_TEUnlockServer.APrefix p) =>
-                GameManager_TEUnlockServer.Prefix(p._blockPos, ref p._allowContainerDestroy))));
+            Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEUnlockServer)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((GameManager_TEUnlockServer.APrefix p) => GameManager_TEUnlockServer.Prefix(p._blockPos, ref p._allowContainerDestroy))));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.Init)), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_LootWindow __instance) =>
-                XUiC_LootWindow_Init.Postfix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.Init)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_LootWindow __instance) => XUiC_LootWindow_Init.Postfix(__instance))));
 
-            harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.GetBindingValue)),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_LootWindow_GetBindingValue_2.APrefix p) =>
-                XUiC_LootWindow_GetBindingValue_2.Prefix(p.__instance, ref p._value, p._bindingName, ref p.__result))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.GetBindingValue)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_LootWindow_GetBindingValue_2.APrefix p) => XUiC_LootWindow_GetBindingValue_2.Prefix(p.__instance, ref p._value, p._bindingName, ref p.__result))));
 
             OnGameLoadedActions.Add(LoadPreventDestroyValues);
-
-            LogPatchApplied(nameof(Settings.PreventDestroyOnClose));
         }
 
-        private static string PreventDestroySaveFile => FeaturesFolderPath + $"\\{nameof(Settings.PreventDestroyOnClose)}\\save.txt";
+        public static class PreventDestroyOnClose
+        {
+            public static List<string> Containers = [];
+            public static string PreventDestroySaveFile => FeaturesFolderPath + $"\\{nameof(Settings.PreventDestroyOnClose)}\\save.txt";
+        }
 
         /// <summary>
         /// Prevent the loot container from being auto-destroyed.
@@ -51,7 +52,7 @@ namespace VoidGags
 
                     if (!string.IsNullOrEmpty(blockName))
                     {
-                        _allowContainerDestroy = !ModStorage.PreventDestroyContainers.Contains(blockName);
+                        _allowContainerDestroy = !PreventDestroyOnClose.Containers.Contains(blockName);
                     }
                 }
             }
@@ -73,7 +74,7 @@ namespace VoidGags
                 {
                     var window = _sender.xui.GetWindowByType<XUiC_LootWindow>();
                     var blockName = _sender.xui.lootContainer?.blockValue.Block?.blockName;
-                    var destroy = ModStorage.PreventDestroyContainers.Contains(blockName);
+                    var destroy = PreventDestroyOnClose.Containers.Contains(blockName);
                     UpdateAndSavePreventDestroyValue(blockName, destroy);
                     window?.RefreshBindings();
                 }
@@ -120,7 +121,7 @@ namespace VoidGags
                         var blockName = lootableEntity.blockValue.Block?.blockName;
                         if (!string.IsNullOrEmpty(blockName))
                         {
-                            _value = (ModStorage.PreventDestroyContainers.Contains(blockName) == true).ToString();
+                            _value = (PreventDestroyOnClose.Containers.Contains(blockName) == true).ToString();
                         }
                     }
                     __result = true;
@@ -134,24 +135,24 @@ namespace VoidGags
         {
             if (!string.IsNullOrEmpty(containerName))
             {
-                if (destroy && ModStorage.PreventDestroyContainers.Contains(containerName))
+                if (destroy && PreventDestroyOnClose.Containers.Contains(containerName))
                 {
-                    ModStorage.PreventDestroyContainers.Remove(containerName);
+                    PreventDestroyOnClose.Containers.Remove(containerName);
                 }
-                else if (!destroy && !ModStorage.PreventDestroyContainers.Contains(containerName))
+                else if (!destroy && !PreventDestroyOnClose.Containers.Contains(containerName))
                 {
-                    ModStorage.PreventDestroyContainers.Add(containerName);
+                    PreventDestroyOnClose.Containers.Add(containerName);
                 }
 
-                File.WriteAllLines(PreventDestroySaveFile, ModStorage.PreventDestroyContainers);
+                File.WriteAllLines(PreventDestroyOnClose.PreventDestroySaveFile, PreventDestroyOnClose.Containers);
             }
         }
 
         public static void LoadPreventDestroyValues()
         {
-            if (File.Exists(PreventDestroySaveFile))
+            if (File.Exists(PreventDestroyOnClose.PreventDestroySaveFile))
             {
-                ModStorage.PreventDestroyContainers = new(File.ReadAllLines(PreventDestroySaveFile));
+                PreventDestroyOnClose.Containers = new(File.ReadAllLines(PreventDestroyOnClose.PreventDestroySaveFile));
             }
         }
     }

@@ -1,5 +1,4 @@
-﻿using System;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UniLinq;
 using UnityEngine;
 
@@ -10,15 +9,15 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ArrowsBoltsAutoPickUp(Harmony harmony)
+        public void ApplyPatches_ArrowsBoltsAutoPickUp()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
+            LogApplyingPatch(nameof(Settings.ArrowsBoltsAutoPickUp));
+
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt __instance) => XUiC_Toolbelt_Update_2.Prefix(__instance))));
 
-            harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.ItemDropServer), new Type[] { typeof(ItemStack), typeof(Vector3), typeof(Vector3), typeof(int), typeof(float), typeof(bool) }),
+            Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.ItemDropServer), [typeof(ItemStack), typeof(Vector3), typeof(Vector3), typeof(int), typeof(float), typeof(bool)]),
                 new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack _itemStack) => GameManager_ItemDropServer.Prefix(_itemStack))));
-
-            LogPatchApplied(nameof(Settings.ArrowsBoltsAutoPickUp));
         }
 
         /// <summary>

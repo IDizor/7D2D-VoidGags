@@ -7,16 +7,16 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_PreventConsoleErrorSpam(Harmony harmony)
+        public void ApplyPatches_PreventConsoleErrorSpam()
         {
-            harmony.Patch(AccessTools.Method(typeof(GUIWindowConsole), "openConsole"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GUIWindowConsole_openConsole.Prefix())));
+            LogApplyingPatch(nameof(Settings.PreventConsoleErrorSpam));
 
-            LogPatchApplied(nameof(Settings.PreventConsoleErrorSpam));
+            Harmony.Patch(AccessTools.Method(typeof(GUIWindowConsole), nameof(GUIWindowConsole.openConsole)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GUIWindowConsole_openConsole.Prefix())));
         }
 
         /// <summary>
-        /// Makes the scrapping process in inventory faster, depending on the Salvage Operations perk level.
+        /// Allow to auto-open console only for the first exception to avoid losing player control in case of exceptions spam.
         /// </summary>
         public class GUIWindowConsole_openConsole
         {

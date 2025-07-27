@@ -7,13 +7,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_CraftingQueueMove(Harmony harmony)
+        public void ApplyPatches_CraftingQueueMove()
         {
-            harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), "Init"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_Init.APostfix p) =>
-                XUiC_RecipeStack_Init.Postfix(p.__instance, p.___background))));
+            LogApplyingPatch(nameof(Settings.CraftingQueueRightClickToMove));
 
-            LogPatchApplied(nameof(Settings.CraftingQueueRightClickToMove));
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeStack), nameof(XUiC_RecipeStack.Init)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_RecipeStack_Init.APostfix p) => XUiC_RecipeStack_Init.Postfix(p.__instance, p.___background))));
         }
 
         /// <summary>

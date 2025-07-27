@@ -7,19 +7,19 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_StealthOnLadders(Harmony harmony)
+        public void ApplyPatches_StealthOnLadders()
         {
-            harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), "MoveByInput"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Prefix(p.__instance, out p.__state))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Postfix(p.__instance, p.__state))));
+            LogApplyingPatch(nameof(Settings.StealthOnLadders));
 
-            harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), "GetSpeedModifier"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_GetSpeedModifier.APostfix p) => EntityPlayerLocal_GetSpeedModifier.Postfix(p.__instance, ref p.__result, p.___isLadderAttached))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.MoveByInput)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Prefix(p.__instance, out p.__state))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_MoveByInput.AParams p) => EntityPlayerLocal_MoveByInput.Postfix(p.__instance, p.__state))));
 
-            harmony.Patch(AccessTools.Method(typeof(PlayerStealth), "CalcVolume"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((PlayerStealth_CalcVolume.APostfix p) => PlayerStealth_CalcVolume.Postfix(ref p.__result, p.___player))));
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.GetSpeedModifier)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal_GetSpeedModifier.APostfix p) => EntityPlayerLocal_GetSpeedModifier.Postfix(p.__instance, ref p.__result, p.___isLadderAttached))));
 
-            LogPatchApplied(nameof(Settings.StealthOnLadders));
+            Harmony.Patch(AccessTools.Method(typeof(PlayerStealth), nameof(PlayerStealth.CalcVolume)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((PlayerStealth_CalcVolume.APostfix p) => PlayerStealth_CalcVolume.Postfix(ref p.__result, p.___player))));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace VoidGags
                 {
                     if (player.isLadderAttached)
                     {
-                        __result *= 0.5f;
+                        __result *= 0.25f;
                     }
                 }
             }

@@ -8,13 +8,12 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_GeneratorSwitchFirst(Harmony harmony)
+        public void ApplyPatches_GeneratorSwitchFirst()
         {
-            harmony.Patch(AccessTools.Method(typeof(BlockPowerSource), nameof(BlockPowerSource.GetBlockActivationCommands)), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockActivationCommand[] __result) =>
-                BlockPowerSource_GetBlockActivationCommands.Postfix(ref __result))));
+            LogApplyingPatch(nameof(Settings.GeneratorSwitchFirst));
 
-            LogPatchApplied(nameof(Settings.GeneratorSwitchFirst));
+            Harmony.Patch(AccessTools.Method(typeof(BlockPowerSource), nameof(BlockPowerSource.GetBlockActivationCommands)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockActivationCommand[] __result) => BlockPowerSource_GetBlockActivationCommands.Postfix(ref __result))));
         }
 
         /// <summary>

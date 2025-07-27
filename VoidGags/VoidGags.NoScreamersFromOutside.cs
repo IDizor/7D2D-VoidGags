@@ -11,15 +11,15 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_NoScreamersFromOutside(Harmony harmony)
+        public void ApplyPatches_NoScreamersFromOutside()
         {
-            harmony.Patch(AccessTools.Method(typeof(AIDirectorChunkEventComponent), "SpawnScouts"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3 targetPos) => AIDirectorChunkEventComponent_SpawnScouts.Prefix(targetPos))));
+            LogApplyingPatch(nameof(Settings.NoScreamersFromOutside));
 
-            harmony.Patch(AccessTools.Method(typeof(NetPackageQuestEvent), "ProcessPackage"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((NetPackageQuestEvent __instance) => NetPackageQuestEvent_ProcessPackage.Postfix(__instance))));
+            Harmony.Patch(AccessTools.Method(typeof(AIDirectorChunkEventComponent), nameof(AIDirectorChunkEventComponent.SpawnScouts)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3 targetPos) => AIDirectorChunkEventComponent_SpawnScouts.Prefix(targetPos))));
 
-            LogPatchApplied(nameof(Settings.NoScreamersFromOutside));
+            Harmony.Patch(AccessTools.Method(typeof(NetPackageQuestEvent), nameof(NetPackageQuestEvent.ProcessPackage)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((NetPackageQuestEvent __instance) => NetPackageQuestEvent_ProcessPackage.Postfix(__instance))));
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace VoidGags
         /// </summary>
         public class NetPackageQuestEvent_ProcessPackage
         {
-            public static List<ActiveQuestPrefab> ActiveQuests = new List<ActiveQuestPrefab>();
+            public static List<ActiveQuestPrefab> ActiveQuests = [];
 
             public class ActiveQuestPrefab
             {
@@ -78,7 +78,7 @@ namespace VoidGags
 
             public static void Postfix(NetPackageQuestEvent __instance)
             {
-                if (SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
+                if (IsServer)
                 {
                     if (__instance.eventType == QuestEventTypes.LockPOI)
                     {

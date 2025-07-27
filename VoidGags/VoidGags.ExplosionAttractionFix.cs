@@ -9,17 +9,16 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_ExplosionAttractionFix(Harmony harmony)
+        public void ApplyPatches_ExplosionAttractionFix()
         {
-            harmony.Patch(AccessTools.Method(typeof(AIDirector), "OnSoundPlayedAtPosition"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((AIDirector_OnSoundPlayedAtPosition.APrefix p) =>
-                AIDirector_OnSoundPlayedAtPosition.Prefix(ref p._entityThatCausedSound, p._position, p.__instance))));
+            LogApplyingPatch(nameof(Settings.ExplosionAttractionFix));
 
-            harmony.Patch(AccessTools.Method(typeof(GameManager), "explode"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Prefix())),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Postfix())));
+            Harmony.Patch(AccessTools.Method(typeof(AIDirector), nameof(AIDirector.OnSoundPlayedAtPosition)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((AIDirector_OnSoundPlayedAtPosition.APrefix p) => AIDirector_OnSoundPlayedAtPosition.Prefix(ref p._entityThatCausedSound, p._position, p.__instance))));
 
-            LogPatchApplied(nameof(Settings.ExplosionAttractionFix));
+            Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.explode)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Prefix())),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GameManager_explode.Postfix())));
         }
 
         /// <summary>

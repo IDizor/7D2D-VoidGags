@@ -9,16 +9,16 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_UnrevealedTradeRoutesOnly(Harmony harmony)
+        public void ApplyPatches_UnrevealedTradeRoutesOnly()
         {
-            harmony.Patch(AccessTools.Method(typeof(ObjectiveGoto), "GetPosition"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayer entityPlayer) => ObjectiveGoto_GetPosition.Prefix(entityPlayer))),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ObjectiveGoto_GetPosition.Postfix())));
+            LogApplyingPatch(nameof(Settings.UnrevealedTradeRoutesOnly));
 
-            harmony.Patch(AccessTools.Method(typeof(QuestJournal), "GetTraderList"), null,
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<Vector2> __result) => QuestJournal_GetTraderList.Postfix(ref __result))));
+            Harmony.Patch(AccessTools.Method(typeof(ObjectiveGoto), nameof(ObjectiveGoto.GetPosition)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayer entityPlayer) => ObjectiveGoto_GetPosition.Prefix(entityPlayer))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ObjectiveGoto_GetPosition.Postfix())));
 
-            LogPatchApplied(nameof(Settings.UnrevealedTradeRoutesOnly));
+            Harmony.Patch(AccessTools.Method(typeof(QuestJournal), nameof(QuestJournal.GetTraderList)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<Vector2> __result) => QuestJournal_GetTraderList.Postfix(ref __result))));
         }
 
         /// <summary>

@@ -7,15 +7,15 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_PreventPillaring(Harmony harmony)
+        public void ApplyPatches_PreventPillaring()
         {
-            harmony.Patch(AccessTools.Method(typeof(RenderDisplacedCube), "update0"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((RenderDisplacedCube_update0.APrefix p) => RenderDisplacedCube_update0.Prefix(p._focusBlockPos, p._player))));
+            LogApplyingPatch(nameof(Settings.PreventPillaring));
 
-            harmony.Patch(AccessTools.Method(typeof(Block), "CanPlaceBlockAt"),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool __result) => Block_CanPlaceBlockAt.Prefix(ref __result))));
+            Harmony.Patch(AccessTools.Method(typeof(RenderDisplacedCube), nameof(RenderDisplacedCube.update0)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((RenderDisplacedCube_update0.APrefix p) => RenderDisplacedCube_update0.Prefix(p._focusBlockPos, p._player))));
 
-            LogPatchApplied(nameof(Settings.PreventPillaring));
+            Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.CanPlaceBlockAt)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool __result) => Block_CanPlaceBlockAt.Prefix(ref __result))));
         }
 
         /// <summary>
