@@ -14,10 +14,10 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ArrowsBoltsAutoPickUp));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt __instance) => XUiC_Toolbelt_Update_2.Prefix(__instance))));
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt __instance) => XUiC_Toolbelt_Update_2.Prefix(__instance))));
 
             Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.ItemDropServer), [typeof(ItemStack), typeof(Vector3), typeof(Vector3), typeof(int), typeof(float), typeof(bool)]),
-                new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack _itemStack) => GameManager_ItemDropServer.Prefix(_itemStack))));
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack _itemStack) => GameManager_ItemDropServer.Prefix(_itemStack))));
         }
 
         /// <summary>

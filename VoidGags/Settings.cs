@@ -55,6 +55,9 @@ namespace VoidGags
         public static bln ExplosionMining = true;
         public static bln SprintJunkie = true;
         public static bln JumpControl = true;
+        public static bln VisibleScriptedSleepers = true;
+        public static bln ZombiesFriendlyFire = true;
+        public static flt ZombiesStumbleChance = 0.5f;
 
         static Settings()
         {

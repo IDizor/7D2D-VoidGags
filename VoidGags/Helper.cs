@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Platform;
 using UnityEngine;
 
@@ -47,11 +48,19 @@ namespace VoidGags
         public static string GetCallStackPath(int limit = 5)
         {
             var stackTrace = new System.Diagnostics.StackTrace();
-            var path = string.Join(" <-- ", stackTrace.GetFrames()
+            var path = string.Join(" <- ", stackTrace.GetFrames()
                 .Skip(4)
                 .Take(limit)
                 .Select(f => f.GetMethod())
-                .Select(m => $"{m.DeclaringType.Name}.{m.Name}()"));
+                .Select(m =>
+                {
+                    var match = Regex.Match(m.Name, @".*?\s(\w+:\w+)\(.+");
+                    if (match.Success)
+                    {
+                        return $"{match.Groups[1].Value}()";
+                    }
+                    return $"{m.DeclaringType.Name}.{m.Name}()";
+                }));
 
             return path;
         }

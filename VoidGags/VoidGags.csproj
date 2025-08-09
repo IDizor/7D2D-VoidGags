@@ -94,6 +94,9 @@
     <Compile Include="NetPackages\NetPackageSetInvestigatePos.cs" />
     <Compile Include="NetPackages\NetPackageMasterWorkCreated.cs" />
     <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
+    <Compile Include="VoidGags.ZombiesStumbleChance.cs" />
+    <Compile Include="VoidGags.ZombieFriendlyFire.cs" />
+    <Compile Include="VoidGags.VisibleSkriptedSleepers.cs" />
     <Compile Include="VoidGags.AutoSpreadLoot.cs" />
     <Compile Include="VoidGags.JumpControl.cs" />
     <Compile Include="VoidGags.SprintJunkie.cs" />

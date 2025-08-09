@@ -16,8 +16,16 @@ namespace VoidGags
                 prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((float abundance) => LootContainer_SpawnLootItemsFromList.Prefix(ref abundance))));
 
             Harmony.Patch(AccessTools.Method(typeof(LootManager), nameof(LootManager.LootContainerOpened)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootManager_LootContainerOpened_2.APrefix p) => LootManager_LootContainerOpened_2.Prefix(p._tileEntity, p._entityIdThatOpenedIt, p._containerTags))),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => LootManager_LootContainerOpened_2.Postfix())));
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((LootManager_LootContainerOpened.APrefix p) => LootManager_LootContainerOpened.Prefix(p._tileEntity, p._entityIdThatOpenedIt, p._containerTags))),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => LootManager_LootContainerOpened.Postfix())));
+        }
+
+        public static class MainLootTierBonus
+        {
+            public static FastTags<TagGroup.Global> Safes = FastTags<TagGroup.Global>.Parse("safes");
+
+            public static bool ApplyBonus = false;
+            public static int PoiTier = 0;
         }
 
         /// <summary>
@@ -27,12 +35,12 @@ namespace VoidGags
         {
             public static void Prefix(ref float abundance)
             {
-                if (LootManager_LootContainerOpened_2.ApplyBonus)
+                if (MainLootTierBonus.ApplyBonus)
                 {
-                    LootManager_LootContainerOpened_2.ApplyBonus = false;
-                    if (LootManager_LootContainerOpened_2.PoiTier > 0)
+                    MainLootTierBonus.ApplyBonus = false;
+                    if (MainLootTierBonus.PoiTier > 0)
                     {
-                        abundance *= 1f + (0.25f * (LootManager_LootContainerOpened_2.PoiTier - 1));
+                        abundance *= 1.2f + (0.2f * (MainLootTierBonus.PoiTier - 1));
                     }
                 }
             }
@@ -41,57 +49,52 @@ namespace VoidGags
         /// <summary>
         /// Checks if opened container can be considered as a main loot container and allows to apply bonus to it.
         /// </summary>
-        public class LootManager_LootContainerOpened_2
+        public class LootManager_LootContainerOpened
         {
-            public static FastTags<TagGroup.Global> Safes = FastTags<TagGroup.Global>.Parse("safes");
-
-            public static bool ApplyBonus = false;
-            public static int PoiTier = 0;
-
             public struct APrefix
             {
-                public TileEntityLootContainer _tileEntity;
+                public ITileEntityLootable _tileEntity;
                 public int _entityIdThatOpenedIt;
                 public FastTags<TagGroup.Global> _containerTags;
             }
 
-            public static void Prefix(TileEntityLootContainer _tileEntity, int _entityIdThatOpenedIt, FastTags<TagGroup.Global> _containerTags)
+            public static void Prefix(ITileEntityLootable _tileEntity, int _entityIdThatOpenedIt, FastTags<TagGroup.Global> _containerTags)
             {
                 if (_tileEntity.GetChunk() != null) // no chunk no block
                 {
-                    var blockName = _tileEntity.blockValue.Block.GetBlockName();
-                    ApplyBonus = _containerTags.Test_AnySet(Safes);
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntLootCrate");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntLootChest");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntHardened");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntBuried");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntWeapon");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntAmmo");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntChem");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntMedic");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntFood");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntLootWeapon");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntLootTools");
-                    ApplyBonus = ApplyBonus || blockName.StartsWith("cntBackpack");
+                    var blockName = _tileEntity.blockValue.Block.blockName;
+                    MainLootTierBonus.ApplyBonus = _containerTags.Test_AnySet(MainLootTierBonus.Safes);
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntLootCrate");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntLootChest");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntHardened");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntBuried");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntWeapon");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntAmmo");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntChem");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntMedic");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntFood");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntLootWeapon");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntLootTools");
+                    MainLootTierBonus.ApplyBonus = MainLootTierBonus.ApplyBonus || blockName.StartsWith("cntBackpack");
 
-                    if (ApplyBonus)
+                    if (MainLootTierBonus.ApplyBonus)
                     {
                         var world = GameManager.Instance.World;
-                        var player = (EntityPlayer)world.GetEntity(_entityIdThatOpenedIt);
-                        var prefab = player.prefab?.prefab;
-                        PoiTier = Mathf.Max(0, prefab?.DifficultyTier ?? 0);
-                        Debug.LogWarning($"Container: {blockName}, Tags: [{_containerTags}], POI Tier: {PoiTier}");
+                        var player = world.GetEntity(_entityIdThatOpenedIt) as EntityPlayer;
+                        var prefab = player?.prefab?.prefab;
+                        MainLootTierBonus.PoiTier = Mathf.Max(0, prefab?.DifficultyTier ?? 0);
+                        LogModWarning($"Container: {blockName}, Tags: [{_containerTags}], POI Tier: {MainLootTierBonus.PoiTier}, Bonus applied.");
                     }
                     else
                     {
-                        Debug.Log($"Container: {blockName}, Tags: [{_containerTags}], Bonus was not applied.");
+                        //LogModError($"Container: {blockName}, Tags: [{_containerTags}], Bonus was not applied.");
                     }
                 }
             }
 
             public static void Postfix()
             {
-                ApplyBonus = false;
+                MainLootTierBonus.ApplyBonus = false;
             }
         }
     }

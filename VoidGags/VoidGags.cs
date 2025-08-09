@@ -82,6 +82,9 @@ namespace VoidGags
             if (Settings.ExplosionMining) SafePatch(ApplyPatches_ExplosionMining);
             if (Settings.SprintJunkie) SafePatch(ApplyPatches_SprintJunkie);
             if (Settings.JumpControl) SafePatch(ApplyPatches_JumpControl);
+            if (Settings.VisibleScriptedSleepers) SafePatch(ApplyPatches_VisibleScriptedSleepers);
+            if (Settings.ZombiesFriendlyFire) SafePatch(ApplyPatches_ZombiesFriendlyFire);
+            if (Settings.ZombiesStumbleChance > 0f) SafePatch(ApplyPatches_ZombiesStumbleChance);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
@@ -200,6 +203,11 @@ namespace VoidGags
         internal static void LogModInfo(string message)
         {
             Debug.Log($"Mod {nameof(VoidGags)}: {message}");
+        }
+
+        internal static void LogModTranspilerFailure(string patchName)
+        {
+            LogModException($"Failed to apply transpiler patch for feature: {patchName}.");
         }
 
         private static float spLogError = 0f;

@@ -140,7 +140,7 @@ namespace VoidGags
                 entity.isInvestigateAlert = true;
             }
         }
-
+        
         /// <summary>
         /// No head no screams.
         /// (but still unable to stop sounds started before the dismembering)
