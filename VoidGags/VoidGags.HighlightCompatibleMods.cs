@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using VoidGags.Types;
 using static XUiC_ItemStack;
 
 namespace VoidGags
@@ -24,12 +25,15 @@ namespace VoidGags
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon)),
                 prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ItemStack_updateLockTypeIcon.APrefix p) => XUiC_ItemStack_updateLockTypeIcon.Prefix(p.__instance, p.___lockType, ref p.___lockSprite, p.___lockTypeIcon))));
+
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_PartList), nameof(XUiC_PartList.SetSlots)),
+                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_PartList __instance) => XUiC_PartList_SetSlots.Postfix(__instance))));
         }
 
         /// <summary>
         /// Tracks the selected item using item info window.
         /// </summary>
-        public class XUiC_ItemInfoWindow_SetInfo
+        public static class XUiC_ItemInfoWindow_SetInfo
         {
             public static ItemClass SelectedItem = null;
 
@@ -48,7 +52,7 @@ namespace VoidGags
         /// <summary>
         /// Clears selected item.
         /// </summary>
-        public class XUiC_ItemInfoWindow_ShowEmptyInfo
+        public static class XUiC_ItemInfoWindow_ShowEmptyInfo
         {
             public static void Prefix()
             {
@@ -60,7 +64,7 @@ namespace VoidGags
         /// <summary>
         /// Clears selected item.
         /// </summary>
-        public class XUiC_InfoWindow_OnVisibilityChanged
+        public static class XUiC_InfoWindow_OnVisibilityChanged
         {
             public struct APostfix
             {
@@ -80,7 +84,7 @@ namespace VoidGags
         /// <summary>
         /// Highlights compatible mods gears icon.
         /// </summary>
-        public class XUiC_ItemStack_updateLockTypeIcon
+        public static class XUiC_ItemStack_updateLockTypeIcon
         {
             public struct APrefix
             {
@@ -121,6 +125,59 @@ namespace VoidGags
                     }
                 }
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Greys out not allowed mod slots and makes mods clickable in info window.
+        /// </summary>
+        public static class XUiC_PartList_SetSlots
+        {
+            private static Color32? EnabledColor = null;
+            private static Color32 DisabledColor = Color.clear;
+
+            public static void Postfix(XUiC_PartList __instance)
+            {
+                if (__instance.GetParentWindow().Controller is XUiC_ItemInfoWindow window)
+                {
+                    if (!window.itemStack.IsEmpty())
+                    {
+                        var modsLimit = window.itemStack.itemValue.Modifications?.Length ?? 0;
+                        for (int i = 0; i < __instance.itemControllers.Length; i++)
+                        {
+                            XUiC_ItemStack stack = __instance.itemControllers[i];
+
+                            // store initial color
+                            if (EnabledColor is null)
+                            {
+                                EnabledColor = stack.backgroundColor;
+                                DisabledColor = Color32.Lerp(EnabledColor.Value, new Color32(0, 0, 0, EnabledColor.Value.a), 0.85f);
+                            }
+
+                            if (!stack.ItemStack.IsEmpty())
+                            {
+                                // make stack clickable
+                                stack.ViewComponent.EventOnPress = true;
+                                stack.OnPress += (_, _) =>
+                                {
+                                    if (!stack.ItemStack.IsEmpty() && stack.itemClass != null)
+                                    {
+                                        var initialItemStack = window.selectedItemStack;
+                                        window.SetItemStack(stack, _makeVisible: true);
+                                        window.mainActionItemList.SetCraftingActionList(XUiC_ItemActionList.ItemActionListTypes.None, stack);
+                                        window.mainActionItemList.AddActionListEntry(new ItemActionEntryCustom(stack, () =>
+                                        {
+                                            window.SetItemStack(initialItemStack, _makeVisible: true);
+                                        }));
+                                    }
+                                };
+                            }
+
+                            // update available mod stacks color
+                            stack.backgroundColor = i < modsLimit ? EnabledColor.Value : DisabledColor;
+                        }
+                    }
+                }
             }
         }
     }

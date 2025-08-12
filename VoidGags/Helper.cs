@@ -280,5 +280,44 @@ namespace VoidGags
                 childByType.SetTimer(delay, timerEventData);
             }
         }
+
+        public static bool PlayerCanSeePos(EntityPlayer player, Vector3 pos)
+        {
+            var headPosition = player.getHeadPosition();
+            var distance = Mathf.Max(0f, player.position.DistanceTo(pos) - 0.5f);
+            var ray = new Ray(headPosition, headPosition.DirectionTo(pos));
+            bool someObstacleHit = Voxel.Raycast(player.world, ray, distance, bHitTransparentBlocks: false, bHitNotCollidableBlocks: false);
+            return !someObstacleHit;
+        }
+
+        public static bool AnyPlayerCanSeePos(World world, Vector3 pos, float maxRadius, out EntityPlayer player)
+        {
+            for (int i = 0; i < world.Players.list.Count; i++)
+            {
+                var p = world.Players.list[i];
+                if ((maxRadius <= 0 || p.position.DistanceTo(pos) <= maxRadius) && PlayerCanSeePos(p, pos))
+                {
+                    player = p;
+                    return true;
+                }
+            }
+            player = null;
+            return false;
+        }
+
+        public static bool AnyPlayerIsInRadius(World world, Vector3 pos, float radius, out EntityPlayer player)
+        {
+            for (int i = 0; i < world.Players.list.Count; i++)
+            {
+                var p = world.Players.list[i];
+                if (p.position.DistanceTo(pos) <= radius)
+                {
+                    player = p;
+                    return true;
+                }
+            }
+            player = null;
+            return false;
+        }
     }
 }

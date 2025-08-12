@@ -57,7 +57,9 @@ namespace VoidGags
         public static bln JumpControl = true;
         public static bln VisibleScriptedSleepers = true;
         public static bln ZombiesFriendlyFire = true;
-        public static flt ZombiesStumbleChance = 0.5f;
+        public static flt ZombiesStumbleChance = 1.0f;
+        public static bln DamageModifier = false; // hidden feature, disabled by default
+        public static flt DamageModifier_Gun = 1f;
 
         static Settings()
         {

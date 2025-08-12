@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using HarmonyLib;
 using UnityEngine;
+using VoidGags.Types;
 
 namespace VoidGags
 {
@@ -21,12 +22,17 @@ namespace VoidGags
 
             Harmony.Patch(AccessTools.Method(typeof(SleeperEventData), nameof(SleeperEventData.SetupData)),
                 postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((SleeperEventData __instance) => SleeperEventData_SetupData.Postfix(__instance))));
+
+            Harmony.Patch(AccessTools.Method(typeof(SleeperVolume), nameof(SleeperVolume.Tick)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((SleeperVolume_Tick.APrefix p) => SleeperVolume_Tick.Prefix(p.__instance, p._world))));
+
+            Harmony.Patch(AccessTools.Method(typeof(EAISetNearestEntityAsTarget), nameof(EAISetNearestEntityAsTarget.FindTargetPlayer)),
+                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EAISetNearestEntityAsTarget __instance) => EAISetNearestEntityAsTarget_FindTargetPlayer.Prefix(__instance))));
         }
 
         public static class VisibleScriptedSleepers
         {
-            public const float UnseenTouchDistance = 25f;
-            public const float SeenTouchDistance = 100f;
+            public const float TouchDistance = 15f;
             public static int PlayerId;
             public static float TouchTime = 0f;
         }
@@ -34,7 +40,7 @@ namespace VoidGags
         /// <summary>
         /// Spawn scripted sleepers on reasonable distance.
         /// </summary>
-        public class TriggerVolume_CheckTouching
+        public static class TriggerVolume_CheckTouching
         {
             public struct APostfix
             {
@@ -47,27 +53,13 @@ namespace VoidGags
             {
                 if (!__instance.isTriggered)
                 {
-                    var distance = (__instance.Center - _player.position).magnitude;
-                    if (distance < VisibleScriptedSleepers.UnseenTouchDistance)
+                    if (_player.position.DistanceTo(__instance.Center) < VisibleScriptedSleepers.TouchDistance ||
+                        Helper.PlayerCanSeePos(_player, __instance.Center))
                     {
-                        Touch();
+                        VisibleScriptedSleepers.PlayerId = _player.entityId;
+                        VisibleScriptedSleepers.TouchTime = Time.time;
+                        __instance.Touch(_world, _player);
                     }
-                    else if (distance < VisibleScriptedSleepers.SeenTouchDistance)
-                    {
-                        var ray = new Ray(_player.position, __instance.Center);
-                        bool hitObstacle = Voxel.Raycast(_world, ray, distance, bHitTransparentBlocks: false, bHitNotCollidableBlocks: false);
-                        if (!hitObstacle)
-                        {
-                            Touch();
-                        }
-                    }
-                }
-
-                void Touch()
-                {
-                    VisibleScriptedSleepers.PlayerId = _player.entityId;
-                    VisibleScriptedSleepers.TouchTime = Time.time;
-                    __instance.Touch(_world, _player);
                 }
             }
         }
@@ -75,7 +67,7 @@ namespace VoidGags
         /// <summary>
         /// Disable sleepers auto-attack until they see/hear the player.
         /// </summary>
-        public class SleeperVolume_WakeAttackLater
+        public static class SleeperVolume_WakeAttackLater
         {
             public struct APrefix
             {
@@ -114,11 +106,61 @@ namespace VoidGags
         /// <summary>
         /// Show more not-killed sleepers on compass, in case some zombies cannot hear you from hidden housing.
         /// </summary>
-        public class SleeperEventData_SetupData
+        public static class SleeperEventData_SetupData
         {
             public static void Postfix(SleeperEventData __instance)
             {
                 __instance.ShowQuestClearCount = Mathf.CeilToInt(__instance.ShowQuestClearCount * 1.5f);
+            }
+        }
+
+        /// <summary>
+        /// Spawn unloaded sleepers.
+        /// </summary>
+        public static class SleeperVolume_Tick
+        {
+            private static DelayStorage<Vector3> Delays = new(2f);
+
+            public struct APrefix
+            {
+                public SleeperVolume __instance;
+                public World _world;
+            }
+
+            public static void Prefix(SleeperVolume __instance, World _world)
+            {
+                if (!__instance.isSpawning && !__instance.wasCleared && __instance.spawnsAvailable?.Count > 0)
+                {
+                    if (Delays.Check(__instance.Center))
+                    {
+                        EntityPlayer player;
+                        if (Helper.AnyPlayerIsInRadius(_world, __instance.Center, VisibleScriptedSleepers.TouchDistance, out player) ||
+                            Helper.AnyPlayerCanSeePos(_world, __instance.Center, 300f, out player))
+                        {
+                            __instance.UpdatePlayerTouched(_world, player);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Activate passive sleepers / their senses.
+        /// </summary>
+        public static class EAISetNearestEntityAsTarget_FindTargetPlayer
+        {
+            private static DelayStorage<int> Delays = new(2f);
+
+            public static void Prefix(EAISetNearestEntityAsTarget __instance)
+            {
+                if (__instance.theEntity?.IsSleeperPassive == true && Delays.Check(__instance.theEntity.entityId))
+                {
+                    if (Helper.AnyPlayerCanSeePos(__instance.theEntity.world, __instance.theEntity.position, 300f, out _) ||
+                        Helper.AnyPlayerCanSeePos(__instance.theEntity.world, __instance.theEntity.getHeadPosition(), 300f, out _))
+                    {
+                        __instance.theEntity?.SetSleeperActive();
+                    }
+                }
             }
         }
     }

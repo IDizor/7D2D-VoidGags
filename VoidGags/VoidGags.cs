@@ -85,6 +85,7 @@ namespace VoidGags
             if (Settings.VisibleScriptedSleepers) SafePatch(ApplyPatches_VisibleScriptedSleepers);
             if (Settings.ZombiesFriendlyFire) SafePatch(ApplyPatches_ZombiesFriendlyFire);
             if (Settings.ZombiesStumbleChance > 0f) SafePatch(ApplyPatches_ZombiesStumbleChance);
+            if (Settings.DamageModifier) SafePatch(ApplyPatches_DamageModifier);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;

@@ -1,6 +1,5 @@
 ﻿using System;
 using HarmonyLib;
-using UnityEngine;
 
 namespace VoidGags
 {
@@ -36,12 +35,12 @@ namespace VoidGags
                 if (zombie != null && zombie.rand.RandomFloat < ZombiesStumbleChance.Chance)
                 {
                     // if not ragdoll and is moving
-                    if (zombie.emodel?.IsRagdollOn == false && zombie.speedForward >= 0.03f)
+                    if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.03f)
                     {
                         var dmgResponse = DamageResponse.New(
-                            new DamageSource(EnumDamageSource.External, EnumDamageTypes.Bashing, zombie.transform.forward + Vector3.down),
+                            new DamageSource(EnumDamageSource.External, EnumDamageTypes.Bashing, zombie.transform.forward),
                             _fatal: false);
-                        dmgResponse.Strength = Math.Min((int)(zombie.speedForward * 1000), 250);
+                        dmgResponse.Strength = Math.Min((int)(zombie.speedForward * 400), 250);
                         //LogModWarning($"speed = {zombie.speedForward:0.000}, str = {dmgResponse.Strength}");
                         zombie.emodel.DoRagdoll(dmgResponse, 1f);
                     }

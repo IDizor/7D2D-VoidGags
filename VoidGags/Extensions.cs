@@ -23,6 +23,16 @@ namespace VoidGags
             return str.Equals(another, StringComparison.CurrentCultureIgnoreCase);
         }
 
+        public static float DistanceTo(this Vector3 fromPos, Vector3 toPos)
+        {
+            return (fromPos - toPos).magnitude;
+        }
+
+        public static Vector3 DirectionTo(this Vector3 fromPos, Vector3 toPos)
+        {
+            return (toPos - fromPos).normalized;
+        }
+
         public static XUiC_ItemStackGrid GetItemStackGrid(this XUiC_ContainerStandardControls controls)
         {
             var grid = controls.Parent?.Parent?.GetChildByType<XUiC_ItemStackGrid>();
