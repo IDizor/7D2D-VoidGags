@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using static VoidGags.VoidGags.ExhaustingLadders;
 
 namespace VoidGags
 {
@@ -13,72 +14,61 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ExhaustingLadders));
 
             Harmony.Patch(AccessTools.Method(typeof(EffectManager), nameof(EffectManager.GetValue)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APrefix p) => EffectManager_GetValue.Prefix(p._passiveEffect, p._entity, ref p.tags, out p.__state))),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EffectManager_GetValue.APostfix p) => EffectManager_GetValue.Postfix(ref p.__result, p.__state))));
+                prefix: new HarmonyMethod(EffectManager_GetValue.Prefix),
+                postfix: new HarmonyMethod(EffectManager_GetValue.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.OnUpdateLive)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityPlayerLocal __instance) => EntityPlayerLocal_OnUpdateLive.Postfix(__instance))));
+                postfix: new HarmonyMethod(EntityPlayerLocal_OnUpdateLive.Postfix));
         }
 
-        /// <summary>
-        /// Consume stamina on ladders.
-        /// </summary>
-        public class EffectManager_GetValue
+        public static class ExhaustingLadders
         {
-            public struct APrefix
+            /// <summary>
+            /// Consume stamina on ladders.
+            /// </summary>
+            public static class EffectManager_GetValue
             {
-                public PassiveEffects _passiveEffect;
-                public EntityAlive _entity;
-                public FastTags<TagGroup.Global> tags;
-                public bool __state;
-            }
-
-            public struct APostfix
-            {
-                public float __result;
-                public bool __state;
-            }
-
-            public static void Prefix(PassiveEffects _passiveEffect, EntityAlive _entity, ref FastTags<TagGroup.Global> tags, out bool __state)
-            {
-                if (_passiveEffect == PassiveEffects.StaminaChangeOT && _entity != null
-                    && !tags.IsEmpty && _entity is EntityPlayerLocal player)
+                public static void Prefix(PassiveEffects _passiveEffect, EntityAlive _entity, ref FastTags<TagGroup.Global> tags, out bool __state)
                 {
-                    //Debug.LogWarning($"StaminaChangeOT = {string.Join("/", tags.GetTagNames())}");
-                    if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsFlyMode.Value)
+                    if (_passiveEffect == PassiveEffects.StaminaChangeOT && _entity != null
+                        && !tags.IsEmpty && _entity is EntityPlayerLocal player)
                     {
-                        __state = true;
-                        return;
+                        //Debug.LogWarning($"StaminaChangeOT = {string.Join("/", tags.GetTagNames())}");
+                        if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsFlyMode.Value)
+                        {
+                            __state = true;
+                            return;
+                        }
+                    }
+                    __state = false;
+                }
+
+                public static void Postfix(ref float __result, bool __state)
+                {
+                    if (__state)
+                    {
+                        __result = Mathf.Min(__result, -2f);
                     }
                 }
-                __state = false;
             }
 
-            public static void Postfix(ref float __result, bool __state)
+            /// <summary>
+            /// Fall down from the ladder when stamina runs out.
+            /// </summary>
+            public static class EntityPlayerLocal_OnUpdateLive
             {
-                if (__state)
+                public static void Postfix(EntityPlayerLocal __instance)
                 {
-                    __result = Mathf.Min(__result, -2f);
-                }
-            }
-        }
+                    var player = __instance;
 
-        /// <summary>
-        /// Fall down from the ladder when stamina runs out.
-        /// </summary>
-        public class EntityPlayerLocal_OnUpdateLive
-        {
-            public static void Postfix(EntityPlayerLocal __instance)
-            {
-                var player = __instance;
-
-                if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsFlyMode.Value)
-                {
-                    if (player.bExhausted)
+                    if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsFlyMode.Value)
                     {
-                        player.canLadderAirAttach = false;
-                        player.MakeAttached(false);
-                        return;
+                        if (player.bExhausted)
+                        {
+                            player.canLadderAirAttach = false;
+                            player.MakeAttached(false);
+                            return;
+                        }
                     }
                 }
             }

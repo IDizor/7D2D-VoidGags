@@ -60,6 +60,10 @@ namespace VoidGags
         public static flt ZombiesStumbleChance = 1.0f;
         public static bln DamageModifier = false; // hidden feature, disabled by default
         public static flt DamageModifier_Gun = 1f;
+        public static bln MoveOnePiece = true;
+        public static bln ClickableMarkers = true;
+        public static bln TradersPlayerReputation = true;
+        public static bln TradersBiomeQuests = true;
 
         static Settings()
         {

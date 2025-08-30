@@ -23,6 +23,12 @@ namespace VoidGags
             return str.Equals(another, StringComparison.CurrentCultureIgnoreCase);
         }
 
+        public static byte EncodeToByte(this int value)
+        {
+            int result = (value / 256) + (value % 256);
+            return result < 256 ? (byte)result : EncodeToByte(result);
+        }
+
         public static float DistanceTo(this Vector3 fromPos, Vector3 toPos)
         {
             return (fromPos - toPos).magnitude;

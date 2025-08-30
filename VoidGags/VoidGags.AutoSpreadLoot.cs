@@ -6,6 +6,7 @@ using HarmonyLib;
 using Platform;
 using UniLinq;
 using UnityEngine;
+using static VoidGags.VoidGags.AutoSpreadLoot;
 
 namespace VoidGags
 {
@@ -27,41 +28,41 @@ namespace VoidGags
             UseXmlPatches(nameof(Settings.AutoSpreadLoot));
             
             Harmony.Patch(AccessTools.Method(typeof(Bag), nameof(Bag.AddItem)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Prefix())),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Postfix())));
+                prefix: new HarmonyMethod(SomeStorage_AddItem.Prefix),
+                postfix: new HarmonyMethod(SomeStorage_AddItem.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(TileEntityLootContainer), nameof(TileEntityLootContainer.AddItem)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Prefix())),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Postfix())));
+                prefix: new HarmonyMethod(SomeStorage_AddItem.Prefix),
+                postfix: new HarmonyMethod(SomeStorage_AddItem.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(TEFeatureStorage), nameof(TEFeatureStorage.AddItem)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Prefix())),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => SomeStorage_AddItem.Postfix())));
+                prefix: new HarmonyMethod(SomeStorage_AddItem.Prefix),
+                postfix: new HarmonyMethod(SomeStorage_AddItem.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(ItemStack), nameof(ItemStack.IsEmpty), parameters: []),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack_IsEmpty.APostfix p) => ItemStack_IsEmpty.Postfix(p.__instance, ref p.__result))));
+                postfix: new HarmonyMethod(ItemStack_IsEmpty.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ContainerStandardControls), nameof(XUiC_ContainerStandardControls.Init)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_ContainerStandardControls __instance) => XUiC_ContainerStandardControls_Init.Postfix(__instance))));
+                postfix: new HarmonyMethod(XUiC_ContainerStandardControls_Init.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(World), nameof(World.SetBlockRPC), [typeof(int), typeof(Vector3i), typeof(BlockValue)]),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((World_SetBlockRPC.APrefix p) => World_SetBlockRPC.Prefix(p._blockPos, p._blockValue))));
+                prefix: new HarmonyMethod(World_SetBlockRPC.Prefix));
 
-            Harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.GetBindingValue)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_LootWindow_GetBindingValue.APrefix p) => XUiC_LootWindow_GetBindingValue.Prefix(p.__instance, ref p._value, p._bindingName, ref p.__result))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiController), nameof(XUiController.GetBindingValue)),
+                prefix: new HarmonyMethod(XUiController_GetBindingValue.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEAccessClient)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEAccessClient.Prefix(_blockPos))));
+                prefix: new HarmonyMethod(GameManager_TEAccessClient.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(ItemActionEntryEquip), nameof(ItemActionEntryEquip.OnActivated)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ItemActionEntryEquip_OnActivated.Prefix())),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ItemActionEntryEquip_OnActivated.Postfix())));
+                prefix: new HarmonyMethod(ItemActionEntryEquip_OnActivated.Prefix),
+                postfix: new HarmonyMethod(ItemActionEntryEquip_OnActivated.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiM_PlayerInventory), nameof(XUiM_PlayerInventory.AddItem), [typeof(ItemStack)]),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool __result) => XUiM_PlayerInventory_AddItem.Prefix(ref __result))));
+                prefix: new HarmonyMethod(XUiM_PlayerInventory_AddItem.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEDeniedAccessClient)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3i _blockPos) => GameManager_TEDeniedAccessClient.Prefix(_blockPos))));
+                prefix: new HarmonyMethod(GameManager_TEDeniedAccessClient.Prefix));
 
             OnGameLoadedActions.Add(XUiC_ContainerStandardControls_Init.LoadIgnoredContainers);
 
@@ -75,464 +76,447 @@ namespace VoidGags
 
         public static class AutoSpreadLoot
         {
+            public static string SavesDir => FeaturesFolderPath + $"\\{nameof(Settings.AutoSpreadLoot)}\\Saves";
+
             public static List<Vector3i> IgnoredContainers = [];
             public static List<XUiC_ItemStackGrid> UiGrids = null;
 
-            public static string SavesDir => FeaturesFolderPath + $"\\{nameof(Settings.AutoSpreadLoot)}\\Saves";
-        }
-
-        /// <summary>
-        /// Keep all UI grids to prevent adding new items to empty locked slots in the backpack/vehicle/drone.
-        /// </summary>
-        public class SomeStorage_AddItem
-        {
-            public static void Prefix()
+            /// <summary>
+            /// Keep all UI grids to prevent adding new items to empty locked slots in the backpack/vehicle/drone.
+            /// </summary>
+            public static class SomeStorage_AddItem
             {
-                if (IsDedicatedServer) return;
-                AutoSpreadLoot.UiGrids = Helper.PlayerLocal.PlayerUI?.activeItemStackGrids;
-                /*foreach (var g in UiGrids)
+                public static void Prefix()
                 {
-                    LogModWarning($"Grid: {g.GetType().Name}, {g.Parent.GetType().Name}, {g.Parent.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.Parent?.GetType().Name}");
-                }*/
-            }
+                    if (IsDedicatedServer) return;
+                    UiGrids = Helper.PlayerLocal.PlayerUI?.activeItemStackGrids;
+                    /*foreach (var g in UiGrids)
+                    {
+                        LogModWarning($"Grid: {g.GetType().Name}, {g.Parent.GetType().Name}, {g.Parent.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.GetType().Name}, {g.Parent.Parent?.Parent?.Parent?.GetType().Name}");
+                    }*/
+                }
 
-            public static void Postfix()
-            {
-                if (IsDedicatedServer) return;
-                AutoSpreadLoot.UiGrids = null;
-            }
-        }
-
-        /// <summary>
-        /// Return false for locked slots when adding new items.
-        /// </summary>
-        public class ItemStack_IsEmpty
-        {
-            public struct APostfix
-            {
-                public ItemStack __instance;
-                public bool __result;
-            }
-
-            public static void Postfix(ItemStack __instance, ref bool __result)
-            {
-                if (IsDedicatedServer) return;
-
-                if (__result && AutoSpreadLoot.UiGrids != null)
+                public static void Postfix()
                 {
-                    foreach (var grid in AutoSpreadLoot.UiGrids)
+                    if (IsDedicatedServer) return;
+                    UiGrids = null;
+                }
+            }
+
+            /// <summary>
+            /// Return false for locked slots when adding new items.
+            /// </summary>
+            public static class ItemStack_IsEmpty
+            {
+                public static void Postfix(ItemStack __instance, ref bool __result)
+                {
+                    if (IsDedicatedServer) return;
+
+                    if (__result && UiGrids != null)
                     {
-                        if (grid is XUiC_Backpack backpack)
+                        foreach (var grid in UiGrids)
                         {
-                            var bag = backpack.xui.PlayerInventory?.backpack;
-                            if (bag != null)
+                            if (grid is XUiC_Backpack backpack)
                             {
-                                var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
-                                if (i >= 0 && bag.LockedSlots.Get(i))
+                                var bag = backpack.xui.PlayerInventory?.backpack;
+                                if (bag != null)
                                 {
-                                    __result = false;
-                                    return;
+                                    var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
+                                    if (i >= 0 && bag.LockedSlots.Get(i))
+                                    {
+                                        __result = false;
+                                        return;
+                                    }
+                                }
+                            }
+                            if (grid is XUiC_VehicleContainer vehicleContainer)
+                            {
+                                var bag = vehicleContainer.xui.vehicle?.bag;
+                                if (bag != null)
+                                {
+                                    var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
+                                    if (i >= 0 && bag.LockedSlots.Get(i))
+                                    {
+                                        __result = false;
+                                        return;
+                                    }
+                                }
+                            }
+                            if (grid is XUiC_LootContainer loot)
+                            {
+                                if (loot.xui.lootContainer != null)
+                                {
+                                    var i = Array.FindIndex(loot.GetSlots(), item => item != null && ReferenceEquals(item, __instance));
+                                    if (i >= 0 && loot.xui.lootContainer.SlotLocks.Get(i))
+                                    {
+                                        __result = false;
+                                        return;
+                                    }
                                 }
                             }
                         }
-                        if (grid is XUiC_VehicleContainer vehicleContainer)
+                        // check if it tries to add an item to the player bag
+                        var playerBag = Helper.PlayerLocal?.bag;
+                        if (playerBag != null)
                         {
-                            var bag = vehicleContainer.xui.vehicle?.bag;
-                            if (bag != null)
+                            var i = Array.FindIndex(playerBag.items, item => item != null && ReferenceEquals(item, __instance));
+                            if (i >= 0 && playerBag.LockedSlots.Get(i))
                             {
-                                var i = Array.FindIndex(bag.items, item => item != null && ReferenceEquals(item, __instance));
-                                if (i >= 0 && bag.LockedSlots.Get(i))
-                                {
-                                    __result = false;
-                                    return;
-                                }
+                                __result = false;
+                                return;
                             }
-                        }
-                        if (grid is XUiC_LootContainer loot)
-                        {
-                            if (loot.xui.lootContainer != null)
-                            {
-                                var i = Array.FindIndex(loot.GetSlots(), item => item != null && ReferenceEquals(item, __instance));
-                                if (i >= 0 && loot.xui.lootContainer.SlotLocks.Get(i))
-                                {
-                                    __result = false;
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    // check if it tries to add an item to the player bag
-                    var playerBag = Helper.PlayerLocal?.bag;
-                    if (playerBag != null)
-                    {
-                        var i = Array.FindIndex(playerBag.items, item => item != null && ReferenceEquals(item, __instance));
-                        if (i >= 0 && playerBag.LockedSlots.Get(i))
-                        {
-                            __result = false;
-                            return;
                         }
                     }
                 }
             }
-        }
 
-        /// <summary>
-        /// Auto-spreads the loot to nearby containers.
-        /// </summary>
-        public class XUiC_ContainerStandardControls_Init
-        {
-            public static bool Active = false;
-            public static Vector3i? CurrentContainerPos = null;
-            public static Vector3i? LocalOpenEntityPos = null;
-            
-            public static void Postfix(XUiC_ContainerStandardControls __instance)
+            /// <summary>
+            /// Auto-spreads the loot to nearby containers.
+            /// </summary>
+            public static class XUiC_ContainerStandardControls_Init
             {
-                // auto-spread button
-                var btnSpreadLoot = __instance.GetChildById("btnSpreadLoot");
-                if (btnSpreadLoot != null)
-                {
-                    btnSpreadLoot.OnPress += (sender, _) => GameManager.Instance.StartCoroutine(SpreadLoot(sender));
-                }
+                public static bool Active = false;
+                public static Vector3i? CurrentContainerPos = null;
+                public static Vector3i? LocalOpenEntityPos = null;
 
-                IEnumerator SpreadLoot(XUiController sender)
+                public static void Postfix(XUiC_ContainerStandardControls __instance)
                 {
-                    if (!Active)
+                    // auto-spread button
+                    var btnSpreadLoot = __instance.GetChildById("btnSpreadLoot");
+                    if (btnSpreadLoot != null)
                     {
-                        Active = true;
-                        var parentWindowController = sender.GetParentWindow().Controller;
-                        var controls = sender.GetParentByType<XUiC_ContainerStandardControls>();
-                        var localOpenContainer = controls.xui.lootContainer;
-                        var isWorkstation = localOpenContainer == null && controls.xui.currentWorkstation?.Length > 0;
-                        var workstation = isWorkstation ? GetWorkstation(controls.xui.currentWorkstation) : null;
-                        LocalOpenEntityPos = isWorkstation ? workstation?.ToWorldPos() : localOpenContainer?.ToWorldPos();
-                        var localOpenEntityId = isWorkstation ? workstation?.entityId : localOpenContainer?.EntityId;
-                        
-                        var loot = controls.GetItemStackGrid();
-                        var lockedSlots = controls.xui.playerUI.entityPlayer.bag.LockedSlots;
-                        var moveStartBottomRight = controls.MoveStartBottomRight;
+                        btnSpreadLoot.OnPress += (sender, _) => GameManager.Instance.StartCoroutine(SpreadLoot(sender));
+                    }
 
-                        if (LocalOpenEntityPos.HasValue)
+                    IEnumerator SpreadLoot(XUiController sender)
+                    {
+                        if (!Active)
                         {
-                            if (localOpenContainer != null && !AutoSpreadLoot.IgnoredContainers.Contains(LocalOpenEntityPos.Value))
+                            Active = true;
+                            var parentWindowController = sender.GetParentWindow().Controller;
+                            var controls = sender.GetParentByType<XUiC_ContainerStandardControls>();
+                            var localOpenContainer = controls.xui.lootContainer;
+                            var isWorkstation = localOpenContainer == null && controls.xui.currentWorkstation?.Length > 0;
+                            var workstation = isWorkstation ? GetWorkstation(controls.xui.currentWorkstation) : null;
+                            LocalOpenEntityPos = isWorkstation ? workstation?.ToWorldPos() : localOpenContainer?.ToWorldPos();
+                            var localOpenEntityId = isWorkstation ? workstation?.entityId : localOpenContainer?.EntityId;
+
+                            var loot = controls.GetItemStackGrid();
+                            var lockedSlots = controls.xui.playerUI.entityPlayer.bag.LockedSlots;
+                            var moveStartBottomRight = controls.MoveStartBottomRight;
+
+                            if (LocalOpenEntityPos.HasValue)
+                            {
+                                if (localOpenContainer != null && !IgnoredContainers.Contains(LocalOpenEntityPos.Value))
+                                {
+                                    controls.MoveSmart();
+                                }
+                                if (!IsServer)
+                                {
+                                    // unlock container while spreading to be able to lock other containers
+                                    GameManager.Instance.TEUnlockServer(0, LocalOpenEntityPos.Value, localOpenEntityId.Value, _allowContainerDestroy: false);
+                                }
+                            }
+                            else if (controls.xui.vehicle != null)
                             {
                                 controls.MoveSmart();
                             }
-                            if (!IsServer)
+
+                            var player = Helper.PlayerLocal;
+                            var tiles = Helper.GetTileEntities(player.position, Settings.AutoSpreadLoot_Radius);
+                            var timeLimit = Time.time + 5f;
+
+                            foreach (var tile in tiles)
                             {
-                                // unlock container while spreading to be able to lock other containers
-                                GameManager.Instance.TEUnlockServer(0, LocalOpenEntityPos.Value, localOpenEntityId.Value, _allowContainerDestroy: false);
-                            }
-                        }
-                        else if (controls.xui.vehicle != null)
-                        {
-                            controls.MoveSmart();
-                        }
+                                var tilePos = tile.ToWorldPos();
+                                ITileEntityLootable box = null;
 
-                        var player = Helper.PlayerLocal;
-                        var tiles = Helper.GetTileEntities(player.position, Settings.AutoSpreadLoot_Radius);
-                        var timeLimit = Time.time + 5f;
-                        
-                        foreach (var tile in tiles)
-                        {
-                            var tilePos = tile.ToWorldPos();
-                            ITileEntityLootable box = null;
-
-                            if (tile is TileEntityComposite teComposite && teComposite.TryGetSelfOrFeature<ITileEntityLootable>(out var teLootable))
-                            {
-                                box = teLootable;
-                            }
-
-                            box ??= tile as ITileEntityLootable;
-
-                            if (box != null && box.bTouched && !AutoSpreadLoot.IgnoredContainers.Contains(tilePos) && tilePos != LocalOpenEntityPos)
-                            {
-                                var secureBox = box as TileEntitySecureLootContainer;
-                                var hasAccess = secureBox == null || !secureBox.IsLocked() || secureBox.IsUserAllowed(PlatformManager.InternalLocalUserIdentifier);
-                                if (hasAccess)
+                                if (tile is TileEntityComposite teComposite && teComposite.TryGetSelfOrFeature<ITileEntityLootable>(out var teLootable))
                                 {
-                                    var tileEntityId = tile.entityId;
-                                    var boxPos = tilePos;
-                                    var deniedPos = boxPos.Invert();
-                                    var openerEntityId = GameManager.Instance.GetEntityIDForLockedTileEntity(tile);
-                                    var isOpenByAnyPlayer = openerEntityId > 0; // this variable can be used on server only
-                                    if (IsServer)
-                                    {
-                                        if (!isOpenByAnyPlayer)
-                                        {
-                                            Spread();
-                                        }
-                                        else if (LocalPlayerUI.GetUIForPlayer(player) != null && box.ContainsAnyItem(loot))
-                                        {
-                                            GameManager.ShowTooltip(player, Localization.Get("ttNoInteractItem"), string.Empty, "ui_denied");
-                                        }
-                                    }
-                                    else if (box.ContainsAnyItem(loot))
-                                    {
-                                        // send "TELockServer" and wait until response processed in "TEAccessClient" and then call Spread()
-                                        CurrentContainerPos = boxPos;
-                                        GameManager.Instance.TELockServer(0, boxPos, tileEntityId, player.entityId, null);
+                                    box = teLootable;
+                                }
 
-                                        var timedOut = false;
-                                        var waitFlag = true;
-                                        while (waitFlag)
+                                box ??= tile as ITileEntityLootable;
+
+                                if (box != null && box.bTouched && !IgnoredContainers.Contains(tilePos) && tilePos != LocalOpenEntityPos)
+                                {
+                                    var secureBox = box as TileEntitySecureLootContainer;
+                                    var hasAccess = secureBox == null || !secureBox.IsLocked() || secureBox.IsUserAllowed(PlatformManager.InternalLocalUserIdentifier);
+                                    if (hasAccess)
+                                    {
+                                        var tileEntityId = tile.entityId;
+                                        var boxPos = tilePos;
+                                        var deniedPos = boxPos.Invert();
+                                        var openerEntityId = GameManager.Instance.GetEntityIDForLockedTileEntity(tile);
+                                        var isOpenByAnyPlayer = openerEntityId > 0; // this variable can be used on server only
+                                        if (IsServer)
                                         {
-                                            yield return new WaitForSeconds(0.05f);
-                                            var denied = CurrentContainerPos == deniedPos;
-                                            var access = CurrentContainerPos == null;
-                                            timedOut = Time.time > timeLimit;
-                                            waitFlag = !denied && !access && !timedOut;
-                                            if (access)
+                                            if (!isOpenByAnyPlayer)
                                             {
                                                 Spread();
+                                            }
+                                            else if (LocalPlayerUI.GetUIForPlayer(player) != null && box.ContainsAnyItem(loot))
+                                            {
+                                                GameManager.ShowTooltip(player, Localization.Get("ttNoInteractItem"), string.Empty, "ui_denied");
+                                            }
+                                        }
+                                        else if (box.ContainsAnyItem(loot))
+                                        {
+                                            // send "TELockServer" and wait until response processed in "TEAccessClient" and then call Spread()
+                                            CurrentContainerPos = boxPos;
+                                            GameManager.Instance.TELockServer(0, boxPos, tileEntityId, player.entityId, null);
+
+                                            var timedOut = false;
+                                            var waitFlag = true;
+                                            while (waitFlag)
+                                            {
+                                                yield return new WaitForSeconds(0.05f);
+                                                var denied = CurrentContainerPos == deniedPos;
+                                                var access = CurrentContainerPos == null;
+                                                timedOut = Time.time > timeLimit;
+                                                waitFlag = !denied && !access && !timedOut;
+                                                if (access)
+                                                {
+                                                    Spread();
+                                                    LeaveBox();
+                                                }
+                                            }
+
+                                            if (timedOut)
+                                            {
+                                                CloseInventory();
                                                 LeaveBox();
+                                                LocalOpenEntityPos = null;
                                             }
                                         }
 
-                                        if (timedOut)
+                                        void Spread()
                                         {
-                                            CloseInventory();
-                                            LeaveBox();
-                                            LocalOpenEntityPos = null;
+                                            XUiM_LootContainer.StashItems(parentWindowController, loot, box, 0, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, moveStartBottomRight);
                                         }
-                                    }
 
-                                    void Spread()
-                                    {
-                                        XUiM_LootContainer.StashItems(parentWindowController, loot, box, 0, lockedSlots, XUiM_LootContainer.EItemMoveKind.FillAndCreate, moveStartBottomRight);
-                                    }
-
-                                    void LeaveBox()
-                                    {
-                                        GameManager.Instance.TEUnlockServer(0, boxPos, tileEntityId, _allowContainerDestroy: false);
+                                        void LeaveBox()
+                                        {
+                                            GameManager.Instance.TEUnlockServer(0, boxPos, tileEntityId, _allowContainerDestroy: false);
+                                        }
                                     }
                                 }
                             }
+
+                            Reset();
+
+                            if (!IsServer && LocalOpenEntityPos.HasValue)
+                            {
+                                GameManager.Instance.TELockServer(0, LocalOpenEntityPos.Value, localOpenEntityId.Value, player.entityId, null);
+                            }
                         }
+                    }
 
-                        Reset();
+                    // ignore container buttons
+                    var btnSpreadReceiver = __instance.GetChildById("btnSpreadReceiver");
+                    var btnSpreadIgnorer = __instance.GetChildById("btnSpreadIgnorer");
+                    if (btnSpreadReceiver != null) btnSpreadReceiver.OnPress += ToggleReceiver;
+                    if (btnSpreadIgnorer != null) btnSpreadIgnorer.OnPress += ToggleReceiver;
 
-                        if (!IsServer && LocalOpenEntityPos.HasValue)
+                    void ToggleReceiver(XUiController sender, int _)
+                    {
+                        var window = sender.xui.GetWindowByType<XUiC_LootWindow>();
+                        var lootContainer = sender.xui.lootContainer;
+                        if (window != null && lootContainer != null)
                         {
-                            GameManager.Instance.TELockServer(0, LocalOpenEntityPos.Value, localOpenEntityId.Value, player.entityId, null);
+                            var pos = lootContainer.ToWorldPos();
+                            if (!IgnoredContainers.Remove(pos))
+                            {
+                                IgnoredContainers.Add(pos);
+                            }
+                            window.RefreshBindings();
+                            SaveIgnoredContainers();
                         }
                     }
                 }
-                
-                // ignore container buttons
-                var btnSpreadReceiver = __instance.GetChildById("btnSpreadReceiver");
-                var btnSpreadIgnorer = __instance.GetChildById("btnSpreadIgnorer");
-                if (btnSpreadReceiver != null) btnSpreadReceiver.OnPress += ToggleReceiver;
-                if (btnSpreadIgnorer != null) btnSpreadIgnorer.OnPress += ToggleReceiver;
 
-                void ToggleReceiver(XUiController sender, int _)
+                // auxiliary methods
+
+                public static void CloseInventory()
                 {
-                    var window = sender.xui.GetWindowByType<XUiC_LootWindow>();
-                    var lootContainer = sender.xui.lootContainer;
-                    if (window != null && lootContainer != null)
+                    var playerUI = LocalPlayerUI.GetUIForPlayer(Helper.PlayerLocal);
+                    var lootWindow = playerUI?.xui.GetChildByType<XUiC_LootWindow>();
+                    if (lootWindow != null)
                     {
-                        var pos = lootContainer.ToWorldPos();
-                        if (!AutoSpreadLoot.IgnoredContainers.Remove(pos))
+                        ThreadManager.StartCoroutine(lootWindow.closeInventoryLater());
+                    }
+                }
+
+                public static void SaveIgnoredContainers()
+                {
+                    var playerId = Helper.PlayerId;
+                    var worldSeed = Helper.WorldSeed;
+                    Directory.CreateDirectory(SavesDir);
+                    var filePath = Path.Combine(SavesDir, $"{worldSeed}-ignored-containers-p{playerId}.txt");
+                    File.WriteAllLines(filePath, IgnoredContainers.Select(pos => pos.ToString()));
+                }
+
+                public static void LoadIgnoredContainers()
+                {
+                    IgnoredContainers.Clear();
+                    var playerId = Helper.PlayerId;
+                    var worldSeed = Helper.WorldSeed;
+                    var filePath = Path.Combine(SavesDir, $"{worldSeed}-ignored-containers-p{playerId}.txt");
+                    if (File.Exists(filePath))
+                    {
+                        foreach (var line in File.ReadAllLines(filePath))
                         {
-                            AutoSpreadLoot.IgnoredContainers.Add(pos);
+                            var pos = Vector3i.Parse(line);
+                            if (pos != Vector3i.zero)
+                            {
+                                IgnoredContainers.Add(pos);
+                            }
                         }
-                        window.RefreshBindings();
-                        SaveIgnoredContainers();
                     }
                 }
-            }
 
-            // auxiliary methods
-
-            public static void CloseInventory()
-            {
-                var playerUI = LocalPlayerUI.GetUIForPlayer(Helper.PlayerLocal);
-                var lootWindow = playerUI?.xui.GetChildByType<XUiC_LootWindow>();
-                if (lootWindow != null)
+                public static TileEntityWorkstation GetWorkstation(string workstationName)
                 {
-                    ThreadManager.StartCoroutine(lootWindow.closeInventoryLater());
+                    var playerUI = LocalPlayerUI.GetUIForPlayer(Helper.PlayerLocal);
+                    var windows = playerUI?.xui.GetWindowsByType<XUiC_WorkstationWindowGroup>();
+                    return windows?.FirstOrDefault(w => w.Workstation == workstationName)?.WorkstationData?.TileEntity;
+                }
+
+                public static void Reset()
+                {
+                    CurrentContainerPos = null;
+                    Active = false;
                 }
             }
 
-            public static void SaveIgnoredContainers()
+            /// <summary>
+            /// Removes block from the ignored containers when destroyed.
+            /// </summary>
+            public static class World_SetBlockRPC
             {
-                var playerId = Helper.PlayerId;
-                var worldSeed = Helper.WorldSeed;
-                Directory.CreateDirectory(AutoSpreadLoot.SavesDir);
-                var filePath = Path.Combine(AutoSpreadLoot.SavesDir, $"{worldSeed}-ignored-containers-p{playerId}.txt");
-                File.WriteAllLines(filePath, AutoSpreadLoot.IgnoredContainers.Select(pos => pos.ToString()));
-            }
-
-            public static void LoadIgnoredContainers()
-            {
-                AutoSpreadLoot.IgnoredContainers.Clear();
-                var playerId = Helper.PlayerId;
-                var worldSeed = Helper.WorldSeed;
-                var filePath = Path.Combine(AutoSpreadLoot.SavesDir, $"{worldSeed}-ignored-containers-p{playerId}.txt");
-                if (File.Exists(filePath))
+                public static void Prefix(Vector3i _blockPos, BlockValue _blockValue)
                 {
-                    foreach (var line in File.ReadAllLines(filePath))
+                    if (IsDedicatedServer) return;
+
+                    if (_blockValue.isair || GameManager.Instance.World.GetBlock(_blockPos).isair)
                     {
-                        var pos = Vector3i.Parse(line);
-                        if (pos != Vector3i.zero)
+                        if (IgnoredContainers.Remove(_blockPos))
                         {
-                            AutoSpreadLoot.IgnoredContainers.Add(pos);
+                            XUiC_ContainerStandardControls_Init.SaveIgnoredContainers();
                         }
                     }
                 }
             }
 
-            public static TileEntityWorkstation GetWorkstation(string workstationName)
+            /// <summary>
+            /// Custom binding values for loot containers.
+            /// </summary>
+            public static class XUiController_GetBindingValue
             {
-                var playerUI = LocalPlayerUI.GetUIForPlayer(Helper.PlayerLocal);
-                var windows = playerUI?.xui.GetWindowsByType<XUiC_WorkstationWindowGroup>();
-                return windows?.FirstOrDefault(w => w.Workstation == workstationName)?.WorkstationData?.TileEntity;
-            }
-
-            public static void Reset()
-            {
-                CurrentContainerPos = null;
-                Active = false;
-            }
-        }
-
-        /// <summary>
-        /// Removes block from the ignored containers when destroyed.
-        /// </summary>
-        public class World_SetBlockRPC
-        {
-            public struct APrefix
-            {
-                public Vector3i _blockPos;
-                public BlockValue _blockValue;
-            }
-
-            public static void Prefix(Vector3i _blockPos, BlockValue _blockValue)
-            {
-                if (IsDedicatedServer) return;
-
-                if (_blockValue.isair || GameManager.Instance.World.GetBlock(_blockPos).isair)
+                public static bool Prefix(XUiController __instance, ref string _value, string _bindingName, ref bool __result)
                 {
-                    if (AutoSpreadLoot.IgnoredContainers.Remove(_blockPos))
+                    if (__instance is XUiC_LootWindow)
                     {
-                        XUiC_ContainerStandardControls_Init.SaveIgnoredContainers();
+                        if (_bindingName == "auto_spread_ignore")
+                        {
+                            _value = "false";
+                            var containerPos = __instance.xui.lootContainer?.ToWorldPos();
+                            if (containerPos.HasValue)
+                            {
+                                _value = IgnoredContainers.Contains(containerPos.Value).ToString();
+                            }
+                            __result = true;
+                            return false;
+                        }
+                        if (_bindingName == "is_container_block")
+                        {
+                            _value = (__instance.xui.lootContainer != null && __instance.xui.lootContainer.GetChunk() != null).ToString();
+                            __result = true;
+                            return false;
+                        }
                     }
+                    return true;
                 }
             }
-        }
 
-        /// <summary>
-        /// Custom binding values for loot containers.
-        /// </summary>
-        public class XUiC_LootWindow_GetBindingValue
-        {
-            public struct APrefix
+            /// <summary>
+            /// Keep "Equip" item action state.
+            /// </summary>
+            public static class ItemActionEntryEquip_OnActivated
             {
-                public XUiC_LootWindow __instance;
-                public string _value;
-                public string _bindingName;
-                public bool __result;
+                public static bool Active = false;
+
+                public static void Prefix()
+                {
+                    Active = true;
+                }
+
+                public static void Postfix()
+                {
+                    Active = false;
+                }
             }
 
-            public static bool Prefix(XUiC_LootWindow __instance, ref string _value, string _bindingName, ref bool __result)
+            /// <summary>
+            /// Returns false that means item was not added to the empty/not-filled-up stack.
+            /// It is expected that the item from the toolbelt will be placed to the same slot where
+            /// the equipping item was in the backpack (<see cref="ItemActionEntryEquip.OnActivated"/>).
+            /// </summary>
+            public static class XUiM_PlayerInventory_AddItem
             {
-                if (_bindingName == "auto_spread_ignore")
+                public static bool Prefix(ref bool __result)
                 {
-                    _value = "false";
-                    var containerPos = __instance.xui.lootContainer?.ToWorldPos();
-                    if (containerPos.HasValue)
+                    if (ItemActionEntryEquip_OnActivated.Active)
                     {
-                        _value = AutoSpreadLoot.IgnoredContainers.Contains(containerPos.Value).ToString();
-                    }
-                    __result = true;
-                    return false;
-                }
-                if (_bindingName == "is_container_block")
-                {
-                    _value = (__instance.xui.lootContainer != null && __instance.xui.lootContainer.GetChunk() != null).ToString();
-                    __result = true;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Keep "Equip" item action state.
-        /// </summary>
-        public class ItemActionEntryEquip_OnActivated
-        {
-            public static bool Active = false;
-
-            public static void Prefix()
-            {
-                Active = true;
-            }
-
-            public static void Postfix()
-            {
-                Active = false;
-            }
-        }
-
-        /// <summary>
-        /// Returns false that means item was not added to the empty/not-filled-up stack.
-        /// It is expected that the item from the toolbelt will be placed to the same slot where
-        /// the equipping item was in the backpack (<see cref="ItemActionEntryEquip.OnActivated"/>).
-        /// </summary>
-        public class XUiM_PlayerInventory_AddItem
-        {
-            public static bool Prefix(ref bool __result)
-            {
-                if (ItemActionEntryEquip_OnActivated.Active)
-                {
-                    __result = false;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Processes the success response from TEUnlockServer() when spreading the loot.
-        /// </summary>
-        public class GameManager_TEAccessClient
-        {
-            public static bool Prefix(Vector3i _blockPos)
-            {
-                if (!IsServer)
-                {
-                    if (XUiC_ContainerStandardControls_Init.CurrentContainerPos == _blockPos)
-                    {
-                        XUiC_ContainerStandardControls_Init.CurrentContainerPos = null;
+                        __result = false;
                         return false;
                     }
-                    else if (XUiC_ContainerStandardControls_Init.LocalOpenEntityPos == _blockPos)
-                    {
-                        XUiC_ContainerStandardControls_Init.LocalOpenEntityPos = null;
-                        return false;
-                    }
+                    return true;
                 }
-                return true;
             }
-        }
 
-        /// <summary>
-        /// Processes the denied response from TEUnlockServer() when spreading the loot.
-        /// </summary>
-        public class GameManager_TEDeniedAccessClient
-        {
-            public static void Prefix(Vector3i _blockPos)
+            /// <summary>
+            /// Processes the success response from TEUnlockServer() when spreading the loot.
+            /// </summary>
+            public static class GameManager_TEAccessClient
             {
-                if (!IsServer)
+                public static bool Prefix(Vector3i _blockPos)
                 {
-                    if (XUiC_ContainerStandardControls_Init.CurrentContainerPos == _blockPos)
+                    if (!IsServer)
                     {
-                        XUiC_ContainerStandardControls_Init.CurrentContainerPos = _blockPos.Invert();
+                        if (XUiC_ContainerStandardControls_Init.CurrentContainerPos == _blockPos)
+                        {
+                            XUiC_ContainerStandardControls_Init.CurrentContainerPos = null;
+                            return false;
+                        }
+                        else if (XUiC_ContainerStandardControls_Init.LocalOpenEntityPos == _blockPos)
+                        {
+                            XUiC_ContainerStandardControls_Init.LocalOpenEntityPos = null;
+                            return false;
+                        }
                     }
-                    else if (XUiC_ContainerStandardControls_Init.LocalOpenEntityPos == _blockPos)
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Processes the denied response from TEUnlockServer() when spreading the loot.
+            /// </summary>
+            public static class GameManager_TEDeniedAccessClient
+            {
+                public static void Prefix(Vector3i _blockPos)
+                {
+                    if (!IsServer)
                     {
-                        XUiC_ContainerStandardControls_Init.LocalOpenEntityPos = null;
-                        XUiC_ContainerStandardControls_Init.CloseInventory();
+                        if (XUiC_ContainerStandardControls_Init.CurrentContainerPos == _blockPos)
+                        {
+                            XUiC_ContainerStandardControls_Init.CurrentContainerPos = _blockPos.Invert();
+                        }
+                        else if (XUiC_ContainerStandardControls_Init.LocalOpenEntityPos == _blockPos)
+                        {
+                            XUiC_ContainerStandardControls_Init.LocalOpenEntityPos = null;
+                            XUiC_ContainerStandardControls_Init.CloseInventory();
+                        }
                     }
                 }
             }

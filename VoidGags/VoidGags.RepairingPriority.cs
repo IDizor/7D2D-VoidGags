@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.RepairingHasTopPriority;
 
 namespace VoidGags
 {
@@ -12,53 +13,49 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.RepairingHasTopPriority));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingQueue), nameof(XUiC_CraftingQueue.AddItemToRepair)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_CraftingQueue_AddItemToRepair.APostfix p) => XUiC_CraftingQueue_AddItemToRepair.Postfix(p.__instance, ref p.___queueItems, ref p.__result))));
+                postfix: new HarmonyMethod(XUiC_CraftingQueue_AddItemToRepair.Postfix));
         }
 
-        /// <summary>
-        /// New items to repair are always placed to the top of the crafting queue.
-        /// </summary>
-        public class XUiC_CraftingQueue_AddItemToRepair
+        public static class RepairingHasTopPriority
         {
-            public struct APostfix
+            /// <summary>
+            /// New items to repair are always placed to the top of the crafting queue.
+            /// </summary>
+            public static class XUiC_CraftingQueue_AddItemToRepair
             {
-                public XUiC_CraftingQueue __instance;
-                public XUiController[] ___queueItems;
-                public bool __result;
-            }
-
-            public static void Postfix(XUiC_CraftingQueue __instance, ref XUiController[] ___queueItems, ref bool __result)
-            {
-                if (__result)
+                public static void Postfix(XUiC_CraftingQueue __instance, ref bool __result)
                 {
-                    if (___queueItems.Length > 1)
+                    if (__result)
                     {
-                        __instance.HaltCrafting();
-                        XUiC_RecipeStack repairingItem = null;
-
-                        for (int i = 0; i < ___queueItems.Length - 1; i++)
+                        if (__instance.queueItems.Length > 1)
                         {
-                            if (___queueItems[i] is XUiC_RecipeStack recipeStack && recipeStack.HasRecipe())
-                            {
-                                if (repairingItem == null)
-                                {
-                                    repairingItem = new XUiC_RecipeStack();
-                                    recipeStack.CopyTo(repairingItem);
-                                }
+                            __instance.HaltCrafting();
+                            XUiC_RecipeStack repairingItem = null;
 
-                                if (repairingItem != null)
+                            for (int i = 0; i < __instance.queueItems.Length - 1; i++)
+                            {
+                                if (__instance.queueItems[i] is XUiC_RecipeStack recipeStack && recipeStack.HasRecipe())
                                 {
-                                    ((XUiC_RecipeStack)___queueItems[i + 1]).CopyTo(recipeStack);
+                                    if (repairingItem == null)
+                                    {
+                                        repairingItem = new XUiC_RecipeStack();
+                                        recipeStack.CopyTo(repairingItem);
+                                    }
+
+                                    if (repairingItem != null)
+                                    {
+                                        ((XUiC_RecipeStack)__instance.queueItems[i + 1]).CopyTo(recipeStack);
+                                    }
                                 }
                             }
-                        }
 
-                        if (repairingItem != null)
-                        {
-                            repairingItem.CopyTo((XUiC_RecipeStack)___queueItems[___queueItems.Length - 1]);
-                        }
+                            if (repairingItem != null)
+                            {
+                                repairingItem.CopyTo((XUiC_RecipeStack)__instance.queueItems[__instance.queueItems.Length - 1]);
+                            }
 
-                        __instance.ResumeCrafting();
+                            __instance.ResumeCrafting();
+                        }
                     }
                 }
             }

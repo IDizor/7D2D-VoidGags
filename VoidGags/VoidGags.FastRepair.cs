@@ -1,6 +1,7 @@
 ﻿using System;
 using HarmonyLib;
 using UnityEngine;
+using static VoidGags.VoidGags.FastRepair;
 
 namespace VoidGags
 {
@@ -9,68 +10,63 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        static KeyCode fastRepairHotKey = KeyCode.Mouse2;
-
         public void ApplyPatches_FastRepair()
         {
             LogApplyingPatch(nameof(Settings.FastRepair));
 
-            if (!Enum.TryParse(Settings.FastRepair_HotKey, out fastRepairHotKey))
+            if (!Enum.TryParse(Settings.FastRepair_HotKey, out FastRepairHotKey))
             {
                 LogModException($"Invalid value for setting '{nameof(Settings.FastRepair_HotKey)}'.");
                 return;
             }
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt_Update.APostfix p) => XUiC_Toolbelt_Update.Postfix(p.__instance, p.___itemControllers, p.___currentHoldingIndex))));
+                postfix: new HarmonyMethod(XUiC_Toolbelt_Update.Postfix));
         }
 
-        /// <summary>
-        /// Repairs current weapon/tool in hands by the hot key.
-        /// </summary>
-        public class XUiC_Toolbelt_Update
+        public static class FastRepair
         {
-            private static bool RepairingFlag = false;
+            public static KeyCode FastRepairHotKey = KeyCode.Mouse2;
+            public static bool RepairingFlag = false;
 
-            public struct APostfix
+            /// <summary>
+            /// Repairs current weapon/tool in hands by the hot key.
+            /// </summary>
+            public class XUiC_Toolbelt_Update
             {
-                public XUiC_Toolbelt __instance;
-                public XUiController[] ___itemControllers;
-                public int ___currentHoldingIndex;
-            }
-
-            public static void Postfix(XUiC_Toolbelt __instance, XUiController[] ___itemControllers, int ___currentHoldingIndex)
-            {
-                if (Input.GetKey(fastRepairHotKey))
+                public static void Postfix(XUiC_Toolbelt __instance, XUiController[] ___itemControllers, int ___currentHoldingIndex)
                 {
-                    if (!RepairingFlag)
+                    if (Input.GetKey(FastRepairHotKey))
                     {
-                        RepairingFlag = true;
-                        if (___currentHoldingIndex != __instance.xui.PlayerInventory.Toolbelt.DUMMY_SLOT_IDX)
+                        if (!RepairingFlag)
                         {
-                            var currentItem = (XUiC_ItemStack)___itemControllers[___currentHoldingIndex];
-                            var itemValue = currentItem?.ItemStack?.itemValue;
-
-                            if (itemValue != null && itemValue.MaxUseTimes > 0 && itemValue.UseTimes > 0f && itemValue.ItemClass.RepairTools != null && itemValue.ItemClass.RepairTools.Length > 0 && itemValue.ItemClass.RepairTools[0].Value.Length > 0)
+                            RepairingFlag = true;
+                            if (___currentHoldingIndex != __instance.xui.PlayerInventory.Toolbelt.DUMMY_SLOT_IDX)
                             {
-                                var repairAction = new ItemActionEntryRepair(currentItem);
-                                repairAction.RefreshEnabled();
-                                if (repairAction.Enabled)
+                                var currentItem = (XUiC_ItemStack)___itemControllers[___currentHoldingIndex];
+                                var itemValue = currentItem?.ItemStack?.itemValue;
+
+                                if (itemValue != null && itemValue.MaxUseTimes > 0 && itemValue.UseTimes > 0f && itemValue.ItemClass.RepairTools != null && itemValue.ItemClass.RepairTools.Length > 0 && itemValue.ItemClass.RepairTools[0].Value.Length > 0)
                                 {
-                                    repairAction.OnActivated();
-                                }
-                                else
-                                {
-                                    repairAction.OnDisabledActivate();
+                                    var repairAction = new ItemActionEntryRepair(currentItem);
+                                    repairAction.RefreshEnabled();
+                                    if (repairAction.Enabled)
+                                    {
+                                        repairAction.OnActivated();
+                                    }
+                                    else
+                                    {
+                                        repairAction.OnDisabledActivate();
+                                    }
                                 }
                             }
                         }
-                    }
 
-                }
-                else
-                {
-                    RepairingFlag = false;
+                    }
+                    else
+                    {
+                        RepairingFlag = false;
+                    }
                 }
             }
         }

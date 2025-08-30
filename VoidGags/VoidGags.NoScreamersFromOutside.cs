@@ -2,7 +2,7 @@
 using System.Linq;
 using HarmonyLib;
 using UnityEngine;
-using static NetPackageQuestEvent;
+using static VoidGags.VoidGags.NoScreamersFromOutside;
 
 namespace VoidGags
 {
@@ -16,57 +16,15 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.NoScreamersFromOutside));
 
             Harmony.Patch(AccessTools.Method(typeof(AIDirectorChunkEventComponent), nameof(AIDirectorChunkEventComponent.SpawnScouts)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vector3 targetPos) => AIDirectorChunkEventComponent_SpawnScouts.Prefix(targetPos))));
+                prefix: new HarmonyMethod(AIDirectorChunkEventComponent_SpawnScouts.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(NetPackageQuestEvent), nameof(NetPackageQuestEvent.ProcessPackage)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((NetPackageQuestEvent __instance) => NetPackageQuestEvent_ProcessPackage.Postfix(__instance))));
+                postfix: new HarmonyMethod(NetPackageQuestEvent_ProcessPackage.Postfix));
         }
 
-        /// <summary>
-        /// Prevents zombie Screamers from spawning near players with an active quest.
-        /// </summary>
-        public class AIDirectorChunkEventComponent_SpawnScouts
+        public static class NoScreamersFromOutside
         {
-            const float spawnRadius = 150;
-
-            public static bool Prefix(Vector3 targetPos)
-            {
-                if (SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
-                {
-                    // check active quests from clients
-                    var activeQuests = NetPackageQuestEvent_ProcessPackage.ActiveQuests;
-                    if (activeQuests.Any(q => (targetPos - q.PrefabCenter).magnitude < spawnRadius))
-                    {
-                        LogModWarning("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
-                        return false;
-                    }
-
-                    // check local player quest
-                    if (!GameManager.IsDedicatedServer)
-                    {
-                        foreach (var player in GameManager.Instance.World.Players.list)
-                        {
-                            if (player.QuestJournal.ActiveQuest?.CurrentState == Quest.QuestState.InProgress)
-                            {
-                                var pos = new Vector3(targetPos.x, player.position.y, targetPos.z);
-                                if ((player.position - pos).magnitude < spawnRadius)
-                                {
-                                    LogModWarning("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Tracks active quests on the server from the remote clients.
-        /// </summary>
-        public class NetPackageQuestEvent_ProcessPackage
-        {
+            public const float SpawnRadius = 150f;
             public static List<ActiveQuestPrefab> ActiveQuests = [];
 
             public class ActiveQuestPrefab
@@ -76,32 +34,75 @@ namespace VoidGags
                 public float StartTime;
             }
 
-            public static void Postfix(NetPackageQuestEvent __instance)
+            /// <summary>
+            /// Prevents zombie Screamers from spawning near players with an active quest.
+            /// </summary>
+            public static class AIDirectorChunkEventComponent_SpawnScouts
             {
-                if (IsServer)
+                public static bool Prefix(Vector3 targetPos)
                 {
-                    if (__instance.eventType == QuestEventTypes.LockPOI)
+                    if (SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
                     {
-                        var prefabDecorator = GameManager.Instance.World.ChunkClusters[0].ChunkProvider.GetDynamicPrefabDecorator();
-                        var prefab = prefabDecorator.GetPrefabAtPosition(__instance.prefabPos);
-                        if (prefab != null)
+                        // check active quests from clients
+                        if (ActiveQuests.Any(q => (targetPos - q.PrefabCenter).magnitude < SpawnRadius))
                         {
-                            ActiveQuests.Add(new ActiveQuestPrefab
+                            LogModInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
+                            return false;
+                        }
+
+                        // check local player quest
+                        if (!GameManager.IsDedicatedServer)
+                        {
+                            foreach (var player in GameManager.Instance.World.Players.list)
                             {
-                                PrefabPos = __instance.prefabPos,
-                                PrefabCenter = prefab.boundingBoxPosition + new Vector3i(prefab.boundingBoxSize.ToVector3() / 2),
-                                StartTime = Time.time,
-                            });
-                            //Debug.LogWarning("Quest started!");
+                                if (player.QuestJournal.ActiveQuest?.CurrentState == Quest.QuestState.InProgress)
+                                {
+                                    var pos = new Vector3(targetPos.x, player.position.y, targetPos.z);
+                                    if ((player.position - pos).magnitude < SpawnRadius)
+                                    {
+                                        LogModInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
+                                        return false;
+                                    }
+                                }
+                            }
                         }
                     }
-                    if (__instance.eventType == QuestEventTypes.ClearSleeper)
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Tracks active quests on the server from the remote clients.
+            /// </summary>
+            public static class NetPackageQuestEvent_ProcessPackage
+            {
+                public static void Postfix(NetPackageQuestEvent __instance)
+                {
+                    if (IsServer)
                     {
-                        var now = Time.time;
-                        var removed = ActiveQuests.RemoveAll(q => now - q.StartTime > 5 && __instance.prefabPos == q.PrefabPos);
-                        if (removed > 0)
+                        if (__instance.eventType == NetPackageQuestEvent.QuestEventTypes.LockPOI)
                         {
-                            //Debug.LogWarning("Quest finished!");
+                            var prefabDecorator = GameManager.Instance.World.ChunkClusters[0].ChunkProvider.GetDynamicPrefabDecorator();
+                            var prefab = prefabDecorator.GetPrefabAtPosition(__instance.prefabPos);
+                            if (prefab != null)
+                            {
+                                ActiveQuests.Add(new ActiveQuestPrefab
+                                {
+                                    PrefabPos = __instance.prefabPos,
+                                    PrefabCenter = prefab.boundingBoxPosition + new Vector3i(prefab.boundingBoxSize.ToVector3() / 2),
+                                    StartTime = Time.time,
+                                });
+                                //Debug.LogWarning("Quest started!");
+                            }
+                        }
+                        if (__instance.eventType == NetPackageQuestEvent.QuestEventTypes.ClearSleeper)
+                        {
+                            var now = Time.time;
+                            var removed = ActiveQuests.RemoveAll(q => now - q.StartTime > 5 && __instance.prefabPos == q.PrefabPos);
+                            if (removed > 0)
+                            {
+                                //Debug.LogWarning("Quest finished!");
+                            }
                         }
                     }
                 }

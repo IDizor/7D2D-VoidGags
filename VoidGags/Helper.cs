@@ -131,7 +131,7 @@ namespace VoidGags
         /// </summary>
         public static List<TController> FindControllersByType<TController>() where TController : XUiController
         {
-            return PlayerLocal.PlayerUI?.xui.WindowGroups?.SelectMany(wg => wg.Controller.GetChildrenByType<TController>()).ToList() ?? new List<TController>();
+            return PlayerLocal.PlayerUI?.xui.WindowGroups?.SelectMany(wg => wg.Controller.GetChildrenByType<TController>()).ToList() ?? [];
         }
 
         /// <summary>

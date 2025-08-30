@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.PreventPillaring;
 
 namespace VoidGags
 {
@@ -12,61 +13,67 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.PreventPillaring));
 
             Harmony.Patch(AccessTools.Method(typeof(RenderDisplacedCube), nameof(RenderDisplacedCube.update0)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((RenderDisplacedCube_update0.APrefix p) => RenderDisplacedCube_update0.Prefix(p._focusBlockPos, p._player))));
+                prefix: new HarmonyMethod(RenderDisplacedCube_update0.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.CanPlaceBlockAt)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((bool __result) => Block_CanPlaceBlockAt.Prefix(ref __result))));
+                prefix: new HarmonyMethod(Block_CanPlaceBlockAt.Prefix));
         }
 
-        /// <summary>
-        /// Keeps allow-flag for further check when placing blocks.
-        /// </summary>
-        public class RenderDisplacedCube_update0
+        public static class PreventPillaring
         {
-            public static bool Allowed = true;
-            
-            public struct APrefix
-            {
-                public Vector3i _focusBlockPos;
-                public EntityAlive _player;
-            }
+            public static bool PlacingAllowed = true;
 
-            public static void Prefix(Vector3i _focusBlockPos, EntityAlive _player)
+            /// <summary>
+            /// Set allow-flag for further check when placing blocks.
+            /// </summary>
+            public static class RenderDisplacedCube_update0
             {
-                Allowed = _player.IsGodMode.Value
-                    || _player.onGround
-                    || _player.IsInWater()
-                    || _focusBlockPos.y >= _player.position.y
-                    || _player is EntityPlayerLocal && ((EntityPlayerLocal)_player).isLadderAttached;
-            }
-        }
-
-        /// <summary>
-        /// Prevents pillaring - jumping and placing a block underneath you.
-        /// </summary>
-        public class Block_CanPlaceBlockAt
-        {
-            public static bool Prefix(ref bool __result)
-            {
-                var caller = Helper.GetCallerMethod();
-                if (caller.Name.Contains(":update0(") || (caller.Name == nameof(BlockToolSelection.ExecuteUseAction) && caller.DeclaringType.Name == nameof(BlockToolSelection)))
+                public static void Prefix(Vector3i _focusBlockPos, EntityAlive _player)
                 {
-                    if (!RenderDisplacedCube_update0.Allowed)
+                    PlacingAllowed = _player.IsGodMode.Value
+                        || _player.onGround
+                        || _player.IsInWater()
+                        || _focusBlockPos.y >= _player.position.y
+                        || _player is EntityPlayerLocal && ((EntityPlayerLocal)_player).isLadderAttached
+                        || IsLandClaimBlockArea();
+
+                    bool IsLandClaimBlockArea()
                     {
-                        __result = false;
-                        return false;
+                        var playerData = GameManager.Instance.persistentPlayers.GetPlayerDataFromEntityID(_player.entityId);
+                        var ownership = _player.world.GetLandClaimOwner(_focusBlockPos, playerData);
+
+                        return ownership == EnumLandClaimOwner.Self || ownership == EnumLandClaimOwner.Ally;
                     }
                 }
-                /*else
+            }
+
+            /// <summary>
+            /// Prevents pillaring - jumping and placing a block underneath you.
+            /// </summary>
+            public static class Block_CanPlaceBlockAt
+            {
+                public static bool Prefix(ref bool __result)
                 {
-                    var ps = Helper.GetCallStackPath(5).Replace(" <-- ", "~").Split('~');
-                    UnityEngine.Debug.LogError($"!CanPlaceBlockAt, {caller.DeclaringType.Name}.{caller.Name}");
-                    foreach (var p in ps)
+                    var caller = Helper.GetCallerMethod();
+                    if (caller.Name.Contains(":update0(") || (caller.DeclaringType == typeof(BlockToolSelection) && caller.Name == nameof(BlockToolSelection.ExecuteUseAction)))
                     {
-                        UnityEngine.Debug.LogWarning($"{p}");
+                        if (!PlacingAllowed)
+                        {
+                            __result = false;
+                            return false;
+                        }
                     }
-                }*/
-                return true;
+                    //else
+                    //{
+                    //    var ps = Helper.GetCallStackPath(5).Replace(" <-- ", "~").Split('~');
+                    //    UnityEngine.Debug.LogError($"!CanPlaceBlockAt, {caller.DeclaringType.Name}.{caller.Name}");
+                    //    foreach (var p in ps)
+                    //    {
+                    //        UnityEngine.Debug.LogWarning($"{p}");
+                    //    }
+                    //}
+                    return true;
+                }
             }
         }
     }

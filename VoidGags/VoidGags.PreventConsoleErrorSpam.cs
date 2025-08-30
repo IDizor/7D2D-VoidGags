@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.PreventConsoleErrorSpam;
 
 namespace VoidGags
 {
@@ -12,24 +13,27 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.PreventConsoleErrorSpam));
 
             Harmony.Patch(AccessTools.Method(typeof(GUIWindowConsole), nameof(GUIWindowConsole.openConsole)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => GUIWindowConsole_openConsole.Prefix())));
+                prefix: new HarmonyMethod(GUIWindowConsole_openConsole.Prefix));
         }
 
-        /// <summary>
-        /// Allow to auto-open console only for the first exception to avoid losing player control in case of exceptions spam.
-        /// </summary>
-        public class GUIWindowConsole_openConsole
+        public static class PreventConsoleErrorSpam
         {
-            static bool firstTime = true;
+            public static bool WasOpen = false;
 
-            public static bool Prefix()
+            /// <summary>
+            /// Allow to auto-open console only for the first exception to avoid losing player control in case of exceptions spam.
+            /// </summary>
+            public static class GUIWindowConsole_openConsole
             {
-                if (firstTime)
+                public static bool Prefix()
                 {
-                    firstTime = false;
-                    return true;
+                    if (!WasOpen)
+                    {
+                        WasOpen = true;
+                        return true;
+                    }
+                    return false;
                 }
-                return false;
             }
         }
     }

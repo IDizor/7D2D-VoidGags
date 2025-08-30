@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.FoodWaterBars;
 
 namespace VoidGags
 {
@@ -12,48 +13,44 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.FoodWaterBars));
             UseXmlPatches(nameof(Settings.FoodWaterBars));
 
-            Harmony.Patch(AccessTools.Method(typeof(XUiC_HUDStatBar), nameof(XUiC_HUDStatBar.GetBindingValue)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_HUDStatBar_GetBindingValue.APrefix p) => XUiC_HUDStatBar_GetBindingValue.Prefix(p.__instance, ref p.value, p.bindingName, ref p.__result))));
+            Harmony.Patch(AccessTools.Method(typeof(XUiController), nameof(XUiController.GetBindingValue)),
+                prefix: new HarmonyMethod(XUiController_GetBindingValue.Prefix));
         }
 
-        /// <summary>
-        /// Binding values for food and water.
-        /// </summary>
-        public class XUiC_HUDStatBar_GetBindingValue
+        public static class FoodWaterBars
         {
-            public struct APrefix
+            /// <summary>
+            /// Binding values for food and water.
+            /// </summary>
+            public static class XUiController_GetBindingValue
             {
-                public XUiC_HUDStatBar __instance;
-                public string value;
-                public string bindingName;
-                public bool __result;
-            }
-
-            public static bool Prefix(XUiC_HUDStatBar __instance, ref string value, string bindingName, ref bool __result)
-            {
-                var player = __instance.LocalPlayer;
-
-                switch (bindingName)
+                public static bool Prefix(XUiController __instance, ref string _value, string _bindingName, ref bool __result)
                 {
-                    case "playermodifiedcurrentwater":
-                        value = player == null ? "" : XUiM_Player.GetModifiedCurrentWater(player).ToString("0");
-                        __result = true;
-                        return false;
-                    case "playerwatermax":
-                        value = player == null ? "" : XUiM_Player.GetWaterMax(player).ToString("0");
-                        __result = true;
-                        return false;
-                    case "playermodifiedcurrentfood":
-                        value = player == null ? "" : XUiM_Player.GetModifiedCurrentFood(player).ToString("0");
-                        __result = true;
-                        return false;
-                    case "playerfoodmax":
-                        value = player == null ? "" : XUiM_Player.GetFoodMax(player).ToString("0");
-                        __result = true;
-                        return false;
+                    if (__instance is XUiC_HUDStatBar hudStatBar)
+                    {
+                        var player = hudStatBar.LocalPlayer;
+                        switch (_bindingName)
+                        {
+                            case "playermodifiedcurrentwater":
+                                _value = player == null ? "" : XUiM_Player.GetModifiedCurrentWater(player).ToString("0");
+                                __result = true;
+                                return false;
+                            case "playerwatermax":
+                                _value = player == null ? "" : XUiM_Player.GetWaterMax(player).ToString("0");
+                                __result = true;
+                                return false;
+                            case "playermodifiedcurrentfood":
+                                _value = player == null ? "" : XUiM_Player.GetModifiedCurrentFood(player).ToString("0");
+                                __result = true;
+                                return false;
+                            case "playerfoodmax":
+                                _value = player == null ? "" : XUiM_Player.GetFoodMax(player).ToString("0");
+                                __result = true;
+                                return false;
+                        }
+                    }
+                    return true;
                 }
-
-                return true;
             }
         }
     }

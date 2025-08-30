@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.JumpControl;
 
 namespace VoidGags
 {
@@ -12,35 +13,38 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.JumpControl));
 
             Harmony.Patch(AccessTools.Method(typeof(vp_FPController), nameof(vp_FPController.UpdateJumpForceWalk)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((vp_FPController __instance) => vp_FPController_UpdateJumpForceWalk.Postfix(__instance))));
+                postfix: new HarmonyMethod(vp_FPController_UpdateJumpForceWalk.Postfix));
         }
 
-        /// <summary>
-        /// Allows to control jump height.
-        /// Release jump button quickly to make lower jumps.
-        /// </summary>
-        public class vp_FPController_UpdateJumpForceWalk
+        public static class JumpControl
         {
-            public static bool JumpReset = false;
-
-            public static void Postfix(vp_FPController __instance)
+            /// <summary>
+            /// Allows to control jump height.
+            /// Release jump button quickly to make lower jumps.
+            /// </summary>
+            public static class vp_FPController_UpdateJumpForceWalk
             {
-                if (!JumpReset &&
-                    __instance.Player.Jump.Active &&
-                    !__instance.m_Grounded &&
-                    !__instance.localPlayer.inputWasJump &&
-                    !__instance.localPlayer.isLadderAttached &&
-                    !__instance.localPlayer.IsSwimming() &&
-                    __instance.m_MotorThrottle.y > 0f)
-                {
-                    __instance.m_MotorThrottle.y *= 0.5f;
-                    JumpReset = true;
-                    return;
-                }
+                public static bool JumpReset = false;
 
-                if (JumpReset && __instance.m_Grounded)
+                public static void Postfix(vp_FPController __instance)
                 {
-                    JumpReset = false;
+                    if (!JumpReset &&
+                        __instance.Player.Jump.Active &&
+                        !__instance.m_Grounded &&
+                        !__instance.localPlayer.inputWasJump &&
+                        !__instance.localPlayer.isLadderAttached &&
+                        !__instance.localPlayer.IsSwimming() &&
+                        __instance.m_MotorThrottle.y > 0f)
+                    {
+                        __instance.m_MotorThrottle.y *= 0.5f;
+                        JumpReset = true;
+                        return;
+                    }
+
+                    if (JumpReset && __instance.m_Grounded)
+                    {
+                        JumpReset = false;
+                    }
                 }
             }
         }

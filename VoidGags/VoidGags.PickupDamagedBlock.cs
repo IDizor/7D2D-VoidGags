@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using HarmonyLib;
+using static VoidGags.VoidGags.PickupDamagedItems;
 
 namespace VoidGags
 {
@@ -21,12 +22,12 @@ namespace VoidGags
                 {
                     var typesToPatch = TypeToPatch.GetAllFromAssembly(UndeadLegacyAssembly, "OnBlockActivated", "_blockValue");
                     typesToPatch.AddRange(TypeToPatch.GetAllFromAssembly(UndeadLegacyAssembly, "TakeWithTimer", "_blockValue"));
-                    var prefix = SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue));
                     foreach (var ttp in typesToPatch)
                     {
                         try
                         {
-                            Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), prefix: new HarmonyMethod(prefix));
+                            Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters),
+                                prefix: new HarmonyMethod(SomeBlockType_WithMethodThatUsesBlockValue.Prefix));
                         }
                         catch (Exception ex)
                         {
@@ -40,17 +41,17 @@ namespace VoidGags
                         .FirstOrDefault(a => a.FullName.StartsWith("Assembly-CSharp,"));
 
                     var typesToPatch = TypeToPatch.GetAllFromAssembly(nativeAssembly, "TakeItemWithTimer", "_blockValue");
-                    var prefix = SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue));
                     foreach (var ttp in typesToPatch)
                     {
-                        Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters), prefix: new HarmonyMethod(prefix));
+                        Harmony.Patch(AccessTools.Method(ttp.Type, ttp.MethodName, ttp.MethodParameters),
+                            prefix: new HarmonyMethod(SomeBlockType_WithMethodThatUsesBlockValue.Prefix));
                     }
                     
                     Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockActivated), [typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal)]),
-                        prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => SomeBlockType_WithMethodThatUsesBlockValue.Prefix(ref _blockValue))));
+                        prefix: new HarmonyMethod(SomeBlockType_WithMethodThatUsesBlockValue.Prefix));
                     
                     Harmony.Patch(AccessTools.Method(typeof(World), nameof(World.GetBlock), [typeof(Vector3i)]),
-                        postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockValue _blockValue) => World_GetBlock.Postfix(ref _blockValue))));
+                        postfix: new HarmonyMethod(World_GetBlock.Postfix));
                 }
             }
             else
@@ -62,43 +63,45 @@ namespace VoidGags
             }
         }
 
-        private static float PickupDamagedBlockPercentage = 0.2f;
-        
-        /// <summary>
-        /// Makes block undamaged for futher checks.
-        /// </summary>
-        public class SomeBlockType_WithMethodThatUsesBlockValue
+        public static class PickupDamagedItems
         {
-            public static void Prefix(ref BlockValue _blockValue)
+            public static float PickupDamagedBlockPercentage = 0.2f;
+            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation), typeof(BlockDewCollector)];
+
+            /// <summary>
+            /// Makes block undamaged for futher checks.
+            /// </summary>
+            public static class SomeBlockType_WithMethodThatUsesBlockValue
             {
-                if (_blockValue.damage > 0 && _blockValue.Block != null)
+                public static void Prefix(ref BlockValue _blockValue)
                 {
-                    if (PickupDamagedBlockPercentage * _blockValue.Block.MaxDamage > _blockValue.damage)
+                    if (_blockValue.damage > 0 && _blockValue.Block != null)
                     {
-                        _blockValue.damage = 0;
+                        if (PickupDamagedBlockPercentage * _blockValue.Block.MaxDamage > _blockValue.damage)
+                        {
+                            _blockValue.damage = 0;
+                        }
                     }
                 }
             }
-        }
 
-        /// <summary>
-        /// Allows to pickup heavy items like crafting stations (event when the timer elapsed).
-        /// Had to add this patch because of an odd code in the original methods like <see cref="BlockCampfire.EventData_Event"/>:
-        /// </summary>
-        public class World_GetBlock
-        {
-            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation), typeof(BlockDewCollector)];
-
-            public static void Postfix(ref BlockValue __result)
+            /// <summary>
+            /// Allows to pickup heavy items like crafting stations (event when the timer elapsed).
+            /// Had to add this patch because of an odd code in the original methods like <see cref="BlockCampfire.EventData_Event"/>:
+            /// </summary>
+            public static class World_GetBlock
             {
-                if (__result.damage > 0 && __result.Block != null)
+                public static void Postfix(ref BlockValue __result)
                 {
-                    if (PickupDamagedBlockPercentage * __result.Block.MaxDamage > __result.damage)
+                    if (__result.damage > 0 && __result.Block != null)
                     {
-                        var caller = Helper.GetCallerMethod();
-                        if (caller.Name == "EventData_Event" && AllowedToPickupBlockTypes.Contains(caller.DeclaringType))
+                        if (PickupDamagedBlockPercentage * __result.Block.MaxDamage > __result.damage)
                         {
-                            __result.damage = 0;
+                            var caller = Helper.GetCallerMethod();
+                            if (caller.Name == "EventData_Event" && AllowedToPickupBlockTypes.Contains(caller.DeclaringType))
+                            {
+                                __result.damage = 0;
+                            }
                         }
                     }
                 }

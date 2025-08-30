@@ -2,6 +2,7 @@
 using HarmonyLib;
 using UniLinq;
 using UnityEngine;
+using static VoidGags.VoidGags.ExplosionMining;
 
 namespace VoidGags
 {
@@ -15,83 +16,79 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ExplosionMining));
 
             Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDestroyedByExplosion)), null,
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Block_OnBlockDestroyedByExplosion.AParams p) => Block_OnBlockDestroyedByExplosion.Postfix(p._world, p._blockPos, p._blockValue))));
+                postfix: new HarmonyMethod(Block_OnBlockDestroyedByExplosion.Postfix));
         }
 
-        /// <summary>
-        /// Terrain explosions allow to collect terrain resources (soil, sand, ores, etc).
-        /// </summary>
-        public class Block_OnBlockDestroyedByExplosion
+        public static class ExplosionMining
         {
-            public struct AParams
+            /// <summary>
+            /// Terrain explosions allow to collect terrain resources (soil, sand, ores, etc).
+            /// </summary>
+            public static class Block_OnBlockDestroyedByExplosion
             {
-                public WorldBase _world;
-                public Vector3i _blockPos;
-                public BlockValue _blockValue;
-            }
-
-            public static void Postfix(WorldBase _world, Vector3i _blockPos, BlockValue _blockValue)
-            {
-                if (_blockValue.Block.shape.IsTerrain())
+                public static void Postfix(WorldBase _world, Vector3i _blockPos, BlockValue _blockValue)
                 {
-                    if (GameManager.Instance != null && _blockValue.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> drop) && drop.Count > 0)
+                    if (_blockValue.Block.shape.IsTerrain())
                     {
-                        // wait for a while and spawn resources
-                        var random = _world.GetGameRandom();
-                        Helper.DeferredAction(0.1f + random.RandomFloat / 5, () =>
+                        if (GameManager.Instance != null && _blockValue.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> drop) && drop.Count > 0)
                         {
-                            var chunk = (Chunk)GameManager.Instance.World.GetChunkSync(World.toChunkXZ(_blockPos.x), World.toChunkXZ(_blockPos.z));
-                            var dropPos = FindAirBlockForDrop(_world, _blockPos);
-                            var nearItems = chunk.GetEntities<EntityItem>(dropPos, 3);
-
-                            foreach (var item in drop)
+                            // wait for a while and spawn resources
+                            var random = _world.GetGameRandom();
+                            Helper.DeferredAction(0.1f + random.RandomFloat / 5, () =>
                             {
-                                // only harvestable common resources
-                                if (!item.tag.Same("oreWoodHarvest")) continue;
+                                var chunk = (Chunk)GameManager.Instance.World.GetChunkSync(World.toChunkXZ(_blockPos.x), World.toChunkXZ(_blockPos.z));
+                                var dropPos = FindAirBlockForDrop(_world, _blockPos);
+                                var nearItems = chunk.GetEntities<EntityItem>(dropPos, 3);
 
-                                // truncate resources to drop, except ores
-                                var lootCount = item.name.StartsWith("terrOre") ? item.maxCount : (int)(item.maxCount * 0.6666f);
-                                if (lootCount > 0)
+                                foreach (var item in drop)
                                 {
-                                    var itemType = ItemClass.GetItem(item.name).type;
-                                    var nearItem = nearItems.FirstOrDefault(i => i.itemStack != null && i.itemStack.itemValue.type == itemType);
+                                    // only harvestable common resources
+                                    if (!item.tag.Same("oreWoodHarvest")) continue;
 
-                                    // add items to the same near EntityItem
-                                    if (nearItem != null)
+                                    // truncate resources to drop, except ores
+                                    var lootCount = item.name.StartsWith("terrOre") ? item.maxCount : (int)(item.maxCount * 0.6666f);
+                                    if (lootCount > 0)
                                     {
-                                        nearItem.itemStack.count += lootCount;
-                                    }
-                                    else
-                                    {
-                                        GameManager.Instance.ItemDropServer(new ItemStack(new ItemValue(itemType), lootCount), dropPos, Vector3.zero);
+                                        var itemType = ItemClass.GetItem(item.name).type;
+                                        var nearItem = nearItems.FirstOrDefault(i => i.itemStack != null && i.itemStack.itemValue.type == itemType);
+
+                                        // add items to the same near EntityItem
+                                        if (nearItem != null)
+                                        {
+                                            nearItem.itemStack.count += lootCount;
+                                        }
+                                        else
+                                        {
+                                            GameManager.Instance.ItemDropServer(new ItemStack(new ItemValue(itemType), lootCount), dropPos, Vector3.zero);
+                                        }
                                     }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                }
 
-                static Vector3 FindAirBlockForDrop(WorldBase world, Vector3i pos)
-                {
-                    for (var i = 1; i <= 5; i++)
+                    static Vector3 FindAirBlockForDrop(WorldBase world, Vector3i pos)
                     {
-                        for (var x = -i; x <= i; x++)
+                        for (var i = 1; i <= 5; i++)
                         {
-                            for (var z = -i; z <= i; z++)
+                            for (var x = -i; x <= i; x++)
                             {
-                                for (var y = 0; y <= i; y++)
+                                for (var z = -i; z <= i; z++)
                                 {
-                                    var p = new Vector3i(pos.x + x, pos.y + y, pos.z + z);
-                                    if (world.GetBlock(p).isair)
+                                    for (var y = 0; y <= i; y++)
                                     {
-                                        return p.ToVector3Center();
+                                        var p = new Vector3i(pos.x + x, pos.y + y, pos.z + z);
+                                        if (world.GetBlock(p).isair)
+                                        {
+                                            return p.ToVector3Center();
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    return pos.ToVector3Center();
+                        return pos.ToVector3Center();
+                    }
                 }
             }
         }

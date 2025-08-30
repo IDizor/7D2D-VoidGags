@@ -1,5 +1,4 @@
 ﻿using UnityEngine.Scripting;
-using static VoidGags.VoidGags;
 
 namespace VoidGags.NetPackages
 {
@@ -31,7 +30,7 @@ namespace VoidGags.NetPackages
             var localPlayer = _world.GetPrimaryPlayer();
             if (localPlayer != null && localPlayer.entityId == playerId)
             {
-                ItemValue_ctor.PlayMasterWorkSound();
+                VoidGags.MasterWorkChance.PlayMasterWorkSound();
             }
         }
 

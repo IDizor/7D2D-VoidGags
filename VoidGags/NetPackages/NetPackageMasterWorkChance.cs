@@ -36,16 +36,16 @@ namespace VoidGags.NetPackages
             {
                 // send own values to clients
                 SingletonMonoBehaviour<ConnectionManager>.Instance.SendPackage(NetPackageManager.GetPackage<NetPackageMasterWorkChance>()
-                    .Setup(VoidGags.MasterWorkChanceValue, Settings.MasterWorkChance_MaxQuality));
+                    .Setup(VoidGags.MasterWorkChance.MasterWorkChanceValue, Settings.MasterWorkChance_MaxQuality));
             }
             else
             {
                 // apply chance
                 if (Settings.MasterWorkChance > 0)
                 {
-                    if (VoidGags.MasterWorkChanceValue != chance)
+                    if (VoidGags.MasterWorkChance.MasterWorkChanceValue != chance)
                     {
-                        VoidGags.MasterWorkChanceValue = chance;
+                        VoidGags.MasterWorkChance.MasterWorkChanceValue = chance;
                         VoidGags.LogModWarning($"Master Work chance value is changed by the Server to {chance * 100:0.00} percent.");
                     }
                 }

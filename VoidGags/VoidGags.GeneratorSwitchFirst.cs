@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UniLinq;
+using static VoidGags.VoidGags.GeneratorSwitchFirst;
 
 namespace VoidGags
 {
@@ -13,24 +14,27 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.GeneratorSwitchFirst));
 
             Harmony.Patch(AccessTools.Method(typeof(BlockPowerSource), nameof(BlockPowerSource.GetBlockActivationCommands)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((BlockActivationCommand[] __result) => BlockPowerSource_GetBlockActivationCommands.Postfix(ref __result))));
+                postfix: new HarmonyMethod(BlockPowerSource_GetBlockActivationCommands.Postfix));
         }
 
-        /// <summary>
-        /// Press E to turn on/off power generators.
-        /// </summary>
-        public class BlockPowerSource_GetBlockActivationCommands
+        public static class GeneratorSwitchFirst
         {
-            public static void Postfix(ref BlockActivationCommand[] __result)
+            /// <summary>
+            /// Press E to turn on/off power generators.
+            /// </summary>
+            public static class BlockPowerSource_GetBlockActivationCommands
             {
-                if (__result != null)
+                public static void Postfix(ref BlockActivationCommand[] __result)
                 {
-                    var list = __result.ToList();
-                    var i = list.FindIndex(i => i.text.Same("light"));
-                    if (i > 0 && list[i].enabled)
+                    if (__result != null)
                     {
-                        (list[i], list[0]) = (list[0], list[i]);
-                        __result = list.ToArray();
+                        var list = __result.ToList();
+                        var i = list.FindIndex(i => i.text.Same("light"));
+                        if (i > 0 && list[i].enabled)
+                        {
+                            (list[i], list[0]) = (list[0], list[i]);
+                            __result = [.. list];
+                        }
                     }
                 }
             }

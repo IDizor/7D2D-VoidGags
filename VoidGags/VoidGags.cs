@@ -47,8 +47,8 @@ namespace VoidGags
 
             if (Settings.SkipNewsScreen) SafePatch(ApplyPatches_SkipNewsScreen);
             if (Settings.CraftingQueueRightClickToMove) SafePatch(ApplyPatches_CraftingQueueMove);
-            if (Settings.ExperienceRewardByMaxHP) SafePatch(ApplyPatches_ExperienceByMaxHP);
-            if (Settings.HelmetLightByDefault) SafePatch(ApplyPatches_HelmetLightFirst);
+            if (Settings.ExperienceRewardByMaxHP) SafePatch(ApplyPatches_ExperienceRewardByMaxHP);
+            if (Settings.HelmetLightByDefault) SafePatch(ApplyPatches_HelmetLightByDefault);
             if (Settings.PickupDamagedItems) SafePatch(ApplyPatches_PickupDamagedBlock);
             if (Settings.FastRepair) SafePatch(ApplyPatches_FastRepair);
             if (Settings.RepairingHasTopPriority) SafePatch(ApplyPatches_RepairingPriority);
@@ -86,6 +86,10 @@ namespace VoidGags
             if (Settings.ZombiesFriendlyFire) SafePatch(ApplyPatches_ZombiesFriendlyFire);
             if (Settings.ZombiesStumbleChance > 0f) SafePatch(ApplyPatches_ZombiesStumbleChance);
             if (Settings.DamageModifier) SafePatch(ApplyPatches_DamageModifier);
+            if (Settings.MoveOnePiece) SafePatch(ApplyPatches_MoveOnePiece);
+            if (Settings.ClickableMarkers) SafePatch(ApplyPatches_ClickableMarkers);
+            if (Settings.TradersPlayerReputation) SafePatch(ApplyPatches_TradersPlayerReputation);
+            if (Settings.TradersBiomeQuests) SafePatch(ApplyPatches_TradersBiomeQuests);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
@@ -119,9 +123,8 @@ namespace VoidGags
         /// <summary>
         /// Method that called once the game is loaded.
         /// </summary>
-        [HarmonyPatch(typeof(EntityPlayerLocal))]
-        [HarmonyPatch(nameof(EntityPlayerLocal.PostInit))]
-        public class EntityPlayerLocal_PostInit
+        [HarmonyPatch(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.PostInit))]
+        public static class EntityPlayerLocal_PostInit
         {
             public static void Postfix()
             {
@@ -135,9 +138,8 @@ namespace VoidGags
         /// <summary>
         /// Adds features as separate mods to apply their XML patches.
         /// </summary>
-        [HarmonyPatch(typeof(ModManager))]
-        [HarmonyPatch(nameof(ModManager.GetLoadedMods))]
-        public class ModManager_GetLoadedMods
+        [HarmonyPatch(typeof(ModManager), nameof(ModManager.GetLoadedMods))]
+        public static class ModManager_GetLoadedMods
         {
             public static void Postfix(ref List<Mod> __result)
             {

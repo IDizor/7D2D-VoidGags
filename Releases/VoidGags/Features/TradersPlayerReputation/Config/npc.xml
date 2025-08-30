@@ -1,0 +1,7 @@
+<dizor>
+  <set xpath="/npc/npc_info[@id='traitorjoel']/@quest_faction">5</set>
+  <set xpath="/npc/npc_info[@id='traderjen']/@quest_faction">4</set>
+  <set xpath="/npc/npc_info[@id='traderbob']/@quest_faction">3</set>
+  <set xpath="/npc/npc_info[@id='traderhugh']/@quest_faction">2</set>
+  <set xpath="/npc/npc_info[@id='traderrekt']/@quest_faction">1</set>
+</dizor>

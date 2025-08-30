@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.ScrapTimeAndSalvageOperations;
 
 namespace VoidGags
 {
@@ -12,20 +13,23 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ScrapTimeAndSalvageOperations));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_CraftingWindowGroup), nameof(XUiC_CraftingWindowGroup.AddItemToQueue), [typeof(Recipe), typeof(int)]),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Recipe _recipe) => XUiC_CraftingWindowGroup_AddItemToQueue.Prefix(_recipe)), Priority.Low));
+                prefix: new HarmonyMethod(XUiC_CraftingWindowGroup_AddItemToQueue.Prefix, Priority.Low));
         }
 
-        /// <summary>
-        /// Makes the scrapping process in inventory faster, depending on the Salvage Operations perk level.
-        /// </summary>
-        public class XUiC_CraftingWindowGroup_AddItemToQueue
+        public static class ScrapTimeAndSalvageOperations
         {
-            public static void Prefix(Recipe _recipe)
+            /// <summary>
+            /// Makes the scrapping process in inventory faster, depending on the Salvage Operations perk level.
+            /// </summary>
+            public static class XUiC_CraftingWindowGroup_AddItemToQueue
             {
-                if (Helper.GetCallerMethod().DeclaringType == typeof(ItemActionEntryScrap))
+                public static void Prefix(Recipe _recipe)
                 {
-                    var salvageOperations = Helper.PlayerLocal.PerkSalvageOperations();
-                    _recipe.craftingTime *= 1f - (0.6666f * salvageOperations.Level / salvageOperations.ProgressionClass.MaxLevel);
+                    if (Helper.GetCallerMethod().DeclaringType == typeof(ItemActionEntryScrap))
+                    {
+                        var salvageOperations = Helper.PlayerLocal.PerkSalvageOperations();
+                        _recipe.craftingTime *= 1f - (0.8f * salvageOperations.Level / salvageOperations.ProgressionClass.MaxLevel);
+                    }
                 }
             }
         }

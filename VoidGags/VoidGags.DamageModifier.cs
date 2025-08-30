@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using static VoidGags.VoidGags.DamageModifier;
 
 namespace VoidGags
 {
@@ -15,29 +16,26 @@ namespace VoidGags
             if (Settings.DamageModifier_Gun != 1f)
             {
                 Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.DamageEntity)),
-                    prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityAlive_DamageEntity_2.APrefix p) => EntityAlive_DamageEntity_2.Prefix(p._damageSource, ref p._strength))));
+                    prefix: new HarmonyMethod(EntityAlive_DamageEntity.Prefix));
             }
         }
 
-        /// <summary>
-        /// Modifies guns damage.
-        /// </summary>
-        public class EntityAlive_DamageEntity_2
+        public static class DamageModifier
         {
             public static FastTags<TagGroup.Global> GunTag = FastTags<TagGroup.Global>.Parse("gun");
 
-            public struct APrefix
+            /// <summary>
+            /// Modifies guns damage.
+            /// </summary>
+            public static class EntityAlive_DamageEntity
             {
-                public DamageSource _damageSource;
-                public int _strength;
-            }
-
-            public static void Prefix(DamageSource _damageSource, ref int _strength)
-            {
-                if (_damageSource.damageType == EnumDamageTypes.Piercing &&
-                    _damageSource.ItemClass?.HasAllTags(GunTag) == true)
+                public static void Prefix(DamageSource _damageSource, ref int _strength)
                 {
-                    _strength = Mathf.CeilToInt(_strength * Settings.DamageModifier_Gun);
+                    if (_damageSource.damageType == EnumDamageTypes.Piercing &&
+                        _damageSource.ItemClass?.HasAllTags(GunTag) == true)
+                    {
+                        _strength = Mathf.CeilToInt(_strength * Settings.DamageModifier_Gun);
+                    }
                 }
             }
         }

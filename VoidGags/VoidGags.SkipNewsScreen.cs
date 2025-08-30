@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
 using static NewsManager;
+using static VoidGags.VoidGags.SkipNewsScreen;
 
 namespace VoidGags
 {
@@ -14,32 +15,35 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.SkipNewsScreen));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_MainMenu), nameof(XUiC_MainMenu.Init)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => XUiC_MainMenu_Init.Prefix())));
+                prefix: new HarmonyMethod(XUiC_MainMenu_Init.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(NewsManager), nameof(NewsManager.GetNewsData)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((List<NewsEntry> _target) => NewsManager_GetNewsData.Prefix(_target))));
+                prefix: new HarmonyMethod(NewsManager_GetNewsData.Prefix));
         }
 
-        /// <summary>
-        /// Skip News screen.
-        /// </summary>
-        public class XUiC_MainMenu_Init
+        public static class SkipNewsScreen
         {
-            public static void Prefix()
+            /// <summary>
+            /// Skip News screen.
+            /// </summary>
+            public static class XUiC_MainMenu_Init
             {
-                XUiC_MainMenu.shownNewsScreenOnce = true;
+                public static void Prefix()
+                {
+                    XUiC_MainMenu.shownNewsScreenOnce = true;
+                }
             }
-        }
 
-        /// <summary>
-        /// Suppress GetNewsData() method.
-        /// </summary>
-        public class NewsManager_GetNewsData
-        {
-            public static bool Prefix(List<NewsEntry> _target)
+            /// <summary>
+            /// Suppress GetNewsData() method.
+            /// </summary>
+            public static class NewsManager_GetNewsData
             {
-                _target.Clear();
-                return false;
+                public static bool Prefix(List<NewsEntry> _target)
+                {
+                    _target.Clear();
+                    return false;
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using HarmonyLib;
+using static VoidGags.VoidGags.VehicleRefuelTimer;
 
 namespace VoidGags
 {
@@ -13,17 +14,17 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.VehicleRefuelTimer));
 
             Harmony.Patch(AccessTools.Method(typeof(EntityVehicle), nameof(EntityVehicle.AddFuelFromInventory)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityVehicle_AddFuelFromInventory.AParams p) => EntityVehicle_AddFuelFromInventory.Prefix(p.__instance, p.entity))));
+                prefix: new HarmonyMethod(EntityVehicle_AddFuelFromInventory.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(EntityVehicle), nameof(EntityVehicle.takeFuel)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((EntityVehicle_takeFuel.AParams p) => EntityVehicle_takeFuel.Prefix(p.__instance, p.__result, ref p.count))),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((float __result) => EntityVehicle_takeFuel.Postfix(__result))));
+                prefix: new HarmonyMethod(EntityVehicle_takeFuel.Prefix),
+                postfix: new HarmonyMethod(EntityVehicle_takeFuel.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(Vehicle), nameof(Vehicle.AddFuel)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((Vehicle_AddFuel.AParams p) => Vehicle_AddFuel.Prefix(p.__instance, p._fuelLevel))));
+                prefix: new HarmonyMethod(Vehicle_AddFuel.Prefix));
         }
 
-        private static class VehicleRefuelTimer
+        public static class VehicleRefuelTimer
         {
             public const float RefuelingTime = 2f;
             public static EntityPlayerLocal PlayerEntity = null;
@@ -43,119 +44,100 @@ namespace VoidGags
                     $"{Localization.Get("xuiFuel")}: {fuelPercent:0}%                               ",
                     duration, centerAlign: true);
             }
-        }
 
-        /// <summary>
-        /// Keep player entity for further use and as a flag.
-        /// </summary>
-        public class EntityVehicle_AddFuelFromInventory
-        {
-            public struct AParams
+            /// <summary>
+            /// Keep player entity for further use and as a flag.
+            /// </summary>
+            public static class EntityVehicle_AddFuelFromInventory
             {
-                public EntityVehicle __instance;
-                public EntityAlive entity;
-            }
-
-            public static void Prefix(EntityVehicle __instance, EntityAlive entity)
-            {
-                if (IsDedicatedServer) return;
-
-                // keep player
-                VehicleRefuelTimer.PlayerEntity = entity as EntityPlayerLocal;
-                VehicleRefuelTimer.DisplayVehicleFuel(__instance.vehicle);
-            }
-        }
-
-        /// <summary>
-        /// Limit fuel to take and keep taken value for further use.
-        /// </summary>
-        public class EntityVehicle_takeFuel
-        {
-            public struct AParams
-            {
-                public EntityVehicle __instance;
-                public float __result;
-                public int count;
-            }
-
-            public static void Prefix(EntityVehicle __instance, float __result, ref int count)
-            {
-                if (IsDedicatedServer) return;
-
-                if (VehicleRefuelTimer.PlayerEntity != null)
+                public static void Prefix(EntityVehicle __instance, EntityAlive entity)
                 {
-                    // limit one refuel to 500 units
-                    count = Math.Min(count, 500);
+                    if (IsDedicatedServer) return;
+
+                    // keep player
+                    PlayerEntity = entity as EntityPlayerLocal;
+                    DisplayVehicleFuel(__instance.vehicle);
                 }
             }
 
-            public static void Postfix(float __result)
+            /// <summary>
+            /// Limit fuel to take and keep taken value for further use.
+            /// </summary>
+            public static class EntityVehicle_takeFuel
             {
-                if (IsDedicatedServer) return;
-
-                // keep fuel taken
-                VehicleRefuelTimer.FuelTaken = __result;
-            }
-        }
-
-        /// <summary>
-        /// Add timer and cycle refueling.
-        /// </summary>
-        public class Vehicle_AddFuel
-        {
-            public struct AParams
-            {
-                public Vehicle __instance;
-                public float _fuelLevel;
-            }
-
-            public static bool Prefix(Vehicle __instance, float _fuelLevel)
-            {
-                if (IsDedicatedServer) return true;
-
-                if (VehicleRefuelTimer.SkipAddFuel)
+                public static void Prefix(EntityVehicle __instance, float __result, ref int count)
                 {
-                    VehicleRefuelTimer.SkipAddFuel = false;
+                    if (IsDedicatedServer) return;
+
+                    if (PlayerEntity != null)
+                    {
+                        // limit one refuel to 500 units
+                        count = Math.Min(count, 500);
+                    }
+                }
+
+                public static void Postfix(float __result)
+                {
+                    if (IsDedicatedServer) return;
+
+                    // keep fuel taken
+                    FuelTaken = __result;
+                }
+            }
+
+            /// <summary>
+            /// Add timer and cycle refueling.
+            /// </summary>
+            public static class Vehicle_AddFuel
+            {
+                public static bool Prefix(Vehicle __instance, float _fuelLevel)
+                {
+                    if (IsDedicatedServer) return true;
+
+                    if (SkipAddFuel)
+                    {
+                        SkipAddFuel = false;
+                        return true;
+                    }
+
+                    if (PlayerEntity != null &&
+                        FuelTaken > 0f)
+                    {
+                        Helper.UiTimerAction(RefuelingTime, action: () =>
+                        {
+                            SkipAddFuel = true;
+                            __instance.AddFuel(_fuelLevel);
+
+                            if (__instance?.GetFuelPercent() < 1f && __instance.entity != null &&
+                                PlayerEntity != null)
+                            {
+                                // add next fuel portion automatically
+                                __instance.entity.AddFuelFromInventory(PlayerEntity);
+                            }
+                            else
+                            {
+                                // stop refuel
+                                Clear();
+                                DisplayVehicleFuel(__instance);
+                            }
+                        }, cancelAction: () =>
+                        {
+                            // give gas back to player
+                            if (PlayerEntity != null && FuelTaken > 0f)
+                            {
+                                var gas = new ItemStack(new ItemValue(ItemClass.GetItem("ammoGasCan").type), (int)FuelTaken);
+                                PlayerEntity.GiveItem(gas);
+                                Clear();
+                            }
+                        });
+                        return false;
+                    }
+
+                    // stop refuel
+                    Clear();
+                    DisplayVehicleFuel(__instance);
                     return true;
                 }
-
-                if (VehicleRefuelTimer.PlayerEntity != null &&
-                    VehicleRefuelTimer.FuelTaken > 0f)
-                {
-                    Helper.UiTimerAction(VehicleRefuelTimer.RefuelingTime, action: () =>
-                    {
-                        VehicleRefuelTimer.SkipAddFuel = true;
-                        __instance.AddFuel(_fuelLevel);
-
-                        if (__instance?.GetFuelPercent() < 1f && __instance.entity != null &&
-                            VehicleRefuelTimer.PlayerEntity != null)
-                        {
-                            // add next fuel portion automatically
-                            __instance.entity.AddFuelFromInventory(VehicleRefuelTimer.PlayerEntity);
-                        }
-                        else
-                        {
-                            // stop refuel
-                            VehicleRefuelTimer.Clear();
-                            VehicleRefuelTimer.DisplayVehicleFuel(__instance);
-                        }
-                    }, cancelAction: () =>
-                    {
-                        // give gas back to player
-                        if (VehicleRefuelTimer.PlayerEntity != null && VehicleRefuelTimer.FuelTaken > 0f)
-                        {
-                            var gas = new ItemStack(new ItemValue(ItemClass.GetItem("ammoGasCan").type), (int)VehicleRefuelTimer.FuelTaken);
-                            VehicleRefuelTimer.PlayerEntity.GiveItem(gas);
-                            VehicleRefuelTimer.Clear();
-                        }
-                    });
-                    return false;
-                }
-
-                // stop refuel
-                VehicleRefuelTimer.Clear();
-                VehicleRefuelTimer.DisplayVehicleFuel(__instance);
-                return true;
             }
         }
     }

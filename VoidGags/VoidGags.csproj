@@ -96,6 +96,11 @@
     <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
     <Compile Include="Types\DelayStorage.cs" />
     <Compile Include="Types\ItemActionEntryCustom.cs" />
+    <Compile Include="VoidGags.0Test.cs" />
+    <Compile Include="VoidGags.ClickableMarkers.cs" />
+    <Compile Include="VoidGags.TradersBiomeQuests.cs" />
+    <Compile Include="VoidGags.TradersPlayerReputation.cs" />
+    <Compile Include="VoidGags.MoveOnePiece.cs" />
     <Compile Include="VoidGags.DamageModifier.cs" />
     <Compile Include="VoidGags.ZombiesStumbleChance.cs" />
     <Compile Include="VoidGags.ZombieFriendlyFire.cs" />
@@ -129,11 +134,11 @@
     <Compile Include="VoidGags.StealthOnLadders.cs" />
     <Compile Include="VoidGags.SocialZombies.cs" />
     <Compile Include="VoidGags.UL.cs" />
-    <Compile Include="VoidGags.ExperienceByMaxHP.cs" />
+    <Compile Include="VoidGags.ExperienceRewardByMaxHP.cs" />
     <Compile Include="VoidGags.CraftingQueueMove.cs" />
     <Compile Include="VoidGags.FastRepair.cs" />
     <Compile Include="VoidGags.RepairingPriority.cs" />
-    <Compile Include="VoidGags.HelmetLightFirst.cs" />
+    <Compile Include="VoidGags.HelmetLightByDefault.cs" />
     <Compile Include="VoidGags.ScrapTime.cs" />
     <Compile Include="VoidGags.PickupDamagedBlock.cs" />
     <Compile Include="VoidGags.HighlightLockedSlots.cs" />

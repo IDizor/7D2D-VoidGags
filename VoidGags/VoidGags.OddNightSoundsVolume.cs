@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using static VoidGags.VoidGags.OddNightSoundsVolume;
 
 namespace VoidGags
 {
@@ -14,7 +15,7 @@ namespace VoidGags
                 LogApplyingPatch(nameof(Settings.OddNightSoundsVolume));
 
                 Harmony.Patch(AccessTools.Method(typeof(AudioObject), nameof(AudioObject.SetBiomeVolume)),
-                    prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((AudioObject __instance, float _volume) => AudioObject_SetBiomeVolume.Prefix(__instance, ref _volume))));
+                    prefix: new HarmonyMethod(AudioObject_SetBiomeVolume.Prefix));
             }
             else if (Settings.OddNightSoundsVolume != 100)
             {
@@ -22,36 +23,39 @@ namespace VoidGags
             }
         }
 
-        /*
-        [HarmonyPatch(typeof(EnvironmentAudioManager))]
-        [HarmonyPatch("InitSounds")]
-        public class dfgjghkfgk
+        public static class OddNightSoundsVolume
         {
-            public static void Postfix(EnvironmentAudioManager __instance)
+            /*
+            [HarmonyPatch(typeof(EnvironmentAudioManager))]
+            [HarmonyPatch("InitSounds")]
+            public static class dfgjghkfgk
             {
-                Debug.LogError("InitSounds()");
-                foreach (var sound in __instance.mixedBiomeSounds)
+                public static void Postfix(EnvironmentAudioManager __instance)
                 {
-                    if (sound.name.Contains("Night"))
+                    Debug.LogError("InitSounds()");
+                    foreach (var sound in __instance.mixedBiomeSounds)
                     {
-                        var s = $"{sound.trigger} [{sound.audioClips?.Length}] : {sound.name}";
-                        Debug.LogWarning(s);
+                        if (sound.name.Contains("Night"))
+                        {
+                            var s = $"{sound.trigger} [{sound.audioClips?.Length}] : {sound.name}";
+                            Debug.LogWarning(s);
+                        }
                     }
                 }
             }
-        }
-        */
+            */
 
-        /// <summary>
-        /// Modify odd night sounds volume.
-        /// </summary>
-        public class AudioObject_SetBiomeVolume
-        {
-            public static void Prefix(AudioObject __instance, ref float _volume)
+            /// <summary>
+            /// Modify odd night sounds volume.
+            /// </summary>
+            public static class AudioObject_SetBiomeVolume
             {
-                if (__instance.name == "Night_Oneshots")
+                public static void Prefix(AudioObject __instance, ref float _volume)
                 {
-                    _volume *= 0.33f;
+                    if (__instance.name == "Night_Oneshots")
+                    {
+                        _volume *= 0.33f;
+                    }
                 }
             }
         }

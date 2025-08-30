@@ -2,6 +2,7 @@
 using UnityEngine;
 using VoidGags.NetPackages;
 using static ItemActionAttack;
+using static VoidGags.VoidGags.ArrowsBoltsDistraction;
 
 namespace VoidGags
 {
@@ -15,32 +16,26 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ArrowsBoltsDistraction));
 
             Harmony.Patch(AccessTools.Method(typeof(ItemActionAttack), nameof(ItemActionAttack.Hit)),
-                postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemActionAttack_Hit.APostfix p) => ItemActionAttack_Hit.Postfix(p.hitInfo, p._attackerEntityId, p._damageType, p._attackDetails, p.damagingItemValue))));
+                postfix: new HarmonyMethod(ItemActionAttack_Hit.Postfix));
         }
 
-        /// <summary>
-        /// Arrows and bolts make noise and attract enemies. Can wake sleeping zombies.
-        /// </summary>
-        public class ItemActionAttack_Hit
+        public static class ArrowsBoltsDistraction
         {
             public static FastTags<TagGroup.Global> PerkArcheryTag = FastTags<TagGroup.Global>.Parse("perkArchery");
 
-            public struct APostfix
+            /// <summary>
+            /// Arrows and bolts make noise and attract enemies. Can wake sleeping zombies.
+            /// </summary>
+            public class ItemActionAttack_Hit
             {
-                public WorldRayHitInfo hitInfo;
-                public int _attackerEntityId;
-                public EnumDamageTypes _damageType;
-                public AttackHitInfo _attackDetails;
-                public ItemValue damagingItemValue;
-            }
-
-            public static void Postfix(WorldRayHitInfo hitInfo, int _attackerEntityId, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
-            {
-                if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
+                public static void Postfix(WorldRayHitInfo hitInfo, int _attackerEntityId, EnumDamageTypes _damageType, AttackHitInfo _attackDetails, ItemValue damagingItemValue)
                 {
-                    EntityAlive entityAlive = GameManager.Instance.World.GetEntity(_attackerEntityId) as EntityAlive;
-                    var shotStartPos = entityAlive == null ? Vector3.zero : entityAlive.position;
-                    ProcessBlockHitAttraction(hitInfo, _attackDetails.blockBeingDamaged, shotStartPos);
+                    if (_damageType == EnumDamageTypes.Piercing && damagingItemValue != null && damagingItemValue.ItemClass != null && damagingItemValue.ItemClass.ItemTags.Test_AnySet(PerkArcheryTag))
+                    {
+                        EntityAlive entityAlive = GameManager.Instance.World.GetEntity(_attackerEntityId) as EntityAlive;
+                        var shotStartPos = entityAlive == null ? Vector3.zero : entityAlive.position;
+                        ProcessBlockHitAttraction(hitInfo, _attackDetails.blockBeingDamaged, shotStartPos);
+                    }
                 }
             }
 
@@ -105,7 +100,7 @@ namespace VoidGags
                                     {
                                         var noiceOcclusion = Helper.CalculateNoiseOcclusion(lastBlockPos, enemy.position, 0.027f);
                                         var occlusion = noiceOcclusion * Mathf.Pow(distractionRadius / 10f, 0.2f); // apply material/radius adjustment
-                                        //Debug.LogWarning($"occlusion : {noiceOcclusion:0.000} -> {occlusion:0.000}, distractionRadius = {distractionRadius:0.00}");
+                                                                                                                   //Debug.LogWarning($"occlusion : {noiceOcclusion:0.000} -> {occlusion:0.000}, distractionRadius = {distractionRadius:0.00}");
                                         var wasSleeping = enemy.IsSleeping;
                                         if (occlusion >= 0.87f && enemy.IsSleeping)
                                         {

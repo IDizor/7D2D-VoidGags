@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using UniLinq;
 using UnityEngine;
+using static VoidGags.VoidGags.ArrowsBoltsAutoPickUp;
 
 namespace VoidGags
 {
@@ -14,72 +15,75 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ArrowsBoltsAutoPickUp));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_Toolbelt), nameof(XUiC_Toolbelt.Update)),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((XUiC_Toolbelt __instance) => XUiC_Toolbelt_Update_2.Prefix(__instance))));
+                prefix: new HarmonyMethod(XUiC_Toolbelt_Update.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.ItemDropServer), [typeof(ItemStack), typeof(Vector3), typeof(Vector3), typeof(int), typeof(float), typeof(bool)]),
-                prefix: new HarmonyMethod(SymbolExtensions.GetMethodInfo((ItemStack _itemStack) => GameManager_ItemDropServer.Prefix(_itemStack))));
+                prefix: new HarmonyMethod(GameManager_ItemDropServer.Prefix));
         }
 
-        /// <summary>
-        /// Pick up arrows and bolts automatically.
-        /// </summary>
-        public class XUiC_Toolbelt_Update_2
+        public static class ArrowsBoltsAutoPickUp
         {
             public static float SkipTime = -10f;
 
-            public static void Prefix(XUiC_Toolbelt __instance)
+            /// <summary>
+            /// Pick up arrows and bolts automatically.
+            /// </summary>
+            public class XUiC_Toolbelt_Update
             {
-                if (Time.time > __instance.updateTime)
+                public static void Prefix(XUiC_Toolbelt __instance)
                 {
-                    var world = GameManager.Instance.World;
-                    var player = Helper.PlayerLocal;
-                    
-                    if (player != null && !player.IsDead() && player.AttachedToEntity == null)
+                    if (Time.time > __instance.updateTime)
                     {
-                        // collect sticky projectiles
-                        if (ProjectileManager.projectiles != null)
+                        var world = GameManager.Instance.World;
+                        var player = Helper.PlayerLocal;
+
+                        if (player != null && !player.IsDead() && player.AttachedToEntity == null)
                         {
-                            foreach (var transform in ProjectileManager.projectiles.valueList)
+                            // collect sticky projectiles
+                            if (ProjectileManager.projectiles != null)
                             {
-                                if (transform != null && transform.TryGetComponent(out ProjectileMoveScript script))
+                                foreach (var transform in ProjectileManager.projectiles.valueList)
                                 {
-                                    if (script != null && script.itemProjectile != null && script.itemProjectile.IsSticky)
+                                    if (transform != null && transform.TryGetComponent(out ProjectileMoveScript script))
                                     {
-                                        var distance = (player.position - transform.position - Origin.position).magnitude;
-                                        if (distance < Constants.cCollectItemDistance)
+                                        if (script != null && script.itemProjectile != null && script.itemProjectile.IsSticky)
                                         {
-                                            var dude = transform.GetComponentInParent<EntityAlive>();
-                                            if (dude == null || dude.IsDead()) // do not auto-collect from alive entities
+                                            var distance = (player.position - transform.position - Origin.position).magnitude;
+                                            if (distance < Constants.cCollectItemDistance)
                                             {
-                                                var itemStack = new ItemStack(script.itemValueProjectile, 1);
-                                                if (player.inventory.CanTakeItem(itemStack) || player.bag.CanTakeItem(itemStack))
+                                                var dude = transform.GetComponentInParent<EntityAlive>();
+                                                if (dude == null || dude.IsDead()) // do not auto-collect from alive entities
                                                 {
-                                                    player.PlayerUI.xui.PlayerInventory.AddItem(itemStack);
-                                                    script.ProjectileID = -1;
-                                                    UnityEngine.Object.Destroy(script.gameObject);
+                                                    var itemStack = new ItemStack(script.itemValueProjectile, 1);
+                                                    if (player.inventory.CanTakeItem(itemStack) || player.bag.CanTakeItem(itemStack))
+                                                    {
+                                                        player.PlayerUI.xui.PlayerInventory.AddItem(itemStack);
+                                                        script.ProjectileID = -1;
+                                                        UnityEngine.Object.Destroy(script.gameObject);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // collect dropped arrows
-                        if (Time.time > SkipTime)
-                        {
-                            foreach (var entity in world.Entities.dict.Values.ToArray())
+                            // collect dropped arrows
+                            if (Time.time > SkipTime)
                             {
-                                if (entity is EntityItem item && item.itemStack?.count == 1 && item.CanCollect())
+                                foreach (var entity in world.Entities.dict.Values.ToArray())
                                 {
-                                    var distance = (player.position - item.position).magnitude;
-                                    if (distance < Constants.cCollectItemDistance)
+                                    if (entity is EntityItem item && item.itemStack?.count == 1 && item.CanCollect())
                                     {
-                                        if (item.itemClass.IsSticky)
+                                        var distance = (player.position - item.position).magnitude;
+                                        if (distance < Constants.cCollectItemDistance)
                                         {
-                                            if ((player.inventory.CanTakeItem(item.itemStack) || player.bag.CanTakeItem(item.itemStack)))
+                                            if (item.itemClass.IsSticky)
                                             {
-                                                GameManager.Instance.CollectEntityServer(item.entityId, player.entityId);
+                                                if ((player.inventory.CanTakeItem(item.itemStack) || player.bag.CanTakeItem(item.itemStack)))
+                                                {
+                                                    GameManager.Instance.CollectEntityServer(item.entityId, player.entityId);
+                                                }
                                             }
                                         }
                                     }
@@ -89,25 +93,25 @@ namespace VoidGags
                     }
                 }
             }
-        }
 
-        /// <summary>
-        /// Time delay to not auto-pick-up when player dropped 1 arrow intentionally.
-        /// </summary>
-        public class GameManager_ItemDropServer
-        {
-            public static void Prefix(ItemStack _itemStack)
+            /// <summary>
+            /// Time delay to not auto-pick-up when player dropped 1 arrow intentionally.
+            /// </summary>
+            public class GameManager_ItemDropServer
             {
-                if (_itemStack.count == 1)
+                public static void Prefix(ItemStack _itemStack)
                 {
-                    if (_itemStack.itemValue?.ItemClass?.IsSticky == true)
+                    if (_itemStack.count == 1)
                     {
-                        var caller = Helper.GetCallerMethod();
-                        //LogModWarning($"{caller.DeclaringType.Name}.{caller.Name}() : {_itemStack.itemValue?.ItemClass?.Name}");
-                        if (caller.DeclaringType.Name == nameof(ItemActionEntryDrop) ||
-                            (caller.DeclaringType.Name == nameof(XUiM_PlayerInventory) && caller.Name == nameof(XUiM_PlayerInventory.DropItem)))
+                        if (_itemStack.itemValue?.ItemClass?.IsSticky == true)
                         {
-                            XUiC_Toolbelt_Update_2.SkipTime = Time.time + 3; // 3 seconds
+                            var caller = Helper.GetCallerMethod();
+                            //LogModWarning($"{caller.DeclaringType.Name}.{caller.Name}() : {_itemStack.itemValue?.ItemClass?.Name}");
+                            if (caller.DeclaringType.Name == nameof(ItemActionEntryDrop) ||
+                                (caller.DeclaringType.Name == nameof(XUiM_PlayerInventory) && caller.Name == nameof(XUiM_PlayerInventory.DropItem)))
+                            {
+                                SkipTime = Time.time + 3; // 3 seconds
+                            }
                         }
                     }
                 }
