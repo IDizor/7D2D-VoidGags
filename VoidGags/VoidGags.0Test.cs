@@ -1,5 +1,5 @@
-﻿using HarmonyLib;
-using UnityEngine;
+﻿using System;
+using HarmonyLib;
 
 namespace VoidGags
 {
@@ -8,11 +8,28 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        //[HarmonyPatch(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.PostInit))]
+        //[HarmonyPatch(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon))]
         //public static class knqwefkjeqw
         //{
-        //    public static void Postfix()
+        //    public static bool skipPatch = false;
+        //    public static bool Prefix(XUiC_ItemStack __instance)
         //    {
+        //        if (skipPatch)
+        //        {
+        //            skipPatch = false;
+        //            return true;
+        //        }
+        //        try
+        //        {
+        //            skipPatch = true;
+        //            __instance.updateLockTypeIcon();
+        //            return false;
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            LogModError(ex.ToString());
+        //            throw;
+        //        }
         //    }
         //}
 

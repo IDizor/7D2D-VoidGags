@@ -5,5 +5,5 @@
 	<Description value="The set of the useful fixes and features." />
 	<Author value="Dizor" />
 	<Website value="https://github.com/IDizor/7D2D-VoidGags" />
-	<Version value="2.4" compat="2.3(b8)"/>
+	<Version value="2.4.1" compat="2.3(b8)"/>
 </xml>

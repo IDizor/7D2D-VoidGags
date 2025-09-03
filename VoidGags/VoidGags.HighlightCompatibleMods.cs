@@ -16,9 +16,6 @@ namespace VoidGags
         {
             LogApplyingPatch(nameof(Settings.HighlightCompatibleMods));
 
-            Harmony.Patch(AccessTools.PropertyGetter(typeof(XUiM_AssembleItem), nameof(XUiM_AssembleItem.CurrentItem)),
-                postfix: new HarmonyMethod(XUiM_AssembleItem_CurrentItem_Getter.Postfix));
-
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), nameof(XUiC_ItemInfoWindow.SetInfo)),
                 postfix: new HarmonyMethod(XUiC_ItemInfoWindow_SetInfo.Postfix));
 
@@ -26,10 +23,9 @@ namespace VoidGags
                 prefix: new HarmonyMethod(XUiC_ItemInfoWindow_ShowEmptyInfo.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_InfoWindow), nameof(XUiC_InfoWindow.OnVisibilityChanged)),
-                postfix: new HarmonyMethod(XUiC_InfoWindow_OnVisibilityChanged.Postfix));
+                prefix: new HarmonyMethod(XUiC_InfoWindow_OnVisibilityChanged.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon)),
-                prefix: new HarmonyMethod(XUiC_ItemStack_updateLockTypeIcon.Prefix),
                 postfix: new HarmonyMethod(XUiC_ItemStack_updateLockTypeIcon.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeEntry), nameof(XUiC_RecipeEntry.SetRecipeAndHasIngredients)),
@@ -43,42 +39,52 @@ namespace VoidGags
         public static class HighlightCompatibleMods
         {
             public static ItemStack SelectedItem = null;
-            public static bool IsUpdateIconMethod = false;
-
+            
             public static void SetItemStackGridsDirty()
             {
-                Helper.FindControllersByType<XUiC_ItemStackGrid>().ForEach(c => c.SetAllChildrenDirty());
+                Helper.FindControllersByType<XUiC_ItemStackGrid>().ForEach(c =>
+                {
+                    if (c.GetParentWindow().IsVisible)
+                        c.SetAllChildrenDirty();
+                });
             }
 
             public static void RefreshRecipeLists()
             {
                 Helper.FindControllersByType<XUiC_RecipeList>().ForEach(c =>
                 {
-                    c.IsDirty = true;
-                    c.pageChanged = true;
+                    if (c.GetParentWindow().IsVisible)
+                    {
+                        c.IsDirty = true;
+                        c.pageChanged = true;
+                    }
                 });
             }
 
+            public static void ClearSelectedItem()
+            {
+                SelectedItem = null;
+                SetItemStackGridsDirty();
+                RefreshRecipeLists();
+            }
+
             /// <summary>
-            /// Track selected item using item info window.
+            /// Track selected item using the item info window.
             /// </summary>
             public static class XUiC_ItemInfoWindow_SetInfo
             {
                 public static void Postfix(XUiC_ItemInfoWindow __instance, ItemStack stack)
                 {
-                    // if item is modifyable
                     if (__instance.mainActionItemList?.itemActionEntries != null &&
-                        __instance.mainActionItemList.itemActionEntries.Any(a => a is ItemActionEntryAssemble))
+                        __instance.mainActionItemList.itemActionEntries.Any(a => a is ItemActionEntryAssemble)) // if item is modifyable
                     {
-                        SelectedItem = stack.IsEmpty() ? null : stack;
+                        SelectedItem = stack?.IsEmpty() == false ? stack.Clone() : null;
                         SetItemStackGridsDirty();
                         RefreshRecipeLists();
                     }
                     else if (SelectedItem != null)
                     {
-                        SelectedItem = null;
-                        SetItemStackGridsDirty();
-                        RefreshRecipeLists();
+                        ClearSelectedItem();
                     }
                 }
             }
@@ -92,9 +98,7 @@ namespace VoidGags
                 {
                     if (SelectedItem != null)
                     {
-                        SelectedItem = null;
-                        SetItemStackGridsDirty();
-                        RefreshRecipeLists();
+                        ClearSelectedItem();
                     }
                 }
             }
@@ -104,44 +108,84 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_InfoWindow_OnVisibilityChanged
             {
-                public static void Postfix(XUiC_InfoWindow __instance, bool _isVisible)
+                public static void Prefix(XUiC_InfoWindow __instance, bool _isVisible)
                 {
                     if (!_isVisible && __instance is XUiC_ItemInfoWindow)
                     {
-                        SelectedItem = null;
+                        ClearSelectedItem();
                     }
                 }
             }
 
             /// <summary>
-            /// Substitutes assembling item if empty.
-            /// </summary>
-            public static class XUiM_AssembleItem_CurrentItem_Getter
-            {
-                public static void Postfix(ref ItemStack __result)
-                {
-                    if (IsUpdateIconMethod &&
-                        SelectedItem != null &&
-                        (__result == null || __result.IsEmpty()))
-                    {
-                        __result = SelectedItem;
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Track update icon method.
+            /// Update mod item icon according to selected item compatibility.
             /// </summary>
             public static class XUiC_ItemStack_updateLockTypeIcon
             {
-                public static void Prefix()
+                public static void Postfix(XUiC_ItemStack __instance)
                 {
-                    IsUpdateIconMethod = true;
-                }
+                    if (SelectedItem != null && __instance.flashLockTypeIcon == flashLockTypes.None && __instance.itemClass is ItemClassModifier itemClassModifier)
+                    {
+                        /// TODO: before new release compare this block with the original code from <see cref="XUiC_ItemStack.updateLockTypeIcon"/>.
+                        /// Latest original code was:
 
-                public static void Postfix()
-                {
-                    IsUpdateIconMethod = false;
+                        //if (itemClass is ItemClassModifier itemClassModifier)
+                        //{
+                        //    lockSprite = "ui_game_symbol_assemble";
+                        //    if (itemClassModifier.HasAnyTags(ItemClassModifier.CosmeticModTypes))
+                        //    {
+                        //        lockSprite = "ui_game_symbol_paint_bucket";
+                        //    }
+                        //    if (base.xui.AssembleItem.CurrentItem != null)
+                        //    {
+                        //        if ((itemClassModifier.InstallableTags.IsEmpty || base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
+                        //        {
+                        //            if (StackLocation != StackLocationTypes.Part)
+                        //            {
+                        //                for (int i = 0; i < base.xui.AssembleItem.CurrentItem.itemValue.Modifications.Length; i++)
+                        //                {
+                        //                    ItemValue itemValue = base.xui.AssembleItem.CurrentItem.itemValue.Modifications[i];
+                        //                    if (!itemValue.IsEmpty() && itemValue.ItemClass.HasAnyTags(itemClassModifier.ItemTags))
+                        //                    {
+                        //                        flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
+                        //                        return;
+                        //                    }
+                        //                }
+                        //            }
+                        //            flashLockTypeIcon = flashLockTypes.Allowed;
+                        //        }
+                        //        else
+                        //        {
+                        //            setLockTypeIconColor(Color.grey);
+                        //            flashLockTypeIcon = flashLockTypes.None;
+                        //        }
+                        //    }
+                        //    else
+                        //    {
+                        //        setLockTypeIconColor(Color.white);
+                        //        flashLockTypeIcon = flashLockTypes.None;
+                        //    }
+                        //}
+
+                        /// Converted to the following code (SelectedItem should be used instead the base.xui.AssembleItem.CurrentItem) : 
+                        if ((itemClassModifier.InstallableTags.IsEmpty || SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
+                        {
+                            if (__instance.StackLocation != StackLocationTypes.Part && SelectedItem.itemValue.Modifications != null) // added own check "Modifications != null"
+                            {
+                                for (int i = 0; i < SelectedItem.itemValue.Modifications.Length; i++)
+                                {
+                                    ItemValue itemValue = SelectedItem.itemValue.Modifications[i];
+                                    if (itemValue != null && !itemValue.IsEmpty() && itemValue.ItemClass?.HasAnyTags(itemClassModifier.ItemTags) == true) // added own null checks "itemValue != null", and ItemClass"." -> "?."
+                                    {
+                                        __instance.flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
+                                        return;
+                                    }
+                                }
+                            }
+                            __instance.flashLockTypeIcon = flashLockTypes.Allowed;
+                        }
+                        /// End of block to compare
+                    }
                 }
             }
 
@@ -154,10 +198,10 @@ namespace VoidGags
                 {
                     if (SelectedItem != null && __instance.lblName != null)
                     {
-                        if (__instance.Recipe?.GetOutputItemClass() is ItemClassModifier itemClass)
+                        if (__instance.Recipe?.GetOutputItemClass() is ItemClassModifier)
                         {
                             var stack = new XUiC_ItemStack();
-                            stack.itemStack = new(new(__instance.Recipe.itemValueType), 0);
+                            stack.itemStack = new(new(__instance.Recipe.itemValueType), 1);
                             stack.xui = __instance.xui;
                             stack.updateLockTypeIcon();
                             if (stack.flashLockTypeIcon == flashLockTypes.Allowed || stack.flashLockTypeIcon == flashLockTypes.AlreadyEquipped)
@@ -166,7 +210,6 @@ namespace VoidGags
                                     ? stack.modAllowedColor
                                     : stack.modAlreadyEquippedColor;
                                 __instance.lblName.Color = Color.Lerp(__instance.lblName.Color, color, 0.4f);
-                                __instance.IsDirty = true;
                             }
                         }
                     }

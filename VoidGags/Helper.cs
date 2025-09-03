@@ -14,7 +14,7 @@ namespace VoidGags
         /// <summary>
         /// Gets the local player entity.
         /// </summary>
-        public static EntityPlayerLocal PlayerLocal => GameManager.Instance.World.GetPrimaryPlayer();
+        public static EntityPlayerLocal PlayerLocal => GameManager.Instance?.World?.GetPrimaryPlayer();
 
         /// <summary>
         /// Gets the current player identifier.
@@ -131,7 +131,7 @@ namespace VoidGags
         /// </summary>
         public static List<TController> FindControllersByType<TController>() where TController : XUiController
         {
-            return PlayerLocal.PlayerUI?.xui.WindowGroups?.SelectMany(wg => wg.Controller.GetChildrenByType<TController>()).ToList() ?? [];
+            return PlayerLocal?.PlayerUI?.xui.WindowGroups?.SelectMany(wg => wg.Controller.GetChildrenByType<TController>()).ToList() ?? [];
         }
 
         /// <summary>
