@@ -167,7 +167,7 @@ namespace VoidGags
                         //    }
                         //}
 
-                        /// Converted to the following code (SelectedItem should be used instead the base.xui.AssembleItem.CurrentItem) : 
+                        /// Converted to the following code (SelectedItem should be used instead of base.xui.AssembleItem.CurrentItem) :
                         if ((itemClassModifier.InstallableTags.IsEmpty || SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
                         {
                             if (__instance.StackLocation != StackLocationTypes.Part && SelectedItem.itemValue.Modifications != null) // added own check "Modifications != null"

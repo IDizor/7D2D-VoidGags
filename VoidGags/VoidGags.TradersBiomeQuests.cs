@@ -31,13 +31,13 @@ namespace VoidGags
                     if (caller.DeclaringType == typeof(EntityTrader) && caller.Name == nameof(EntityTrader.PopulateActiveQuests))
                     {
                         var quest = __instance;
-                        if (quest.PositionData.TryGetValue(Quest.PositionDataTypes.TraderPosition, out Vector3 traderPos))
+                        if (quest.QuestClass.Shareable && quest.PositionData.TryGetValue(Quest.PositionDataTypes.TraderPosition, out Vector3 traderPos))
                         {
                             var questBiome = GameManager.Instance.World.GetBiomeInWorld((int)quest.Position.x, (int)quest.Position.z);
                             var traderBiome = GameManager.Instance.World.GetBiomeInWorld((int)traderPos.x, (int)traderPos.z);
                             if (questBiome.m_Id != traderBiome.m_Id)
                             {
-                                //LogModWarning($"Biome mismatch: [Trader:{traderBiome.LocalizedName}], [Quest:{questBiome.LocalizedName}] ({quest.GetPOIName()}) Distance: {traderPos.DistanceTo(quest.position):0}");
+                                //LogModWarning($"Biome mismatch: [Trader:{traderBiome.LocalizedName}], [Quest:{questBiome.LocalizedName}] ({quest.QuestClass?.Name}) Distance: {traderPos.DistanceTo(quest.position):0}");
                                 __result = false;
                             }
                         }
