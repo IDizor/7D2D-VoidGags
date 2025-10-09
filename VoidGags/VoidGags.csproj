@@ -57,6 +57,9 @@
       <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="NGUI">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\NGUI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -87,6 +90,9 @@
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.VehiclesModule">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.VehiclesModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
@@ -98,13 +104,15 @@
     <Compile Include="Types\ItemActionEntryCustom.cs" />
     <Compile Include="VoidGags.0Test.cs" />
     <Compile Include="VoidGags.ClickableMarkers.cs" />
+    <Compile Include="VoidGags.RhinoTouch.cs" />
+    <Compile Include="VoidGags.RoadRash.cs" />
     <Compile Include="VoidGags.TradersBiomeQuests.cs" />
     <Compile Include="VoidGags.TradersPlayerReputation.cs" />
     <Compile Include="VoidGags.MoveOnePiece.cs" />
     <Compile Include="VoidGags.DamageModifier.cs" />
     <Compile Include="VoidGags.ZombiesStumbleChance.cs" />
     <Compile Include="VoidGags.ZombieFriendlyFire.cs" />
-    <Compile Include="VoidGags.VisibleSkriptedSleepers.cs" />
+    <Compile Include="VoidGags.VisibleScriptedSleepers.cs" />
     <Compile Include="VoidGags.AutoSpreadLoot.cs" />
     <Compile Include="VoidGags.JumpControl.cs" />
     <Compile Include="VoidGags.SprintJunkie.cs" />
@@ -112,7 +120,7 @@
     <Compile Include="VoidGags.VehicleRefuelTimer.cs" />
     <Compile Include="VoidGags.VehicleRepairTimer.cs" />
     <Compile Include="VoidGags.OddNightSoundsVolume.cs" />
-    <Compile Include="VoidGags.EnqeueCraftWithNoFuel.cs" />
+    <Compile Include="VoidGags.EnqeueCraftWhenNoFuel.cs" />
     <Compile Include="VoidGags.ArrowsBoltsAutoPickUp.cs" />
     <Compile Include="VoidGags.GeneratorSwitchFirst.cs" />
     <Compile Include="VoidGags.PiercingShots.cs" />

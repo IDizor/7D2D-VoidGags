@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using bln = System.Boolean;
+using fla = System.Single[];
 using flt = System.Single;
 using str = System.String;
 
@@ -55,7 +57,7 @@ namespace VoidGags
         public static bln ExplosionMining = true;
         public static bln SprintJunkie = true;
         public static bln JumpControl = true;
-        public static bln VisibleScriptedSleepers = true;
+        public static bln VisibleScriptedSleepers = false;
         public static bln ZombiesFriendlyFire = true;
         public static flt ZombiesStumbleChance = 1.0f;
         public static bln DamageModifier = false; // hidden feature, disabled by default
@@ -64,6 +66,10 @@ namespace VoidGags
         public static bln ClickableMarkers = true;
         public static bln TradersPlayerReputation = true;
         public static bln TradersBiomeQuests = true;
+        public static bln RoadRash = true;
+        public static fla RoadRash_Drive = [1.5f, 1.25f, 1.25f, 0.9f, 0.7f, 0.8f, 0.7f, 0.1f, 1f]; // [Asphalt, Gravel, Wooden, Ground, Sand, Snow, Destroyed, Bushes, Other]
+        public static fla RoadRash_Walk = [1.2f, 1.2f, 1.0f, 0.9f, 0.7f, 0.8f, 0.8f, 0.3f, 1f]; // [Asphalt, Gravel, Wooden, Ground, Sand, Snow, Destroyed, Bushes, Other]
+        public static bln RhinoTouch = true;
 
         static Settings()
         {
@@ -78,13 +84,16 @@ namespace VoidGags
                     {
                         if (settings.TryGetValue(f.Name, out object v))
                         {
-                            f.SetValue(null, Convert.ChangeType(v, f.FieldType));
+                            if (f.FieldType.IsArray)
+                                f.SetValue(null, ((JArray)v).ToObject(f.FieldType));
+                            else
+                                f.SetValue(null, Convert.ChangeType(v, f.FieldType));
                         }
                     });
                 }
-                catch
+                catch (Exception ex)
                 {
-                    VoidGags.LogModException("Failed to parse config file.");
+                    VoidGags.LogModException("Failed to parse config file: " + ex.Message);
                 }
             }
             else

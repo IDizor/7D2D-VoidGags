@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -32,6 +33,28 @@ namespace VoidGags
         public static float DistanceTo(this Vector3 fromPos, Vector3 toPos)
         {
             return (fromPos - toPos).magnitude;
+        }
+
+        public static bool IsInCubeWith(this Vector3i pos, Vector3i withPos, int cubeRadius)
+        {
+            if (Mathf.Abs(pos.x - withPos.x) > cubeRadius ||
+                Mathf.Abs(pos.y - withPos.y) > cubeRadius ||
+                Mathf.Abs(pos.z - withPos.z) > cubeRadius)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static bool IsInCubeWith(this Vector3 pos, Vector3 withPos, float cubeRadius)
+        {
+            if (Mathf.Abs(pos.x - withPos.x) > cubeRadius ||
+                Mathf.Abs(pos.y - withPos.y) > cubeRadius ||
+                Mathf.Abs(pos.z - withPos.z) > cubeRadius)
+            {
+                return false;
+            }
+            return true;
         }
 
         public static Vector3 DirectionTo(this Vector3 fromPos, Vector3 toPos)
@@ -124,15 +147,6 @@ namespace VoidGags
             return vector * -1;
         }
 
-        public static string GetVehicleEntityId(this XUiC_ContainerStandardControls controls)
-        {
-            if (controls.xui.vehicle != null)
-            {
-                return $"vehicle-{controls.xui.vehicle.EntityId}";
-            }
-            return null;
-        }
-
         public static bool HasFuelAndCanStart(this XUiC_WorkstationFuelGrid workstation)
         {
             return !workstation.WorkstationData.GetIsBesideWater()
@@ -192,6 +206,27 @@ namespace VoidGags
         public static ProgressionValue PerkParkour(this EntityPlayer player)
         {
             return player.Progression.GetProgressionValue("perkParkour");
+        }
+
+        public static bool Is(this Block block, string nameStart)
+        {
+            return block.blockName.StartsWith(nameStart, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static int RaiseEvent(this object instance, string eventName, object[] eventParams)
+        {
+            var typeInfo = instance.GetType().GetTypeInfo();
+            var fieldInfo = typeInfo.GetDeclaredField(eventName);
+            MulticastDelegate eventDelagate = (MulticastDelegate)fieldInfo.GetValue(instance);
+
+            Delegate[] delegates = eventDelagate.GetInvocationList();
+
+            foreach (Delegate d in delegates)
+            {
+                d.GetMethodInfo().Invoke(d.Target, eventParams);
+            }
+
+            return delegates.Length;
         }
     }
 }

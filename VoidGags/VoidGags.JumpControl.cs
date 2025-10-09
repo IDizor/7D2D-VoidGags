@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using InControl;
 using static VoidGags.VoidGags.JumpControl;
 
 namespace VoidGags
@@ -14,6 +15,9 @@ namespace VoidGags
 
             Harmony.Patch(AccessTools.Method(typeof(vp_FPController), nameof(vp_FPController.UpdateJumpForceWalk)),
                 postfix: new HarmonyMethod(vp_FPController_UpdateJumpForceWalk.Postfix));
+
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.MoveByInput)),
+                prefix: new HarmonyMethod(EntityPlayerLocal_MoveByInput.Prefix, priority: Priority.VeryHigh));
         }
 
         public static class JumpControl
@@ -32,7 +36,6 @@ namespace VoidGags
                         __instance.Player.Jump.Active &&
                         !__instance.m_Grounded &&
                         !__instance.localPlayer.inputWasJump &&
-                        !__instance.localPlayer.isLadderAttached &&
                         !__instance.localPlayer.IsSwimming() &&
                         __instance.m_MotorThrottle.y > 0f)
                     {
@@ -45,6 +48,35 @@ namespace VoidGags
                     {
                         JumpReset = false;
                     }
+                }
+            }
+
+            /// <summary>
+            /// Suppress immediate jump from a grabbed ladder if the jump key was not released since the previous jump.
+            /// </summary>
+            public static class EntityPlayerLocal_MoveByInput
+            {
+                static bool wasLadderAttached = false;
+                static bool suppressJump = false;
+
+                public static void Prefix(EntityPlayerLocal __instance)
+                {
+                    if (__instance.movementInput.jump)
+                    {
+                        if (__instance.isLadderAttached && !wasLadderAttached)
+                        {
+                            suppressJump = true;
+                        }
+                        if (suppressJump)
+                        {
+                            __instance.movementInput.jump = false;
+                        }
+                    }
+                    else
+                    {
+                        suppressJump = false;
+                    }
+                    wasLadderAttached = __instance.isLadderAttached;
                 }
             }
         }

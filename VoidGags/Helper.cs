@@ -11,10 +11,30 @@ namespace VoidGags
 {
     public static class Helper
     {
+        private static EntityPlayerLocal playerLocal = null;
+
         /// <summary>
         /// Gets the local player entity.
         /// </summary>
-        public static EntityPlayerLocal PlayerLocal => GameManager.Instance?.World?.GetPrimaryPlayer();
+        public static EntityPlayerLocal PlayerLocal
+        {
+            get
+            {
+                if (playerLocal == null)
+                {
+                    playerLocal = GameManager.Instance?.World?.GetPrimaryPlayer();
+                }
+                return playerLocal;
+            }
+        }
+
+        /// <summary>
+        /// Clear player local private variable.
+        /// </summary>
+        public static void ClearCachedPlayerLocal()
+        {
+            playerLocal = null;
+        }
 
         /// <summary>
         /// Gets the current player identifier.
@@ -144,7 +164,7 @@ namespace VoidGags
             GameManager.Instance.World.GetEntitiesInBounds(typeof(TEntity), bb, entities);
             if (entities.Count == 0)
             {
-                return new List<TEntity>();
+                return [];
             }
 
             return entities.Select(e => ((e.position - pos).magnitude, e))
@@ -263,6 +283,9 @@ namespace VoidGags
             return GameManager.Instance.World.IsWithinTraderArea(pos);
         }
 
+        /// <summary>
+        /// Create delay-timer on UI to perform specified action.
+        /// </summary>
         public static void UiTimerAction(float delay, Action action, Action cancelAction = null)
         {
             LocalPlayerUI playerUI = PlayerLocal?.PlayerUI;
@@ -281,6 +304,9 @@ namespace VoidGags
             }
         }
 
+        /// <summary>
+        /// Check whether player can see specified position.
+        /// </summary>
         public static bool PlayerCanSeePos(EntityPlayer player, Vector3 pos)
         {
             var headPosition = player.getHeadPosition();
@@ -290,11 +316,15 @@ namespace VoidGags
             return !someObstacleHit;
         }
 
-        public static bool AnyPlayerCanSeePos(World world, Vector3 pos, float maxRadius, out EntityPlayer player)
+        /// <summary>
+        /// Check whether any player in the world can see any of specified positions.
+        /// </summary>
+        public static bool AnyPlayerCanSeePos(World world, List<Vector3> poss, float maxRadius, out EntityPlayer player)
         {
             for (int i = 0; i < world.Players.list.Count; i++)
             {
                 var p = world.Players.list[i];
+                foreach (var pos in poss)
                 if ((maxRadius <= 0 || p.position.DistanceTo(pos) <= maxRadius) && PlayerCanSeePos(p, pos))
                 {
                     player = p;
@@ -305,6 +335,9 @@ namespace VoidGags
             return false;
         }
 
+        /// <summary>
+        /// Check whether any player is located in sphere with specified radius.
+        /// </summary>
         public static bool AnyPlayerIsInRadius(World world, Vector3 pos, float radius, out EntityPlayer player)
         {
             for (int i = 0; i < world.Players.list.Count; i++)

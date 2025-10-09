@@ -35,7 +35,7 @@ namespace VoidGags
                     if (zombie != null && zombie.rand.RandomFloat < Chance)
                     {
                         // check state: not ragdoll, is moving, etc.
-                        if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.03f && zombie.onGround && !zombie.IsInWater())
+                        if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.05f && !zombie.IsWalkTypeACrawl() && zombie.onGround && !zombie.IsInWater())
                         {
                             //Debug.LogWarning("Stumble activated for " + zombie.EntityName);
                             var dmgResponse = DamageResponse.New(

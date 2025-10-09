@@ -90,9 +90,12 @@ namespace VoidGags
             if (Settings.ClickableMarkers) SafePatch(ApplyPatches_ClickableMarkers);
             if (Settings.TradersPlayerReputation) SafePatch(ApplyPatches_TradersPlayerReputation);
             if (Settings.TradersBiomeQuests) SafePatch(ApplyPatches_TradersBiomeQuests);
+            if (Settings.RoadRash) SafePatch(ApplyPatches_RoadRash);
+            if (Settings.RhinoTouch) SafePatch(ApplyPatches_RhinoTouch);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
+                Helper.ClearCachedPlayerLocal();
             });
         }
 

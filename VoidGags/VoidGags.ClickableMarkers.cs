@@ -1,6 +1,9 @@
-﻿using HarmonyLib;
+﻿using System.Collections.Generic;
+using HarmonyLib;
 using UniLinq;
+using UnityEngine;
 using static VoidGags.VoidGags.ClickableMarkers;
+using static XUiC_MapWaypointList;
 
 namespace VoidGags
 {
@@ -56,7 +59,29 @@ namespace VoidGags
                         {
                             // select waypoint in the list
                             var waypointList = __instance.xui.GetChildByType<XUiC_MapWaypointList>();
-                            waypointList?.SelectWaypoint(__instance.closestMouseOverNavObject);
+                            if (waypointList != null)
+                            {
+                                SelectWaypoint(__instance.closestMouseOverNavObject);
+
+                                /// Have to use own method because the original <see cref="XUiC_MapWaypointList.SelectWaypoint"/> has a bug.
+                                /// TODO: Check whether the original method is fixed and can be used.
+                                void SelectWaypoint(NavObject _nav)
+                                {
+                                    var list = new List<Waypoint>(player.Waypoints.Collection.list);
+                                    list.Sort(new WaypointSorter(player));
+                                    for (int i = 0; i < list.Count; i++)
+                                    {
+                                        var wp = list[i];
+                                        if (wp.navObject.Equals(_nav))
+                                        {
+                                            waypointList.currentPage = Mathf.Max(0, i - 1) / waypointList.cCountWaypointsPerPage; // bug line was: currentPage = i / waypointList.cCountWaypointsPerPage;
+                                            waypointList.UpdateWaypointsList(list[i]);
+                                            waypointList.SelectedWaypoint = wp;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                         return false;
                     }

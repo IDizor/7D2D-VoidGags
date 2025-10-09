@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 using VoidGags.Types;
@@ -24,8 +26,8 @@ namespace VoidGags
             Harmony.Patch(AccessTools.Method(typeof(SleeperEventData), nameof(SleeperEventData.SetupData)),
                 postfix: new HarmonyMethod(SleeperEventData_SetupData.Postfix));
 
-            Harmony.Patch(AccessTools.Method(typeof(SleeperVolume), nameof(SleeperVolume.Tick)),
-                prefix: new HarmonyMethod(SleeperVolume_Tick.Prefix));
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.OnUpdateLive)),
+                prefix: new HarmonyMethod(EntityPlayerLocal_OnUpdateLive.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(EAISetNearestEntityAsTarget), nameof(EAISetNearestEntityAsTarget.FindTargetPlayer)),
                 prefix: new HarmonyMethod(EAISetNearestEntityAsTarget_FindTargetPlayer.Prefix));
@@ -34,6 +36,7 @@ namespace VoidGags
         public static class VisibleScriptedSleepers
         {
             public const float TouchDistance = 20f;
+            public const float SeeDistance = 100f;
             public static int PlayerId;
             public static float TouchTime = 0f;
 
@@ -82,7 +85,17 @@ namespace VoidGags
                             yield return new WaitForSeconds(entity.rand.Next(30, 60));
                             if (entity != null && weakBlock != null)
                             {
+                                entity.SetSleeperActive();
                                 weakBlock.OnEntityCollidedWithBlock(entity.world, 0, entity.blockPosStandingOn, entity.blockValueStandingOn, entity);
+                            }
+                        }
+                        else
+                        {
+                            // activate sleepers senses during sleep
+                            yield return new WaitForSeconds(entity.rand.Next(30, 60));
+                            if (entity != null && !entity.IsDead())
+                            {
+                                entity.SetSleeperActive();
                             }
                         }
                     }
@@ -101,23 +114,77 @@ namespace VoidGags
             }
 
             /// <summary>
-            /// Spawn unloaded sleepers.
+            /// Spawn regular sleepers.
             /// </summary>
-            public static class SleeperVolume_Tick
+            public static class EntityPlayerLocal_OnUpdateLive
             {
-                private static DelayStorage<Vector3> Delays = new(2f);
+                private const int svChunks = 4;
+                private const float svChunkTime = 0.5f;
+                private static DelayStorage Delay = new(svChunkTime * svChunks);
+                private static DelayStorage DelayClosest = new(15f);
+                private static List<SleeperVolume> ClosestVolumes = [];
 
-                public static void Prefix(SleeperVolume __instance, World _world)
+                public static void Postfix(EntityPlayerLocal __instance)
                 {
-                    if (!__instance.wasCleared && __instance.spawnsAvailable?.Count > 0)
+                    if (DelayClosest.Check())
                     {
-                        if (Delays.Check(__instance.Center))
+                        var world = GameManager.Instance.World;
+                        ClosestVolumes = world.sleeperVolumes
+                            .Where(sv => sv.BoxMin.IsInCubeWith(__instance.blockPosStandingOn, 300))
+                            .ToList();
+                    }
+                    if (Delay.Check())
+                    {
+                        var svChunkSize = (ClosestVolumes.Count / svChunks) + 1;
+                        if (svChunkSize > 1)
                         {
-                            EntityPlayer player;
-                            if (Helper.AnyPlayerIsInRadius(_world, __instance.Center, TouchDistance, out player) ||
-                                Helper.AnyPlayerCanSeePos(_world, __instance.Center, 300f, out player))
+                            var world = GameManager.Instance.World;
+                            GameManager.Instance.StartCoroutine(ProcessSleeperVolumes());
+                            IEnumerator ProcessSleeperVolumes()
                             {
-                                __instance.UpdatePlayerTouched(_world, player);
+                                for (int i = 0; i < svChunks; i++)
+                                {
+                                    if (world == null || __instance == null) break;
+                                    ProcessSvChunk(world, svChunkSize, i, __instance);
+                                    if (i < svChunks - 1)
+                                        yield return new WaitForSeconds(svChunkTime);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                /// <summary>
+                /// Have to process sleeper volumes by chunks for better performance.
+                /// </summary>
+                private static void ProcessSvChunk(World world, int chunkSize, int chunkNumber, EntityPlayerLocal player)
+                {
+                    var sleeperVolumes = ClosestVolumes
+                        .Skip(chunkSize * chunkNumber).Take(chunkSize)
+                        .Where(sv => sv != null && !sv.wasCleared && !sv.isSpawned && !sv.isSpawning)
+                        .ToArray();
+
+                    foreach (var sleepers in sleeperVolumes)
+                    {
+                        var distance = player.position.DistanceTo(sleepers.Center);
+                        if (distance > SeeDistance) continue;
+                        if (distance < TouchDistance)
+                        {
+                            sleepers.UpdatePlayerTouched(world, player);
+                        }
+                        else
+                        {
+                            var positions = new List<Vector3>() { sleepers.Center };
+                            if (sleepers.respawnMap?.Count > 0)
+                            {
+                                positions.AddRange(sleepers.respawnMap
+                                    .Select(r => world.GetEntity(r.Key) as EntityAlive)
+                                    .Where(s => s?.IsDead() == false)
+                                    .Select(s => s.position));
+                            }
+                            if (positions.Any(pos => Helper.PlayerCanSeePos(player, pos)))
+                            {
+                                sleepers.UpdatePlayerTouched(world, player);
                             }
                         }
                     }
@@ -135,8 +202,7 @@ namespace VoidGags
                 {
                     if (__instance.theEntity?.IsSleeperPassive == true && Delays.Check(__instance.theEntity.entityId))
                     {
-                        if (Helper.AnyPlayerCanSeePos(__instance.theEntity.world, __instance.theEntity.position, 300f, out _) ||
-                            Helper.AnyPlayerCanSeePos(__instance.theEntity.world, __instance.theEntity.getHeadPosition(), 300f, out _))
+                        if (Helper.AnyPlayerCanSeePos(__instance.theEntity.world, [__instance.theEntity.position], SeeDistance, out _))
                         {
                             __instance.theEntity?.SetSleeperActive();
                         }

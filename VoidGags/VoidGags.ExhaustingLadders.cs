@@ -34,7 +34,7 @@ namespace VoidGags
                         && !tags.IsEmpty && _entity is EntityPlayerLocal player)
                     {
                         //Debug.LogWarning($"StaminaChangeOT = {string.Join("/", tags.GetTagNames())}");
-                        if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsFlyMode.Value)
+                        if (!player.onGround && player.isLadderAttached && !player.isSwimming && !player.IsInWater() && !player.IsFlyMode.Value)
                         {
                             __state = true;
                             return;

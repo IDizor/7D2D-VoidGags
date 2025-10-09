@@ -15,8 +15,11 @@ namespace VoidGags
         {
             LogApplyingPatch(nameof(Settings.ExplosionMining));
 
-            Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDestroyedByExplosion)), null,
+            Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDestroyedByExplosion)),
                 postfix: new HarmonyMethod(Block_OnBlockDestroyedByExplosion.Postfix));
+
+            Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.SetBlocksRPC)),
+                prefix: new HarmonyMethod(GameManager_SetBlocksRPC.Prefix));
         }
 
         public static class ExplosionMining
@@ -88,6 +91,51 @@ namespace VoidGags
                         }
 
                         return pos.ToVector3Center();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Move on-ground rolling items above spawned ruins or placed blocks.
+            /// </summary>
+            public static class GameManager_SetBlocksRPC
+            {
+                public static void Prefix(List<BlockChangeInfo> _changes)
+                {
+                    if (_changes == null || _changes.Count != 1) return;
+                    var change = _changes.First();
+                    if (change.blockValue.isair) return;
+                    var world = GameManager.Instance.World;
+                    if (world == null) return;
+                    var current = world.GetBlock(change.pos);
+                    if (!current.isair) return;
+                    var blockPos = change.pos;
+                    var chunk = world.GetChunkFromWorldPos(blockPos) as Chunk;
+                    if (chunk == null) return;
+                    var entities = chunk.GetEntities<EntityItem>(blockPos.ToVector3Center(), 0.9f);
+                    if (entities.Count > 0)
+                    {
+                        var up = GetAirDistance();
+                        foreach (var e in entities)
+                        {
+                            var addPos = new Vector3(0, up, 0);
+                            e.SetPosition(e.position + addPos);
+                            if (e.physicsRB != null)
+                            {
+                                e.physicsRB.position += addPos;
+                            }
+                            //LogModError($"{e.itemClass.Name} is moved up by {up}.");
+                        }
+                    }
+
+                    int GetAirDistance()
+                    {
+                        var i = 1;
+                        while (blockPos.y + i < 254 && world.GetBlock(new(blockPos.x, blockPos.y + i, blockPos.z)).isair == false)
+                        {
+                            i++;
+                        }
+                        return i;
                     }
                 }
             }

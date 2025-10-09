@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Audio;
 using HarmonyLib;
 using UnityEngine;
 using static VoidGags.VoidGags.EnqueueCraftWhenNoFuel;
@@ -22,7 +23,10 @@ namespace VoidGags
                 postfix: new HarmonyMethod(XUiC_WorkstationFuelGrid_TurnOn.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_WorkstationWindowGroup), nameof(XUiC_WorkstationWindowGroup.OnClose)),
-                postfix: new HarmonyMethod(XUiC_WorkstationWindowGroup_OnClose.Postfix));
+                prefix: new HarmonyMethod(XUiC_WorkstationWindowGroup_OnClose.Prefix));
+
+            Harmony.Patch(AccessTools.Method(typeof(Manager), nameof(Manager.BroadcastPlayByLocalPlayer)),
+                prefix: new HarmonyMethod(Manager_BroadcastPlayByLocalPlayer.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_WorkstationWindowGroup), nameof(XUiC_WorkstationWindowGroup.Update)),
                 postfix: new HarmonyMethod(XUiC_WorkstationWindowGroup_Update.Postfix));
@@ -30,6 +34,8 @@ namespace VoidGags
 
         public static class EnqueueCraftWhenNoFuel
         {
+            public static bool SuppressWorkstationCloseSound = false;
+
             /// <summary>
             /// Allow to enqueue item to craft when no fuel in the workstation.
             /// </summary>
@@ -64,8 +70,10 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_WorkstationWindowGroup_OnClose
             {
-                public static void Postfix(XUiC_WorkstationWindowGroup __instance)
+                public static void Prefix(XUiC_WorkstationWindowGroup __instance)
                 {
+                    SuppressWorkstationCloseSound = false;
+
                     // if it has fuel window
                     if (__instance.fuelWindow != null)
                     {
@@ -75,10 +83,29 @@ namespace VoidGags
 
                         if (warning)
                         {
+                            SuppressWorkstationCloseSound = true;
+                            Helper.DeferredAction(0.1f, () => SuppressWorkstationCloseSound = false);
                             XUiC_PopupToolTip.QueueTooltip(Helper.PlayerLocal.PlayerUI.xui, $"{Localization.Get(__instance.workstation)} : {Localization.Get("TwitchAction_EmptyFuel")} / {Localization.Get("goDisabled")}",
-                                _args: null, _alertSound: "batterybank_stop", _eventHandler: null, _showImmediately: false, _pinTooltip: false);
+                                _args: null, _alertSound: "keystone_build_warning", _eventHandler: null, _showImmediately: false, _pinTooltip: false);
                         }
                     }
+                }
+            }
+
+            /// <summary>
+            /// Suppress workstation close sound.
+            /// </summary>
+            public static class Manager_BroadcastPlayByLocalPlayer
+            {
+                public static bool Prefix()
+                {
+                    if (SuppressWorkstationCloseSound)
+                    {
+                        var caller = Helper.GetCallerMethod();
+                        return caller.DeclaringType != typeof(XUiC_WorkstationWindowGroup);
+                    }
+
+                    return true;
                 }
             }
 

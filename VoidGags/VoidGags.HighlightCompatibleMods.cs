@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 using VoidGags.Types;
@@ -39,6 +40,7 @@ namespace VoidGags
         public static class HighlightCompatibleMods
         {
             public static ItemStack SelectedItem = null;
+            public static Dictionary<XUiC_ItemStack, flashLockTypes> ItemFlashLockTypeCache = [];
             
             public static void SetItemStackGridsDirty()
             {
@@ -63,7 +65,9 @@ namespace VoidGags
 
             public static void ClearSelectedItem()
             {
+                //LogModInfo($"Selected item cleared {SelectedItem?.itemValue?.ItemClass.Name}");
                 SelectedItem = null;
+                ItemFlashLockTypeCache.Clear();
                 SetItemStackGridsDirty();
                 RefreshRecipeLists();
             }
@@ -75,10 +79,11 @@ namespace VoidGags
             {
                 public static void Postfix(XUiC_ItemInfoWindow __instance, ItemStack stack)
                 {
-                    if (__instance.mainActionItemList?.itemActionEntries != null &&
-                        __instance.mainActionItemList.itemActionEntries.Any(a => a is ItemActionEntryAssemble)) // if item is modifyable
+                    if (stack?.itemValue?.HasModSlots == true)
                     {
                         SelectedItem = stack?.IsEmpty() == false ? stack.Clone() : null;
+                        //if (SelectedItem != null) LogModInfo($"Selected item is set to {SelectedItem.itemValue?.ItemClass.Name}");
+                        ItemFlashLockTypeCache.Clear();
                         SetItemStackGridsDirty();
                         RefreshRecipeLists();
                     }
@@ -124,9 +129,16 @@ namespace VoidGags
             {
                 public static void Postfix(XUiC_ItemStack __instance)
                 {
+                    if (ItemFlashLockTypeCache.TryGetValue(__instance, out flashLockTypes flt))
+                    {
+                        //LogModWarning($"Used from cache: flashLockTypes for {__instance.itemClass?.Name}.");
+                        __instance.flashLockTypeIcon = flt;
+                        return;
+                    }
+
                     if (SelectedItem != null && __instance.flashLockTypeIcon == flashLockTypes.None && __instance.itemClass is ItemClassModifier itemClassModifier)
                     {
-                        /// TODO: before new release compare this block with the original code from <see cref="XUiC_ItemStack.updateLockTypeIcon"/>.
+                        /// TODO: Before new release compare this block with the original code from <see cref="XUiC_ItemStack.updateLockTypeIcon"/>.
                         /// Latest original code was:
 
                         //if (itemClass is ItemClassModifier itemClassModifier)
@@ -178,11 +190,13 @@ namespace VoidGags
                                     if (itemValue != null && !itemValue.IsEmpty() && itemValue.ItemClass?.HasAnyTags(itemClassModifier.ItemTags) == true) // added own null checks "itemValue != null", and ItemClass"." -> "?."
                                     {
                                         __instance.flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
+                                        ItemFlashLockTypeCache[__instance] = flashLockTypes.AlreadyEquipped;
                                         return;
                                     }
                                 }
                             }
                             __instance.flashLockTypeIcon = flashLockTypes.Allowed;
+                            ItemFlashLockTypeCache[__instance] = flashLockTypes.Allowed;
                         }
                         /// End of block to compare
                     }
@@ -246,7 +260,7 @@ namespace VoidGags
                             var modsLimit = window.itemStack.itemValue.Modifications?.Length ?? 0;
                             for (int i = 0; i < __instance.itemControllers.Length; i++)
                             {
-                                XUiC_ItemStack stack = __instance.itemControllers[i];
+                                var stack = __instance.itemControllers[i];
 
                                 // store initial color
                                 if (EnabledColor is null)
@@ -264,9 +278,11 @@ namespace VoidGags
                                         if (!stack.ItemStack.IsEmpty() && stack.itemClass != null)
                                         {
                                             var initialItemStack = window.selectedItemStack;
-                                            window.SetItemStack(stack, _makeVisible: true);
-                                            window.mainActionItemList.SetCraftingActionList(XUiC_ItemActionList.ItemActionListTypes.None, stack);
-                                            window.mainActionItemList.AddActionListEntry(new ItemActionEntryCustom(stack, () =>
+                                            var mod = new XUiC_ItemStack() { xui = stack.xui };
+                                            mod.setItemStack(stack.ItemStack);
+                                            window.SetItemStack(mod, _makeVisible: true);
+                                            window.mainActionItemList.SetCraftingActionList(XUiC_ItemActionList.ItemActionListTypes.None, mod);
+                                            window.mainActionItemList.AddActionListEntry(new ItemActionEntryCustom(mod, () =>
                                             {
                                                 window.SetItemStack(initialItemStack, _makeVisible: true);
                                             }));
