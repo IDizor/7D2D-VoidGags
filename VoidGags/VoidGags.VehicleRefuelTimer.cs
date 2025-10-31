@@ -1,5 +1,6 @@
 ﻿using System;
 using HarmonyLib;
+using UnityEngine;
 using static VoidGags.VoidGags.VehicleRefuelTimer;
 
 namespace VoidGags
@@ -27,6 +28,7 @@ namespace VoidGags
         public static class VehicleRefuelTimer
         {
             public const float RefuelingTime = 2f;
+            public const float RefuelingTimeFast = 1f;
             public static EntityPlayerLocal PlayerEntity = null;
             public static float FuelTaken = 0f;
             public static bool SkipAddFuel = false;
@@ -90,6 +92,10 @@ namespace VoidGags
             /// </summary>
             public static class Vehicle_AddFuel
             {
+                private static readonly float refuelLong = 100f;
+                private static readonly float refuelFast = 700f;
+                private static readonly float refuelUnit = (RefuelingTime - RefuelingTimeFast) / (refuelFast - refuelLong);
+
                 public static bool Prefix(Vehicle __instance, float _fuelLevel)
                 {
                     if (IsDedicatedServer) return true;
@@ -103,7 +109,9 @@ namespace VoidGags
                     if (PlayerEntity != null &&
                         FuelTaken > 0f)
                     {
-                        Helper.UiTimerAction(RefuelingTime, action: () =>
+                        var maxFuelLevel = __instance.GetMaxFuelLevel();
+                        var refuelDelay = RefuelingTime - ((Mathf.Clamp(maxFuelLevel, refuelLong, refuelFast) - refuelLong) * refuelUnit);
+                        Helper.UiTimerAction(refuelDelay, action: () =>
                         {
                             SkipAddFuel = true;
                             __instance.AddFuel(_fuelLevel);

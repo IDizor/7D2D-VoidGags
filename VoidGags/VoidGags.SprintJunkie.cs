@@ -37,6 +37,7 @@ namespace VoidGags
             public static bool RegularRunAvailable(EntityPlayerLocal player)
             {
                 return player.AttachedToEntity is null
+                    && !player.bExhausted
                     && !player.IsCrouching
                     && !player.isSwimming
                     && !player.isLadderAttached

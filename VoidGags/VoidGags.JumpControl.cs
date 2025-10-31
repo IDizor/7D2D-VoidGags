@@ -37,6 +37,7 @@ namespace VoidGags
                         !__instance.m_Grounded &&
                         !__instance.localPlayer.inputWasJump &&
                         !__instance.localPlayer.IsSwimming() &&
+                        __instance.localPlayer.PerkParkour().Level > 0 &&
                         __instance.m_MotorThrottle.y > 0f)
                     {
                         __instance.m_MotorThrottle.y *= 0.5f;

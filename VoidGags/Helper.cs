@@ -295,12 +295,26 @@ namespace VoidGags
                 XUiC_Timer childByType = playerUI.xui.GetChildByType<XUiC_Timer>();
                 TimerEventData timerEventData = new();
                 timerEventData.Data = null;
-                timerEventData.Event += (_) => action();
+                timerEventData.Event += OnEvent;
                 if (cancelAction != null)
                 {
-                    timerEventData.CloseEvent += (_) => cancelAction();
+                    timerEventData.CloseEvent += OnCancel;
                 }
                 childByType.SetTimer(delay, timerEventData);
+            }
+
+            void OnEvent(TimerEventData data)
+            {
+                data.Event -= OnEvent;
+                data.CloseEvent -= OnCancel;
+                action();
+            }
+
+            void OnCancel(TimerEventData data)
+            {
+                data.Event -= OnEvent;
+                data.CloseEvent -= OnCancel;
+                cancelAction();
             }
         }
 

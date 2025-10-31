@@ -352,6 +352,7 @@ namespace VoidGags
                             {
                                 var wheel = __instance.wheels[i];
                                 wheel.sideFriction.stiffness *= modifier;
+                                wheel.sideFriction.stiffness += 1f;
                                 wheel.wheelC.sidewaysFriction = wheel.sideFriction;
                             }
                         }

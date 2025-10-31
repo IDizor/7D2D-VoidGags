@@ -35,14 +35,11 @@ namespace VoidGags
                     if (zombie != null && zombie.rand.RandomFloat < Chance)
                     {
                         // check state: not ragdoll, is moving, etc.
-                        if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.05f && !zombie.IsWalkTypeACrawl() && zombie.onGround && !zombie.IsInWater())
+                        if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.02f && !zombie.IsWalkTypeACrawl() && zombie.onGround && !zombie.IsInWater())
                         {
                             //Debug.LogWarning("Stumble activated for " + zombie.EntityName);
-                            var dmgResponse = DamageResponse.New(
-                                new DamageSource(EnumDamageSource.External, EnumDamageTypes.Bashing, zombie.transform.forward),
-                                _fatal: false);
-                            dmgResponse.Strength = Math.Min((int)(zombie.speedForward * 400), 250);
-                            zombie.emodel.DoRagdoll(dmgResponse, 1f);
+                            zombie.emodel.avatarController.BeginStun(EnumEntityStunType.StumbleBreakThroughRagdoll, EnumBodyPartHit.LeftUpperLeg, Utils.EnumHitDirection.None, _criticalHit: false, 1f);
+                            zombie.SetStun(EnumEntityStunType.StumbleBreakThroughRagdoll);
                         }
                     }
                 }
