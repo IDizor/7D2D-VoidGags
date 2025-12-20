@@ -31,7 +31,7 @@ namespace VoidGags
                         }
                         catch (Exception ex)
                         {
-                            LogModException($"Failed to patch UndeadLegacy type method '{ttp.Type.Name}.{ttp.MethodName}()'. {ex.Message}");
+                            LogException($"Failed to patch UndeadLegacy type method '{ttp.Type.Name}.{ttp.MethodName}()'. {ex.Message}");
                         }
                     }
                 }
@@ -58,7 +58,7 @@ namespace VoidGags
             {
                 if (Settings.PickupDamagedItems_Percentage != 100)
                 {
-                    LogModException($"Invalid value for setting '{nameof(Settings.PickupDamagedItems_Percentage)}'.");
+                    LogException($"Invalid value for setting '{nameof(Settings.PickupDamagedItems_Percentage)}'.");
                 }
             }
         }
@@ -66,7 +66,7 @@ namespace VoidGags
         public static class PickupDamagedItems
         {
             public static float PickupDamagedBlockPercentage = 0.2f;
-            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation), typeof(BlockDewCollector)];
+            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation)];
 
             /// <summary>
             /// Makes block undamaged for futher checks.

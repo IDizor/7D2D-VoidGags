@@ -75,7 +75,7 @@ namespace VoidGags
                             var player = world.GetEntity(_entityIdThatOpenedIt) as EntityPlayer;
                             var prefab = player?.prefab?.prefab;
                             PoiTier = Mathf.Max(0, prefab?.DifficultyTier ?? 0);
-                            LogModInfo($"Container: {blockName}, Tags: [{_containerTags}], POI Tier: {PoiTier}, Bonus applied.");
+                            LogInfo($"Container: {blockName}, Tags: [{_containerTags}], POI Tier: {PoiTier}, Bonus applied.");
                         }
                         else
                         {

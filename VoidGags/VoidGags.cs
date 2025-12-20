@@ -14,12 +14,11 @@ namespace VoidGags
     {
         public Harmony Harmony = null;
 
-        public static Mod ModInstance;
         public static string ModFolder;
         public static string FeaturesFolderPath;
         public static bool IsServer;
-        private static List<string> AdditionalXmlPatches = new();
-        private static List<Action> OnGameLoadedActions = new();
+        private static readonly List<string> AdditionalXmlPatches = [];
+        private static readonly List<Action> OnGameLoadedActions = [];
 
         public static bool IsDedicatedServer => GameManager.IsDedicatedServer;
 
@@ -29,21 +28,26 @@ namespace VoidGags
         /// <param name="_modInstance"></param>
         public void InitMod(Mod _modInstance)
         {
-            ModInstance = _modInstance;
-            Debug.Log("Loading mod: " + GetType().ToString());
-            ModFolder = Path.GetDirectoryName(Assembly.GetAssembly(typeof(VoidGags)).Location);
+            ModFolder = Path.GetFullPath(_modInstance.Path);
             FeaturesFolderPath = Path.Combine(ModFolder, "Features");
 
             if (!Directory.Exists(FeaturesFolderPath))
             {
-                LogModException("\"Features\" folder not found. Please reinstall the mod.");
+                LogException("\"Features\" folder not found. Please reinstall the mod.");
                 return;
             }
 
+            Settings.Init(ModFolder);
             Harmony = new Harmony(GetType().ToString());
 
             CheckUndeadLegacy();
+            ApplyAllPatches();
+        }
+
+        public void ApplyAllPatches()
+        {
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
+            SafePatch(ApplyPatches_BugFixes);
 
             if (Settings.SkipNewsScreen) SafePatch(ApplyPatches_SkipNewsScreen);
             if (Settings.CraftingQueueRightClickToMove) SafePatch(ApplyPatches_CraftingQueueMove);
@@ -72,7 +76,6 @@ namespace VoidGags
             if (Settings.PreventPillaring) SafePatch(ApplyPatches_PreventPillaring);
             if (Settings.UnrevealedTradeRoutesOnly) SafePatch(ApplyPatches_UnrevealedTradeRoutesOnly);
             if (Settings.NoScreamersFromOutside) SafePatch(ApplyPatches_NoScreamersFromOutside);
-            if (Settings.FoodWaterBars) SafePatch(ApplyPatches_FoodWaterBars);
             if (Settings.GeneratorSwitchFirst) SafePatch(ApplyPatches_GeneratorSwitchFirst);
             if (Settings.ArrowsBoltsAutoPickUp) SafePatch(ApplyPatches_ArrowsBoltsAutoPickUp);
             if (Settings.EnqueueCraftWhenNoFuel) SafePatch(ApplyPatches_EnqueueCraftWhenNoFuel);
@@ -92,11 +95,21 @@ namespace VoidGags
             if (Settings.TradersBiomeQuests) SafePatch(ApplyPatches_TradersBiomeQuests);
             if (Settings.RoadRash) SafePatch(ApplyPatches_RoadRash);
             if (Settings.RhinoTouch) SafePatch(ApplyPatches_RhinoTouch);
+            if (Settings.SprintModeHold) SafePatch(ApplyPatches_SprintModeHold);
+            if (Settings.CurtainsSmartCut) SafePatch(ApplyPatches_CurtainsSmartCut);
+            if (Settings.SpeedIndicator) SafePatch(ApplyPatches_SpeedIndicator);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
                 Helper.ClearCachedPlayerLocal();
             });
+        }
+
+        public void RevokeAllPatches()
+        {
+            Harmony.UnpatchSelf();
+            AdditionalXmlPatches.Clear();
+            OnGameLoadedActions.Clear();
         }
 
         public static void SafePatch(Action action)
@@ -107,7 +120,7 @@ namespace VoidGags
             }
             catch (Exception e)
             {
-                LogModException("The patch was not applied properly.", e);
+                LogException("The patch was not applied properly.", e);
             }
         }
 
@@ -118,7 +131,7 @@ namespace VoidGags
         {
             if (!Directory.Exists($"{FeaturesFolderPath}\\{patchName}\\Config"))
             {
-                LogModException($"Unable to apply XML patches for '{patchName}'. Incorrect folders structure. Make sure the 'Features' folder is up to date.");
+                LogException($"Unable to apply XML patches for '{patchName}'. Incorrect folders structure. Make sure the 'Features' folder is up to date.");
             }
             AdditionalXmlPatches.Add(patchName);
         }
@@ -191,64 +204,64 @@ namespace VoidGags
             Debug.Log($"Mod {nameof(VoidGags)}: Applying patch {patchName}...");
         }
 
-        internal static void LogModException(string message, Exception inner = null)
+        internal static void LogException(string message, Exception inner = null)
         {
             Debug.LogException(new Exception($"Mod {nameof(VoidGags)}: {message}", innerException: inner));
         }
 
-        internal static void LogModError(string message)
+        internal static void LogError(string message)
         {
             Debug.LogError($"Mod {nameof(VoidGags)}: {message}");
         }
 
-        internal static void LogModWarning(string message)
+        internal static void LogWarning(string message)
         {
             Debug.LogWarning($"Mod {nameof(VoidGags)}: {message}");
         }
 
-        internal static void LogModInfo(string message)
+        internal static void LogInfo(string message)
         {
             Debug.Log($"Mod {nameof(VoidGags)}: {message}");
         }
 
-        internal static void LogModTranspilerFailure(string patchName)
+        internal static void LogTranspilerFailure(string patchName)
         {
-            LogModException($"Failed to apply transpiler patch for feature: {patchName}.");
+            LogException($"Failed to apply transpiler patch for feature: {patchName}.");
         }
 
         private static float spLogError = 0f;
         private static string msgError = null;
-        internal static void LogModErrorNoSpam(string message, float spamProtection = 0.1f)
+        internal static void LogErrorNoSpam(string message, float spamProtection = 0.1f, bool allowSameMessages = false)
         {
-            if (Time.time - spLogError > spamProtection && msgError != message)
+            if (Time.time - spLogError > spamProtection && (allowSameMessages || msgWarning != message))
             {
                 msgError = message;
                 spLogError = Time.time;
-                LogModError(message);
+                LogError(message);
             }
         }
 
         private static float spLogWarning = 0f;
         private static string msgWarning = null;
-        internal static void LogModWarningNoSpam(string message, float spamProtection = 0.1f)
+        internal static void LogWarningNoSpam(string message, float spamProtection = 0.1f, bool allowSameMessages = false)
         {
-            if (Time.time - spLogWarning > spamProtection && msgWarning != message)
+            if (Time.time - spLogWarning > spamProtection && (allowSameMessages || msgWarning != message))
             {
                 msgWarning = message;
                 spLogWarning = Time.time;
-                LogModWarning(message);
+                LogWarning(message);
             }
         }
 
         private static float spLogInfo = 0f;
         private static string msgInfo = null;
-        internal static void LogModInfoNoSpam(string message, float spamProtection = 0.1f)
+        internal static void LogInfoNoSpam(string message, float spamProtection = 0.1f, bool allowSameMessages = false)
         {
-            if (Time.time - spLogInfo > spamProtection && msgInfo != message)
+            if (Time.time - spLogInfo > spamProtection && (allowSameMessages || msgWarning != message))
             {
                 msgInfo = message;
                 spLogInfo = Time.time;
-                LogModInfo(message);
+                LogInfo(message);
             }
         }
     }

@@ -70,7 +70,7 @@ namespace VoidGags
 
                     if (!patched)
                     {
-                        LogModTranspilerFailure(nameof(Settings.ZombiesFriendlyFire));
+                        LogTranspilerFailure(nameof(Settings.ZombiesFriendlyFire));
                     }
 
                     return IL.AsEnumerable();

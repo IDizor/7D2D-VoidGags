@@ -16,7 +16,7 @@ namespace VoidGags
 
             if (!Enum.TryParse(Settings.FastRepair_HotKey, out FastRepairHotKey))
             {
-                LogModException($"Invalid value for setting '{nameof(Settings.FastRepair_HotKey)}'.");
+                LogException($"Invalid value for setting '{nameof(Settings.FastRepair_HotKey)}'.");
                 return;
             }
 

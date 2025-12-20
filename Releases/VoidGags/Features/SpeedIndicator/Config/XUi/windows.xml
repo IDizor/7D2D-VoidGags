@@ -1,0 +1,8 @@
+<dizor>
+
+  <set xpath="/windows/window[@name='windowCompass']/sprite/label[contains(@text,'{daytitle}')]/@width">500</set>
+  <set xpath="/windows/window[@name='windowCompass']/sprite/label[contains(@text,'{daytitle}')]/@justify">left</set>
+  <set xpath="/windows/window[@name='windowCompass']/sprite/label[contains(@text,'{daytitle}')]/../@pos">260,-60</set>
+  <append xpath="/windows/window[@name='windowCompass']/sprite/label[contains(@text,'{daytitle}')]/@text">{#'     '+localization('xuiSpeed')}: {movingspeed} m/s</append>
+
+</dizor>

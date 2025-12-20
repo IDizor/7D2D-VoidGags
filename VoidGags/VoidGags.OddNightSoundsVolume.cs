@@ -19,7 +19,7 @@ namespace VoidGags
             }
             else if (Settings.OddNightSoundsVolume != 100)
             {
-                LogModException($"Invalid value for setting '{nameof(Settings.OddNightSoundsVolume)}'. Valid range is 0..100.");
+                LogException($"Invalid value for setting '{nameof(Settings.OddNightSoundsVolume)}'. Valid range is 0..100.");
             }
         }
 

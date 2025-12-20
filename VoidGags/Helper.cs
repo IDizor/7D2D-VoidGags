@@ -184,7 +184,7 @@ namespace VoidGags
             int maxDistance = Mathf.CeilToInt(radius);
             if (maxDistance >= 1)
             {
-                var intPos = new Vector3i(pos);
+                var intPos = pos.ToBlockPos();
                 var world = GameManager.Instance.World;
                 for (int x = -maxDistance; x <= maxDistance; x++)
                 for (int y = -maxDistance; y <= maxDistance; y++)
@@ -281,6 +281,14 @@ namespace VoidGags
         public static bool IsTraderArea(Vector3i pos)
         {
             return GameManager.Instance.World.IsWithinTraderArea(pos);
+        }
+
+        /// <summary>
+        /// Gets distant block position in the specified direction.
+        /// </summary>
+        public static Vector3i GetBlockPosInDirection(Vector3 currentPos, Vector3 direction, float distance)
+        {
+            return (currentPos + direction * distance).ToBlockPos();
         }
 
         /// <summary>

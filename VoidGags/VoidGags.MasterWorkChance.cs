@@ -19,7 +19,7 @@ namespace VoidGags
             {
                 if (Settings.MasterWorkChance_MaxQuality < 1 || Settings.MasterWorkChance_MaxQuality > 6)
                 {
-                    LogModException($"Invalid value for setting '{nameof(Settings.MasterWorkChance_MaxQuality)}'. Should be in range 1..6.");
+                    LogException($"Invalid value for setting '{nameof(Settings.MasterWorkChance_MaxQuality)}'. Should be in range 1..6.");
                     return;
                 }
 
@@ -43,7 +43,7 @@ namespace VoidGags
             }
             else if (Settings.MasterWorkChance != 0)
             {
-                LogModException($"Invalid value for setting '{nameof(Settings.MasterWorkChance)}'. Should be in range 0..20 percent.");
+                LogException($"Invalid value for setting '{nameof(Settings.MasterWorkChance)}'. Should be in range 0..20 percent.");
             }
         }
 

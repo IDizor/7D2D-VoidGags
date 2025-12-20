@@ -31,6 +31,13 @@ namespace VoidGags
 
             Harmony.Patch(AccessTools.Method(typeof(EAISetNearestEntityAsTarget), nameof(EAISetNearestEntityAsTarget.FindTargetPlayer)),
                 prefix: new HarmonyMethod(EAISetNearestEntityAsTarget_FindTargetPlayer.Prefix));
+
+            Harmony.Patch(AccessTools.Method(typeof(PlayerStealth), nameof(PlayerStealth.TickServer)),
+                prefix: new HarmonyMethod(PlayerStealth_TickServer.Prefix),
+                postfix: new HarmonyMethod(PlayerStealth_TickServer.Postfix));
+
+            Harmony.Patch(AccessTools.Method(typeof(EAIManager), nameof(EAIManager.CalcSenseScale)),
+                prefix: new HarmonyMethod(EAIManager_CalcSenseScale.Prefix));
         }
 
         public static class VisibleScriptedSleepers
@@ -39,6 +46,7 @@ namespace VoidGags
             public const float SeeDistance = 100f;
             public static int PlayerId;
             public static float TouchTime = 0f;
+            public static bool SuppressFeralSence = false;
 
             /// <summary>
             /// Spawn scripted sleepers on reasonable distance.
@@ -70,35 +78,11 @@ namespace VoidGags
                     var time = Time.time;
                     if (PlayerId == _playerTouched.entityId && time - TouchTime < 2f)
                     {
-                        __result = CheckStandingOnBlock(_ea);
+                        __result = ActivateSleeperWithDelay(_ea);
                         return false;
                     }
 
                     return true;
-
-                    static IEnumerator CheckStandingOnBlock(EntityAlive entity)
-                    {
-                        yield return new WaitForSeconds(1f);
-                        if (entity?.blockValueStandingOn.Block is BlockTrapDoor weakBlock)
-                        {
-                            // touch weak block in random time
-                            yield return new WaitForSeconds(entity.rand.Next(30, 60));
-                            if (entity != null && weakBlock != null)
-                            {
-                                entity.SetSleeperActive();
-                                weakBlock.OnEntityCollidedWithBlock(entity.world, 0, entity.blockPosStandingOn, entity.blockValueStandingOn, entity);
-                            }
-                        }
-                        else
-                        {
-                            // activate sleepers senses during sleep
-                            yield return new WaitForSeconds(entity.rand.Next(30, 60));
-                            if (entity != null && !entity.IsDead())
-                            {
-                                entity.SetSleeperActive();
-                            }
-                        }
-                    }
                 }
             }
 
@@ -115,18 +99,21 @@ namespace VoidGags
 
             /// <summary>
             /// Spawn regular sleepers.
+            /// Recheck all nearest sleepers.
             /// </summary>
             public static class EntityPlayerLocal_OnUpdateLive
             {
                 private const int svChunks = 4;
                 private const float svChunkTime = 0.5f;
                 private static DelayStorage Delay = new(svChunkTime * svChunks);
-                private static DelayStorage DelayClosest = new(15f);
+                private static DelayStorage DelayClosestRegular = new(15f);
                 private static List<SleeperVolume> ClosestVolumes = [];
+                private static DelayStorage DelayNearestAll = new(4f);
+                private static DelayStorage<int> DelayNearestPer = new(20f);
 
                 public static void Postfix(EntityPlayerLocal __instance)
                 {
-                    if (DelayClosest.Check())
+                    if (DelayClosestRegular.Check())
                     {
                         var world = GameManager.Instance.World;
                         ClosestVolumes = world.sleeperVolumes
@@ -149,6 +136,18 @@ namespace VoidGags
                                     if (i < svChunks - 1)
                                         yield return new WaitForSeconds(svChunkTime);
                                 }
+                            }
+                        }
+                    }
+                    if (DelayNearestAll.Check())
+                    {
+                        var nearestEntities = Helper.GetEntities<EntityEnemy>(__instance.position, TouchDistance);
+                        //LogModWarning($"Nearest enemies found {nearestEntities.Count}: {string.Join(", ", nearestEntities.Select(e => e.EntityName + "[" + e.position.DistanceTo(__instance.position).ToString("0.00") + "]"))}");
+                        foreach (var entity in nearestEntities)
+                        {
+                            if (DelayNearestPer.Check(entity.entityId))
+                            {
+                                GameManager.Instance.StartCoroutine(ActivateSleeperWithDelay(entity));
                             }
                         }
                     }
@@ -205,6 +204,77 @@ namespace VoidGags
                         if (Helper.AnyPlayerCanSeePos(__instance.theEntity.world, [__instance.theEntity.position], SeeDistance, out _))
                         {
                             __instance.theEntity?.SetSleeperActive();
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Track active quest state to suppress feral sence during quest.
+            /// Just not to awake tons of zombies in the POI.
+            /// </summary>
+            public static class PlayerStealth_TickServer
+            {
+                public static void Prefix(ref PlayerStealth __instance)
+                {
+                    if (EAIManager.CalcSenseScale() == 0f)
+                        return;
+
+                    var player = __instance.player;
+                    if (player.QuestJournal.ActiveQuest?.CurrentState == Quest.QuestState.InProgress)
+                    {
+                        SuppressFeralSence = true;
+                        //LogModWarningNoSpam("SuppressFeralSence set to true!", 0.5f, allowSameMessages: true);
+                    }
+                }
+
+                public static void Postfix()
+                {
+                    SuppressFeralSence = false;
+                }
+            }
+
+            /// <summary>
+            /// Suppress feral sence during quests.
+            /// </summary>
+            public static class EAIManager_CalcSenseScale
+            {
+                public static bool Prefix(ref float __result)
+                {
+                    if (SuppressFeralSence)
+                    {
+                        __result = 0f;
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+
+            private static IEnumerator ActivateSleeperWithDelay(EntityAlive entity)
+            {
+                if (entity.IsSleeping)
+                {
+                    yield return new WaitForSeconds(1f);
+                    if (entity?.blockValueStandingOn.Block is BlockTrapDoor weakBlock)
+                    {
+                        // touch weak block in random time
+                        yield return new WaitForSeconds(entity.rand.Next(20, 40));
+                        if (entity != null && weakBlock != null)
+                        {
+                            //LogModError($"Activating sleeper '{entity.EntityName}' on a weak block '{weakBlock.blockName}'");
+                            entity.ConditionalTriggerSleeperWakeUp();
+                            weakBlock.OnEntityCollidedWithBlock(entity.world, 0, entity.blockPosStandingOn, entity.blockValueStandingOn, entity);
+                        }
+                    }
+                    else
+                    {
+                        // activate sleepers senses during sleep
+                        yield return new WaitForSeconds(entity.rand.Next(20, 40));
+                        if (entity != null && !entity.IsDead())
+                        {
+                            //LogModError($"Activating sleeper '{entity.EntityName}'");
+                            entity.SetSleeperActive();
                         }
                     }
                 }

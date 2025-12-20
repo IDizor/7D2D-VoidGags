@@ -148,22 +148,30 @@ namespace VoidGags
                         //    {
                         //        lockSprite = "ui_game_symbol_paint_bucket";
                         //    }
+
                         //    if (base.xui.AssembleItem.CurrentItem != null)
                         //    {
                         //        if ((itemClassModifier.InstallableTags.IsEmpty || base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
                         //        {
                         //            if (StackLocation != StackLocationTypes.Part)
                         //            {
+                        //                int num = 0;
                         //                for (int i = 0; i < base.xui.AssembleItem.CurrentItem.itemValue.Modifications.Length; i++)
                         //                {
                         //                    ItemValue itemValue = base.xui.AssembleItem.CurrentItem.itemValue.Modifications[i];
                         //                    if (!itemValue.IsEmpty() && itemValue.ItemClass.HasAnyTags(itemClassModifier.ItemTags))
                         //                    {
-                        //                        flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
-                        //                        return;
+                        //                        num++;
                         //                    }
                         //                }
+
+                        //                if (num >= itemClassModifier.MaxModsAllowed)
+                        //                {
+                        //                    flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
+                        //                    return;
+                        //                }
                         //            }
+
                         //            flashLockTypeIcon = flashLockTypes.Allowed;
                         //        }
                         //        else
@@ -184,15 +192,20 @@ namespace VoidGags
                         {
                             if (__instance.StackLocation != StackLocationTypes.Part && SelectedItem.itemValue.Modifications != null) // added own check "Modifications != null"
                             {
+                                int num = 0;
                                 for (int i = 0; i < SelectedItem.itemValue.Modifications.Length; i++)
                                 {
                                     ItemValue itemValue = SelectedItem.itemValue.Modifications[i];
                                     if (itemValue != null && !itemValue.IsEmpty() && itemValue.ItemClass?.HasAnyTags(itemClassModifier.ItemTags) == true) // added own null checks "itemValue != null", and ItemClass"." -> "?."
                                     {
-                                        __instance.flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
-                                        ItemFlashLockTypeCache[__instance] = flashLockTypes.AlreadyEquipped;
-                                        return;
+                                        num++;
                                     }
+                                }
+                                if (num >= itemClassModifier.MaxModsAllowed)
+                                {
+                                    __instance.flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
+                                    ItemFlashLockTypeCache[__instance] = flashLockTypes.AlreadyEquipped;
+                                    return;
                                 }
                             }
                             __instance.flashLockTypeIcon = flashLockTypes.Allowed;

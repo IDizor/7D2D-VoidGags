@@ -47,7 +47,6 @@ namespace VoidGags
         public static bln PreventPillaring = true;
         public static bln UnrevealedTradeRoutesOnly = true;
         public static bln NoScreamersFromOutside = true;
-        public static bln FoodWaterBars = true;
         public static bln GeneratorSwitchFirst = true;
         public static bln ArrowsBoltsAutoPickUp = true;
         public static bln EnqueueCraftWhenNoFuel = true;
@@ -56,6 +55,7 @@ namespace VoidGags
         public static bln VehicleRepairTimer = true;
         public static bln ExplosionMining = true;
         public static bln SprintJunkie = true;
+        public static bln SprintModeHold = false;
         public static bln JumpControl = true;
         public static bln VisibleScriptedSleepers = false;
         public static bln ZombiesFriendlyFire = true;
@@ -70,30 +70,23 @@ namespace VoidGags
         public static fla RoadRash_Drive = [1.5f, 1.25f, 1.25f, 0.9f, 0.7f, 0.8f, 0.7f, 0.1f, 1f]; // [Asphalt, Gravel, Wooden, Ground, Sand, Snow, Destroyed, Bushes, Other]
         public static fla RoadRash_Walk = [1.2f, 1.2f, 1.0f, 0.9f, 0.7f, 0.8f, 0.8f, 0.3f, 1f]; // [Asphalt, Gravel, Wooden, Ground, Sand, Snow, Destroyed, Bushes, Other]
         public static bln RhinoTouch = true;
+        public static bln CurtainsSmartCut = true;
+        public static bln SpeedIndicator = true;
 
-        static Settings()
+        #region Initialization
+        public static void Init(string modFolder)
         {
             // load settings from json file
-            var path = Path.ChangeExtension(Assembly.GetAssembly(typeof(VoidGags)).Location, "config");
+            var path = Path.Combine(modFolder, nameof(VoidGags) + ".config");
             if (File.Exists(path))
             {
                 try
                 {
-                    var settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(path));
-                    typeof(Settings).GetFields(BindingFlags.Static | BindingFlags.Public).ToList().ForEach(f =>
-                    {
-                        if (settings.TryGetValue(f.Name, out object v))
-                        {
-                            if (f.FieldType.IsArray)
-                                f.SetValue(null, ((JArray)v).ToObject(f.FieldType));
-                            else
-                                f.SetValue(null, Convert.ChangeType(v, f.FieldType));
-                        }
-                    });
+                    InitFromJson(File.ReadAllText(path));
                 }
                 catch (Exception ex)
                 {
-                    VoidGags.LogModException("Failed to parse config file: " + ex.Message);
+                    VoidGags.LogException("Failed to parse config file: " + ex.Message);
                 }
             }
             else
@@ -103,5 +96,21 @@ namespace VoidGags
                     .ToDictionary(f => f.Name, f => f.GetValue(null)), Formatting.Indented));
             }
         }
+
+        public static void InitFromJson(string json)
+        {
+            var settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+            typeof(Settings).GetFields(BindingFlags.Static | BindingFlags.Public).ToList().ForEach(f =>
+            {
+                if (settings.TryGetValue(f.Name, out object v))
+                {
+                    if (f.FieldType.IsArray)
+                        f.SetValue(null, ((JArray)v).ToObject(f.FieldType));
+                    else
+                        f.SetValue(null, Convert.ChangeType(v, f.FieldType));
+                }
+            });
+        }
+        #endregion
     }
 }

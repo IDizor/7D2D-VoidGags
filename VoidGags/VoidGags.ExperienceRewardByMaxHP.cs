@@ -26,7 +26,7 @@ namespace VoidGags
             }
             else
             {
-                LogModException($"Invalid value for setting '{nameof(Settings.ExperienceRewardByMaxHP_Multiplier)}'.");
+                LogException($"Invalid value for setting '{nameof(Settings.ExperienceRewardByMaxHP_Multiplier)}'.");
             }
         }
 

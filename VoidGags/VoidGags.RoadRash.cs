@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 using VoidGags.Types;
@@ -20,13 +19,13 @@ namespace VoidGags
 
             if (Settings.RoadRash_Drive.Length != paramsCount)
             {
-                LogModException($"Invalid '{nameof(Settings.RoadRash_Drive)}' array length. It should have {paramsCount} elements.");
+                LogException($"Invalid '{nameof(Settings.RoadRash_Drive)}' array length. It should have {paramsCount} elements.");
                 return;
             }
 
             if (Settings.RoadRash_Walk.Length != paramsCount)
             {
-                LogModException($"Invalid '{nameof(Settings.RoadRash_Walk)}' array length. It should have {paramsCount} elements.");
+                LogException($"Invalid '{nameof(Settings.RoadRash_Walk)}' array length. It should have {paramsCount} elements.");
                 return;
             }
 
@@ -70,7 +69,7 @@ namespace VoidGags
             if (WalkBushes != Settings.RoadRash_Walk[7]) LogClampWarning(nameof(WalkBushes));
             if (WalkOther != Settings.RoadRash_Walk[8]) LogClampWarning(nameof(WalkOther));
 
-            static void LogClampWarning(string name) => LogModWarning($"{name} speed modifier is clamped to fit valid range [{MinLimit:0.00} to {MaxLimit:0.00}].");
+            static void LogClampWarning(string name) => LogWarning($"{name} speed modifier is clamped to fit valid range [{MinLimit:0.00} to {MaxLimit:0.00}].");
 
             Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.Update)),
                 prefix: new HarmonyMethod(EntityAlive_Update.Prefix));
@@ -115,10 +114,10 @@ namespace VoidGags
 
             public static Dictionary<int, float> EntityModifiers = [];
 
-            public static bool IsBush(Block block)
+            public static bool IsBushBlock(Block block)
             {
                 var isBush = !block.IsDecoration && !block.IsCollideMovement && block.IsPlant();
-                return isBush || block.Is("plantedBlueberry3") || block.Is("plantedYucca3") || block.Is("plantedCoffee3");
+                return isBush || block.Is("plantedBlueberry3") || block.Is("plantedYucca3");
             }
 
             public static bool IsBigVehicle(Vehicle vehicle)
@@ -142,56 +141,19 @@ namespace VoidGags
                 vehicle.EffectVelocityMaxPer *= modifier;
             }
 
-            public static Block[] GetNext2Blocks(World world, Vector3 start, Vector3 direction)
+            public static void SlowDownVehicle(Vehicle vehicle)
             {
-                List<Vector3i> blocks = [];
-                var dir = direction.normalized;
+                var maxVelocity = vehicle.EffectVelocityMaxPer * (vehicle.IsTurbo
+                    ? vehicle.VelocityMaxTurboForward
+                    : vehicle.VelocityMaxForward);
 
-                var current = new Vector3i(
-                    Mathf.FloorToInt(start.x),
-                    Mathf.FloorToInt(start.y),
-                    Mathf.FloorToInt(start.z)
-                );
-
-                int stepX = dir.x > 0 ? 1 : (dir.x < 0 ? -1 : 0);
-                int stepY = dir.y > 0 ? 1 : (dir.y < 0 ? -1 : 0);
-                int stepZ = dir.z > 0 ? 1 : (dir.z < 0 ? -1 : 0);
-
-                float tMaxX = (dir.x != 0) ? ((stepX > 0 ? (current.x + 1) - start.x : start.x - current.x) / dir.x) : Mathf.Infinity;
-                float tMaxY = (dir.y != 0) ? ((stepY > 0 ? (current.y + 1) - start.y : start.y - current.y) / dir.y) : Mathf.Infinity;
-                float tMaxZ = (dir.z != 0) ? ((stepZ > 0 ? (current.z + 1) - start.z : start.z - current.z) / dir.z) : Mathf.Infinity;
-
-                float tDeltaX = (dir.x != 0) ? Mathf.Abs(1f / dir.x) : Mathf.Infinity;
-                float tDeltaY = (dir.y != 0) ? Mathf.Abs(1f / dir.y) : Mathf.Infinity;
-                float tDeltaZ = (dir.z != 0) ? Mathf.Abs(1f / dir.z) : Mathf.Infinity;
-
-                for (int i = 0; i < 2; i++)
+                if (vehicle.CurrentVelocity.magnitude > maxVelocity)
                 {
-                    if (tMaxX < tMaxY && tMaxX < tMaxZ)
-                    {
-                        current.x += stepX;
-                        tMaxX += tDeltaX;
-                    }
-                    else if (tMaxY < tMaxZ)
-                    {
-                        current.y += stepY;
-                        tMaxY += tDeltaY;
-                    }
-                    else
-                    {
-                        current.z += stepZ;
-                        tMaxZ += tDeltaZ;
-                    }
-
-                    blocks.Add(current);
+                    vehicle.CurrentVelocity *= 0.85f;
+                    vehicle.entity.vehicleRB.velocity *= 0.85f;
+                    vehicle.entity.lastRemoteData.Velocity = vehicle.CurrentVelocity;
+                    vehicle.entity.currentRemoteData.Velocity = vehicle.CurrentVelocity;
                 }
-
-                if ((start - blocks[1]).magnitude > 1.2f)
-                {
-                    blocks[1] = blocks[0];
-                }
-
-                return blocks.Select(b => world.GetBlock(b).Block).ToArray();
             }
 
             /// <summary>
@@ -206,9 +168,10 @@ namespace VoidGags
                     if (!EntityDelays.Check(__instance.entityId)) return;
                     if (__instance.blockValueStandingOn.isair) return;
 
+                    var world = __instance.world;
                     var standingOn = __instance.blockValueStandingOn.Block;
-                    var above = __instance.world.GetBlock(__instance.blockPosStandingOn + Vector3i.up).Block;
-                    var below = __instance.world.GetBlock(__instance.blockPosStandingOn + Vector3i.down).Block;
+                    var above = world.GetBlock(__instance.blockPosStandingOn + Vector3i.up).Block;
+                    var below = world.GetBlock(__instance.blockPosStandingOn + Vector3i.down).Block;
                     if (standingOn != null && above != null && below != null)
                     {
                         //if (__instance is EntityPlayerLocal)
@@ -218,12 +181,12 @@ namespace VoidGags
                         //    LogModWarning($"Below is {below.blockName}. IsDecoration {below.IsDecoration}, IsCollideMovement {below.IsCollideMovement}, IsPlant {below.IsPlant()},");
                         //}
 
-                        var isBush = (IsBush(standingOn) || IsBush(above));
                         var vehicle = __instance.AttachedToEntity as EntityVehicle;
                         var isVehicle = vehicle != null;
+                        var bushesModifier = isVehicle ? DriveBushes : WalkBushes;
+                        var isBush = bushesModifier != 1f && (IsBushBlock(standingOn) || IsBushBlock(above));
                         var isBigVehicle = isVehicle && IsBigVehicle(vehicle.vehicle);
                         var entityId = isVehicle ? vehicle.entityId : __instance.entityId;
-                        var vehicleSpeed = isVehicle ? vehicle.vehicle.CurrentVelocity.magnitude : 0f;
 
                         var surface = standingOn;
                         if (surface.IsPlant() && !surface.IsCollideMovement)
@@ -231,14 +194,22 @@ namespace VoidGags
                             surface = below;
                         }
 
-                        var isGround = surface.Is("terrDirt") || surface.Is("terrForestGround") || surface.Is("terrTopSoil") || surface.Is("terrBurntForestGround");
-                        var isWood = !isGround && (surface.Is("woodShapes") || surface.Is("frameShapes"));
-                        var isSand = !isWood && (surface.Is("terrSand") || surface.Is("terrDesertGround"));
-                        var isSnow = !isSand && surface.Is("terrSnow");
-                        var isDestroyed = !isSnow && surface.Is("terrDestroyed");
-                        var isGravel = !isDestroyed && surface.Is("terrGravel");
-                        var isAsphalt = !isGravel && (surface.Is("terrAsphalt") || surface.Is("terrConcrete") || surface.Is("concreteShapes"));
-                        
+                        var isGround = false;
+                        var isWood = false;
+                        var isSand = false;
+                        var isSnow = false;
+                        var isDestroyed = false;
+                        var isGravel = false;
+                        var isAsphalt = false;
+
+                        if (surface.Is("terrDirt") || surface.Is("terrForestGround") || surface.Is("terrTopSoil") || surface.Is("terrBurntForestGround")) isGround = true;
+                        else if (surface.Is("woodShapes") || surface.Is("frameShapes")) isWood = true;
+                        else if (surface.Is("terrSand") || surface.Is("terrDesertGround")) isSand = true;
+                        else if (surface.Is("terrSnow")) isSnow = true;
+                        else if (surface.Is("terrDestroyed")) isDestroyed = true;
+                        else if (surface.Is("terrGravel")) isGravel = true;
+                        else if (surface.Is("terrAsphalt") || surface.Is("terrConcrete") || surface.Is("concreteShapes")) isAsphalt = true;
+
                         var prevModifier = EntityModifiers.ContainsKey(entityId) ? EntityModifiers[entityId] : 1f;
                         var modifier = isVehicle ? DriveOther : WalkOther;
                         if (isGround) modifier = isVehicle ? DriveGround : WalkGround;
@@ -250,34 +221,39 @@ namespace VoidGags
                         else if (isAsphalt) modifier = isVehicle ? DriveAsphalt : WalkAsphalt;
 
                         // check bushes if walking or driving small vehicle
-                        if (!isBigVehicle)
+                        if (!isBigVehicle && bushesModifier != 1f)
                         {
-                            var bushesModifier = isVehicle ? DriveBushes : WalkBushes;
-                            if (bushesModifier != 1f)
+                            var movingSpeed = isVehicle
+                                ? vehicle.vehicle.CurrentVelocity.magnitude
+                                : __instance.GetMovingSpeed();
+                            if (!isBush && movingSpeed > 0.5f)
                             {
-                                if (!isBush && isVehicle && vehicleSpeed > 2f && __instance is EntityPlayerLocal)
+                                var moveDirection = __instance.GetMovingDirection();
+                                var nextBlockPos = Helper.GetBlockPosInDirection(__instance.position + Vector3.up, moveDirection, 0.8f);
+                                if (nextBlockPos.x != __instance.blockPosStandingOn.x ||
+                                    nextBlockPos.z != __instance.blockPosStandingOn.z)
                                 {
-                                    var frontBlocks = GetNext2Blocks(__instance.world, vehicle.position + Vector3.up, vehicle.vehicle.CurrentVelocity);
-                                    isBush = IsBush(frontBlocks[0]) || (frontBlocks[0] != frontBlocks[1] && IsBush(frontBlocks[1]));
+                                    isBush = IsBushBlock(world.GetBlock(nextBlockPos).Block);
+                                    isBush |= IsBushBlock(world.GetBlock(nextBlockPos + Vector3i.down).Block);
                                 }
-                                if (isBush)
+                            }
+                            if (isBush)
+                            {
+                                EntityModifiers[entityId] = Mathf.Clamp(modifier * bushesModifier, MinLimit, MaxLimit);
+                                if (isVehicle) // additional code to force slowdown for vehicle
                                 {
-                                    EntityModifiers[entityId] = Mathf.Clamp(modifier * bushesModifier, MinLimit, MaxLimit);
-                                    if (isVehicle) // additional code to force slowdown for vehicle
+                                    ManualUpdateEffectVelocityMaxPer(vehicle.vehicle, EntityModifiers[entityId]);
+                                    var maxBushesSpeed = vehicle.vehicle.VelocityMaxForward * DriveBushes;
+                                    if (movingSpeed > maxBushesSpeed)
                                     {
-                                        ManualUpdateEffectVelocityMaxPer(vehicle.vehicle, EntityModifiers[entityId]);
-                                        var maxBushesSpeed = vehicle.vehicle.VelocityMaxForward * DriveBushes;
-                                        if (vehicleSpeed > maxBushesSpeed)
-                                        {
-                                            var limiter = maxBushesSpeed / vehicleSpeed;
-                                            vehicle.vehicle.CurrentVelocity *= limiter;
-                                            vehicle.vehicleRB.velocity *= limiter;
-                                            vehicle.lastRemoteData.Velocity = vehicle.vehicle.CurrentVelocity;
-                                            vehicle.currentRemoteData.Velocity = vehicle.vehicle.CurrentVelocity;
-                                        }
+                                        var limiter = maxBushesSpeed / movingSpeed;
+                                        vehicle.vehicle.CurrentVelocity *= limiter;
+                                        vehicle.vehicleRB.velocity *= limiter;
+                                        vehicle.lastRemoteData.Velocity = vehicle.vehicle.CurrentVelocity;
+                                        vehicle.currentRemoteData.Velocity = vehicle.vehicle.CurrentVelocity;
                                     }
-                                    return;
                                 }
+                                return;
                             }
                         }
 
@@ -289,7 +265,11 @@ namespace VoidGags
                         else if (modifier < prevModifier)
                         {
                             EntityModifiers[entityId] = Mathf.Clamp(prevModifier - 0.2f, modifier, MaxLimit);
-                            if (isVehicle) ManualUpdateEffectVelocityMaxPer(vehicle.vehicle, EntityModifiers[entityId]);
+                            if (isVehicle)
+                            {
+                                ManualUpdateEffectVelocityMaxPer(vehicle.vehicle, EntityModifiers[entityId]);
+                                SlowDownVehicle(vehicle.vehicle);
+                            }
                         }
                     }
                 }

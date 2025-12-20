@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using UnityEngine;
 using static VoidGags.VoidGags.VehicleRefuelTimer;
@@ -22,6 +23,7 @@ namespace VoidGags
                 postfix: new HarmonyMethod(EntityVehicle_takeFuel.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(Vehicle), nameof(Vehicle.AddFuel)),
+                reverse: new HarmonyMethod(Vehicle_AddFuel.AddFuel),
                 prefix: new HarmonyMethod(Vehicle_AddFuel.Prefix));
         }
 
@@ -31,7 +33,6 @@ namespace VoidGags
             public const float RefuelingTimeFast = 1f;
             public static EntityPlayerLocal PlayerEntity = null;
             public static float FuelTaken = 0f;
-            public static bool SkipAddFuel = false;
 
             public static void Clear()
             {
@@ -96,15 +97,15 @@ namespace VoidGags
                 private static readonly float refuelFast = 700f;
                 private static readonly float refuelUnit = (RefuelingTime - RefuelingTimeFast) / (refuelFast - refuelLong);
 
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void AddFuel(Vehicle __instance, float _fuelLevel)
+                {
+                    throw new NotImplementedException();
+                }
+
                 public static bool Prefix(Vehicle __instance, float _fuelLevel)
                 {
                     if (IsDedicatedServer) return true;
-
-                    if (SkipAddFuel)
-                    {
-                        SkipAddFuel = false;
-                        return true;
-                    }
 
                     if (PlayerEntity != null &&
                         FuelTaken > 0f)
@@ -113,8 +114,7 @@ namespace VoidGags
                         var refuelDelay = RefuelingTime - ((Mathf.Clamp(maxFuelLevel, refuelLong, refuelFast) - refuelLong) * refuelUnit);
                         Helper.UiTimerAction(refuelDelay, action: () =>
                         {
-                            SkipAddFuel = true;
-                            __instance.AddFuel(_fuelLevel);
+                            AddFuel(__instance, _fuelLevel);
 
                             if (__instance?.GetFuelPercent() < 1f && __instance.entity != null &&
                                 PlayerEntity != null)

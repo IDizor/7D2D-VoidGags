@@ -1,0 +1,9 @@
+<dizor>
+
+  <csv xpath="//blocks/block[starts-with(@name,'curtainDrapes') and not(contains(@name,'Rod'))]/property[@name='FilterTags']/@value" op="add" delim=",">VG_verticalHang</csv>
+  <csv xpath="//blocks/block[starts-with(@name,'curtainVariantHelper') and not(contains(@name,'Rod'))]/property[@name='FilterTags']/@value" op="add" delim=",">VG_verticalHang</csv>
+  <csv xpath="//blocks/block[starts-with(@name,'commercialBlinds')]/property[@name='FilterTags']/@value" op="add" delim=",">VG_verticalHang</csv>
+  <csv xpath="//blocks/block[starts-with(@name,'miniblind')]/property[@name='FilterTags']/@value" op="add" delim=",">VG_verticalHang</csv>
+  <csv xpath="//blocks/block[starts-with(@name,'verticalBlinds')]/property[@name='FilterTags']/@value" op="add" delim=",">VG_verticalHang</csv>
+
+</dizor>

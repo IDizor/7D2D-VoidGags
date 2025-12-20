@@ -116,12 +116,12 @@ namespace VoidGags
                                                 if ((shotStartPos - hitPos).magnitude > 3f)
                                                 {
                                                     investigatePos = Vector3.Lerp(hitPos, shotStartPos, 0.2f + random.RandomFloat / 4f);
-                                                    //Debug.LogWarning($"InvestigatePosition lerped: {Helper.WorldPosToCompasText(new Vector3i(investigatePos))}");
+                                                    //Debug.LogWarning($"InvestigatePosition lerped: {Helper.WorldPosToCompasText(investigatePos.ToBlockPos())}");
                                                 }
                                             }
                                             enemy.SetInvestigatePosition(investigatePos, 600, isAlert: true);
                                             SingletonMonoBehaviour<ConnectionManager>.Instance.SendToClientsOrServer(NetPackageManager.GetPackage<NetPackageSetInvestigatePos>().Setup(enemy.entityId, investigatePos, 600));
-                                            //Debug.LogWarning($"SetInvestigatePosition() {enemy.EntityName} : {Helper.WorldPosToCompasText(new Vector3i(enemy.position))} --> {Helper.WorldPosToCompasText(new Vector3i(investigatePos))}");
+                                            //Debug.LogWarning($"SetInvestigatePosition() {enemy.EntityName} : {Helper.WorldPosToCompasText(new Vector3i(enemy.position))} --> {Helper.WorldPosToCompasText(investigatePos.ToBlockPos())}");
                                         }
                                     }
                                 }

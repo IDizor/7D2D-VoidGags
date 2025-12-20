@@ -21,7 +21,7 @@ namespace VoidGags
 
             if (IsUndeadLegacy)
             {
-                LogModWarning($"Patch '{nameof(Settings.AutoSpreadLoot)}' is not compatible with Undead Legacy.");
+                LogWarning($"Patch '{nameof(Settings.AutoSpreadLoot)}' is not compatible with Undead Legacy.");
                 return;
             }
 
@@ -70,7 +70,7 @@ namespace VoidGags
             {
                 var v = Settings.AutoSpreadLoot_Radius;
                 Settings.AutoSpreadLoot_Radius = Settings.AutoSpreadLoot_Radius < 2f ? 2f : 50f;
-                LogModWarning($"Setting '{nameof(Settings.AutoSpreadLoot_Radius)}' value {v:0.0} is out of range (2..50). Value {Settings.AutoSpreadLoot_Radius:0} will be used instead.");
+                LogWarning($"Setting '{nameof(Settings.AutoSpreadLoot_Radius)}' value {v:0.0} is out of range (2..50). Value {Settings.AutoSpreadLoot_Radius:0} will be used instead.");
             }
         }
 

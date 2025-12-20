@@ -10,18 +10,18 @@ namespace VoidGags
             if (player == null) return;
             if (!GamePrefs.GetBool(EnumGamePrefs.DebugMenuEnabled))
             {
-                VoidGags.LogModWarning("Debug Menu is not activated to use this command.");
+                VoidGags.LogWarning("Debug Menu is not activated to use this command.");
                 return;
             }
             var quest = player.QuestJournal.ActiveQuest ?? player.QuestJournal.TrackedQuest;
             if (quest == null)
             {
-                VoidGags.LogModWarning("No active or tracked quest.");
+                VoidGags.LogWarning("No active or tracked quest.");
                 return;
             }
             if (quest.CurrentState == Quest.QuestState.Completed || quest.CurrentState == Quest.QuestState.Failed)
             {
-                VoidGags.LogModWarning("Cannot complete failed or already completed quest.");
+                VoidGags.LogWarning("Cannot complete failed or already completed quest.");
                 return;
             }
                     
@@ -34,7 +34,7 @@ namespace VoidGags
                     o.ChangeStatus(isSuccess: true);
                 }
             });
-            VoidGags.LogModWarning("Forced completion of the quest: " + quest.questClass?.Name);
+            VoidGags.LogWarning("Forced completion of the quest: " + quest.questClass?.Name);
         }
 
         public override string[] getCommands()

@@ -9,6 +9,17 @@ namespace VoidGags
 {
     public static class Extensions
     {
+        public static void Patch(this Harmony harmony, MethodBase original, HarmonyMethod reverse = null,
+            HarmonyMethod prefix = null, HarmonyMethod postfix = null, HarmonyMethod transpiler = null,
+            HarmonyMethod finalizer = null, HarmonyMethod ilmanipulator = null)
+        {
+            if (reverse != null)
+            {
+                Harmony.ReversePatch(original, standin: reverse);
+            }
+            harmony.Patch(original, prefix, postfix, transpiler, finalizer, ilmanipulator);
+        }
+
         public static string Serialize(this object o)
         {
             return JsonConvert.SerializeObject(o);
@@ -28,6 +39,13 @@ namespace VoidGags
         {
             int result = (value / 256) + (value % 256);
             return result < 256 ? (byte)result : EncodeToByte(result);
+        }
+
+        public static Vector3i ToBlockPos(this Vector3 pos)
+        {
+            var blockPos = new Vector3i();
+            blockPos.FloorToInt(pos);
+            return blockPos;
         }
 
         public static float DistanceTo(this Vector3 fromPos, Vector3 toPos)
@@ -67,7 +85,7 @@ namespace VoidGags
             var grid = controls.Parent?.Parent?.GetChildByType<XUiC_ItemStackGrid>();
             if (grid == null)
             {
-                VoidGags.LogModException("Failed to find 'XUiC_ItemStackGrid' from the 'XUiC_ContainerStandardControls'.");
+                VoidGags.LogException("Failed to find 'XUiC_ItemStackGrid' from the 'XUiC_ContainerStandardControls'.");
             }
             return grid;
         }
@@ -110,6 +128,21 @@ namespace VoidGags
                 && entity.bodyDamage.CurrentStun != EnumEntityStunType.Kneel
                 && entity.bodyDamage.CurrentStun != EnumEntityStunType.Prone
                 && entity.bodyDamage.CurrentStun != EnumEntityStunType.Getup;
+        }
+
+        public static Vector3 GetMovingDirection(this EntityAlive entity)
+        {
+            return entity.transform.forward * entity.moveDirection.z +
+                entity.transform.up * entity.moveDirection.y +
+                entity.transform.right * entity.moveDirection.x;
+        }
+
+        public static float GetMovingSpeed(this EntityAlive entity)
+        {
+            return Mathf.Sqrt(
+                entity.speedForward * entity.speedForward +
+                entity.speedStrafe * entity.speedStrafe +
+                entity.speedVertical * entity.speedVertical);
         }
 
         public static bool ContainsAnyItem(this ITileEntityLootable container, XUiC_ItemStackGrid itemGrid)

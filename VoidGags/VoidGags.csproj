@@ -104,6 +104,10 @@
     <Compile Include="Types\ItemActionEntryCustom.cs" />
     <Compile Include="VoidGags.0Test.cs" />
     <Compile Include="VoidGags.ClickableMarkers.cs" />
+    <Compile Include="VoidGags.BugFixes.cs" />
+    <Compile Include="VoidGags.SpeedIndicator.cs" />
+    <Compile Include="VoidGags.CurtainsSmartCut.cs" />
+    <Compile Include="VoidGags.SprintModeHold.cs" />
     <Compile Include="VoidGags.RhinoTouch.cs" />
     <Compile Include="VoidGags.RoadRash.cs" />
     <Compile Include="VoidGags.TradersBiomeQuests.cs" />
@@ -130,7 +134,6 @@
     <Compile Include="VoidGags.ExplosionAttractionFix.cs" />
     <Compile Include="VoidGags.DigThroughTheGrass.cs" />
     <Compile Include="VoidGags.LessFogWhenFlying.cs" />
-    <Compile Include="VoidGags.FoodWaterBars.cs" />
     <Compile Include="VoidGags.PreventDestroyOnClose.cs" />
     <Compile Include="VoidGags.MainLootTierBonus.cs" />
     <Compile Include="VoidGags.MasterWorkChance.cs" />

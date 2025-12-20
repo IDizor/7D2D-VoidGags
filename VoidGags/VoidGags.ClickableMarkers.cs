@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using UniLinq;
 using UnityEngine;
@@ -17,6 +19,7 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.ClickableMarkers));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_MapArea), nameof(XUiC_MapArea.onMapPressedLeft)),
+                reverse: new HarmonyMethod(XUiC_MapArea_onMapPressedLeft.OnMapPressedLeft),
                 prefix: new HarmonyMethod(XUiC_MapArea_onMapPressedLeft.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_MapArea), nameof(XUiC_MapArea.onMapPressed)),
@@ -25,20 +28,19 @@ namespace VoidGags
 
         public static class ClickableMarkers
         {
-            public static bool SkipLeftClickPatch = false;
-
             /// <summary>
             /// Click on the map marker selects the waypoint in the list.
             /// </summary>
             public static class XUiC_MapArea_onMapPressedLeft // lift click
             {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void OnMapPressedLeft(XUiC_MapArea __instance, XUiController _sender, int _mouseButton)
+                {
+                    throw new NotImplementedException();
+                }
+
                 public static bool Prefix(XUiC_MapArea __instance)
                 {
-                    if (SkipLeftClickPatch)
-                    {
-                        SkipLeftClickPatch = false;
-                        return true;
-                    }
                     if (__instance.closestMouseOverNavObject != null)
                     {
                         var player = __instance.xui.playerUI.entityPlayer;
@@ -98,8 +100,7 @@ namespace VoidGags
                 {
                     if (__instance.closestMouseOverNavObject != null && !InputUtils.ShiftKeyPressed)
                     {
-                        SkipLeftClickPatch = true;
-                        __instance.onMapPressedLeft(_sender, _mouseButton);
+                        XUiC_MapArea_onMapPressedLeft.OnMapPressedLeft(__instance, _sender, _mouseButton);
                         return false;
                     }
                     return true;

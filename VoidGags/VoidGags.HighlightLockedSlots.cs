@@ -11,7 +11,7 @@
 
             if (IsUndeadLegacy)
             {
-                LogModWarning($"Patch '{nameof(Settings.HighlightLockedSlots)}' is not compatible with Undead Legacy.");
+                LogWarning($"Patch '{nameof(Settings.HighlightLockedSlots)}' is not compatible with Undead Legacy.");
                 return;
             }
 

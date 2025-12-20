@@ -48,7 +48,7 @@ namespace VoidGags
                                     }
                                     else
                                     {
-                                        var surfaceBlock = GameManager.Instance.World.GetBlock(hitInfo.hit.blockPos + new Vector3i(0, -1, 0));
+                                        var surfaceBlock = GameManager.Instance.World.GetBlock(hitInfo.hit.blockPos + Vector3i.down);
                                         isCrop = surfaceBlock.Block.GetBlockName().StartsWith("farmPlot");
                                     }
                                 }

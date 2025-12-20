@@ -46,7 +46,7 @@ namespace VoidGags
                         // check active quests from clients
                         if (ActiveQuests.Any(q => (targetPos - q.PrefabCenter).magnitude < SpawnRadius))
                         {
-                            LogModInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
+                            LogInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
                             return false;
                         }
 
@@ -60,7 +60,7 @@ namespace VoidGags
                                     var pos = new Vector3(targetPos.x, player.position.y, targetPos.z);
                                     if ((player.position - pos).magnitude < SpawnRadius)
                                     {
-                                        LogModInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
+                                        LogInfo("Outside spawn of zombie Screamer is prevented. Player has an active quest.");
                                         return false;
                                     }
                                 }
@@ -89,7 +89,7 @@ namespace VoidGags
                                 ActiveQuests.Add(new ActiveQuestPrefab
                                 {
                                     PrefabPos = __instance.prefabPos,
-                                    PrefabCenter = prefab.boundingBoxPosition + new Vector3i(prefab.boundingBoxSize.ToVector3() / 2),
+                                    PrefabCenter = prefab.boundingBoxPosition + (prefab.boundingBoxSize.ToVector3() / 2).ToBlockPos(),
                                     StartTime = Time.time,
                                 });
                                 //Debug.LogWarning("Quest started!");

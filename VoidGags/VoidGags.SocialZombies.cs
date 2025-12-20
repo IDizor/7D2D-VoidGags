@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using UnityEngine;
 using VoidGags.NetPackages;
@@ -34,6 +35,7 @@ namespace VoidGags
                 postfix: new HarmonyMethod(EntityAlive_ConditionalTriggerSleeperWakeUp.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(EntityAlive), nameof(EntityAlive.SetInvestigatePosition)),
+                reverse: new HarmonyMethod(EntityAlive_SetInvestigatePosition.SetInvestigatePosition),
                 prefix: new HarmonyMethod(EntityAlive_SetInvestigatePosition.Prefix),
                 postfix: new HarmonyMethod(EntityAlive_SetInvestigatePosition.Postfix));
 
@@ -114,9 +116,9 @@ namespace VoidGags
                                             }
                                             else
                                             {
-                                                // call own method
+                                                // call reverse method
                                                 //Debug.LogWarning($"{Time.time:0.00} InvestigatePosition");
-                                                InvestigatePosition(loafer, investigatingPosition, 600);
+                                                EntityAlive_SetInvestigatePosition.SetInvestigatePosition(loafer, investigatingPosition, 600);
                                             }
                                             SingletonMonoBehaviour<ConnectionManager>.Instance.SendToClientsOrServer(NetPackageManager.GetPackage<NetPackageSetInvestigatePos>().Setup(loafer.entityId, investigatingPosition, 600));
                                         }
@@ -126,18 +128,6 @@ namespace VoidGags
                         }
                     });
                 }
-            }
-
-            /// <summary>
-            /// Own method to set investigate position to avoid recursive Harmony patches calls.
-            /// Should contain the same code as the original method <see cref="EntityAlive.SetInvestigatePosition(Vector3, int, bool)"/>.
-            /// TODO: Check the original method before new mod version release.
-            /// </summary>
-            private static void InvestigatePosition(EntityAlive entity, Vector3 pos, int ticks)
-            {
-                entity.investigatePos = pos;
-                entity.investigatePositionTicks = ticks;
-                entity.isInvestigateAlert = true;
             }
 
             /// <summary>
@@ -227,6 +217,12 @@ namespace VoidGags
             /// </summary>
             public static class EntityAlive_SetInvestigatePosition
             {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void SetInvestigatePosition(EntityAlive __instance, Vector3 pos, int ticks, bool isAlert = true)
+                {
+                    throw new NotImplementedException();
+                }
+
                 public static void Prefix(EntityAlive __instance, bool isAlert, out bool __state)
                 {
                     __state = isAlert

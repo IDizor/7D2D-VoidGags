@@ -46,7 +46,7 @@ namespace VoidGags.NetPackages
                     if (VoidGags.MasterWorkChance.MasterWorkChanceValue != chance)
                     {
                         VoidGags.MasterWorkChance.MasterWorkChanceValue = chance;
-                        VoidGags.LogModWarning($"Master Work chance value is changed by the Server to {chance * 100:0.00} percent.");
+                        VoidGags.LogWarning($"Master Work chance value is changed by the Server to {chance * 100:0.00} percent.");
                     }
                 }
 
@@ -54,7 +54,7 @@ namespace VoidGags.NetPackages
                 if (Settings.MasterWorkChance_MaxQuality != maxQuality)
                 {
                     Settings.MasterWorkChance_MaxQuality = maxQuality;
-                    VoidGags.LogModWarning($"Master Work max quality is changed by the Server to {maxQuality}.");
+                    VoidGags.LogWarning($"Master Work max quality is changed by the Server to {maxQuality}.");
                 }
             }
         }
