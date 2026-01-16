@@ -3,6 +3,7 @@
   <!-- customize locked slots -->
   <setattribute xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='background']" name="color">{# userlockedslot and (selectionbordercolor == backgroundcolor) ? '85,120,80' : selectionbordercolor}</setattribute>
   <setattribute xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='highlightOverlay']" name="color">{# userlockedslot ? '85,120,80' : backgroundcolor}</setattribute>
-  <remove xpath="/controls/*[@controller='ItemStack']/rect/sprite[@name='iconSlotLock']" />
+  <setattribute xpath="/controls/backpack_item_stack/rect/sprite[@name='iconSlotLock']" name="visible">false</setattribute>
+  <setattribute xpath="/controls/item_stack/rect/sprite[@name='iconSlotLock']" name="sprite"><![CDATA[]]></setattribute>
 
 </dizor>
