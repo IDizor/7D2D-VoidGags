@@ -58,7 +58,7 @@ namespace VoidGags
                         var waypoints = Player.Waypoints?.Collection.list;
                         if (waypoints != null)
                         {
-                            var prefabDecorator = GameManager.Instance.World.ChunkClusters[0].ChunkProvider.GetDynamicPrefabDecorator();
+                            var prefabDecorator = GameManager.Instance.GetDynamicPrefabDecorator();
                             foreach (var w in waypoints)
                             {
                                 //Debug.LogWarning($"Waypoint: {w.icon}, {w.name}, {w.DisplayName}, {Helper.WorldPosToCompasText(w.pos)}");

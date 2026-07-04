@@ -82,14 +82,14 @@ namespace VoidGags
             /// </summary>
             public static class XUiM_Vehicle_RepairVehicle
             {
-                public static void Prefix(XUi _xui, Vehicle vehicle)
+                public static void Prefix(XUi _xui, Vehicle _vehicle)
                 {
                     if (IsDedicatedServer) return;
 
                     // keep parameters
                     Ui = _xui;
-                    Vehicle = vehicle;
-                    DisplayVehicleDurability(vehicle ?? _xui.vehicle.GetVehicle());
+                    Vehicle = _vehicle;
+                    DisplayVehicleDurability(_vehicle ?? _xui.Vehicle.CurrentVehicle.vehicle);
                 }
             }
 

@@ -1,0 +1,19 @@
+<dizor>
+
+  <!-- Make wood spikes lootable with delay -->
+  <append xpath="/blocks/block[@name='trapSpikesWoodDmg0']">
+    <property name="CanPickup" value="true" param1="trapSpikesWoodDmg0"/>
+    <property name="PickupTime" value="2"/>
+  </append>
+
+  <!-- Make iron spikes disassemblable with whench -->
+  <append xpath="//blocks/block[starts-with(@name,'trapSpikesIronDmg')]">
+    <drop event="Harvest" name="terrStone" count="0" tool_category="Disassemble"/>
+  </append>
+
+  <!-- Make barbed fence disassemblable with whench -->
+  <append xpath="//blocks/block[@name='barbedFence']">
+    <drop event="Harvest" name="terrStone" count="0" tool_category="Disassemble"/>
+  </append>
+
+</dizor>

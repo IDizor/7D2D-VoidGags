@@ -1,5 +1,4 @@
-﻿using System;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UniLinq;
 using UnityEngine;
 using static VoidGags.VoidGags.CurtainsSmartCut;
@@ -33,16 +32,17 @@ namespace VoidGags
                 /// <summary>
                 /// Recursive OnBlockDamaged.
                 /// </summary>
-                public static bool Prefix(WorldBase _world, int _clrIdx, Vector3i _blockPos, BlockValue _blockValue, int _damagePoints, int _entityIdThatDamaged, ItemActionAttack.AttackHitInfo _attackHitInfo, bool _bUseHarvestTool, bool _bBypassMaxDamage, int _recDepth, ref int __result)
+                public static bool Prefix(WorldBase _world, BlockValueRef _bvRef, BlockValue _blockValue, int _damagePoints, int _entityIdThatDamaged, ItemActionAttack.AttackHitInfo _attackHitInfo, bool _bUseHarvestTool, bool _bBypassMaxDamage, int _recDepth, ref int __result)
                 {
                     if (_attackHitInfo?.entityHit != null && _attackHitInfo.entityHit is EntityVehicle)
                         return true; 
 
                     if (!_blockValue.isair && _blockValue.Block != null && IsVerticalHang(_blockValue.Block))
                     {
-                        var nextBlockPos = new Vector3i(_blockPos.x, Mathf.Max(0, _blockPos.y - 1), _blockPos.z);
+                        var blockPos = _bvRef.BlockPosition;
+                        var nextBlockPos = new Vector3i(blockPos.x, Mathf.Max(0, blockPos.y - 1), blockPos.z);
                         var nextBlockValue = _world.GetBlock(nextBlockPos);
-                        if (!nextBlockValue.isair && nextBlockValue.Block != null && IsVerticalHang(nextBlockValue.Block))
+                        if (!nextBlockValue.isair && nextBlockValue.Block != null && nextBlockValue.damage <= 20 && IsVerticalHang(nextBlockValue.Block))
                         {
                             if (_attackHitInfo != null)
                             {
@@ -51,8 +51,7 @@ namespace VoidGags
 
                             __result = nextBlockValue.Block.OnBlockDamaged(
                                 _world: _world,
-                                _clrIdx: _clrIdx,
-                                _blockPos: nextBlockPos,
+                                _bvRef: new BlockValueRef(nextBlockPos),
                                 _blockValue: nextBlockValue,
                                 _damagePoints: _damagePoints,
                                 _entityIdThatDamaged: _entityIdThatDamaged,

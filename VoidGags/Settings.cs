@@ -60,11 +60,12 @@ namespace VoidGags
         public static bln VisibleScriptedSleepers = false;
         public static bln ZombiesFriendlyFire = true;
         public static flt ZombiesStumbleChance = 1.0f;
+        public static flt ZombiesStumbleChance_OnSpikes = 30.0f;
         public static bln DamageModifier = false; // hidden feature, disabled by default
         public static flt DamageModifier_Gun = 1f;
         public static bln MoveOnePiece = true;
         public static bln ClickableMarkers = true;
-        public static bln TradersPlayerReputation = true;
+        public static bln NewTradersDontKnowYou = true;
         public static bln TradersBiomeQuests = true;
         public static bln RoadRash = true;
         public static fla RoadRash_Drive = [1.5f, 1.25f, 1.25f, 0.9f, 0.7f, 0.8f, 0.7f, 0.1f, 1f]; // [Asphalt, Gravel, Wooden, Ground, Sand, Snow, Destroyed, Bushes, Other]
@@ -72,6 +73,10 @@ namespace VoidGags
         public static bln RhinoTouch = true;
         public static bln CurtainsSmartCut = true;
         public static bln SpeedIndicator = true;
+        public static bln ScrapDrinksToEmptyJars = true;
+        public static bln PickupSpikes = true;
+        public static flt SpikesKillExperience = 10f;
+        public static bln RichStashings = true;
 
         #region Initialization
         public static void Init(string modFolder)

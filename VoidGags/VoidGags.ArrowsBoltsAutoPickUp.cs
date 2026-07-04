@@ -82,7 +82,7 @@ namespace VoidGags
                                             {
                                                 if ((player.inventory.CanTakeItem(item.itemStack) || player.bag.CanTakeItem(item.itemStack)))
                                                 {
-                                                    GameManager.Instance.CollectEntityServer(item.entityId, player.entityId);
+                                                    item.Collect(player.entityId);
                                                 }
                                             }
                                         }
@@ -106,9 +106,7 @@ namespace VoidGags
                         if (_itemStack.itemValue?.ItemClass?.IsSticky == true)
                         {
                             var caller = Helper.GetCallerMethod();
-                            //LogModWarning($"{caller.DeclaringType.Name}.{caller.Name}() : {_itemStack.itemValue?.ItemClass?.Name}");
-                            if (caller.DeclaringType.Name == nameof(ItemActionEntryDrop) ||
-                                (caller.DeclaringType.Name == nameof(XUiM_PlayerInventory) && caller.Name == nameof(XUiM_PlayerInventory.DropItem)))
+                            if (caller.DeclaringType == typeof(ItemActionEntryDrop) || caller.Is(typeof(XUiM_PlayerInventory), nameof(XUiM_PlayerInventory.DropItem)))
                             {
                                 SkipTime = Time.time + 3; // 3 seconds
                             }

@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using InControl;
 using static VoidGags.VoidGags.JumpControl;
 
 namespace VoidGags
@@ -40,7 +39,7 @@ namespace VoidGags
                         __instance.localPlayer.PerkParkour().Level > 0 &&
                         __instance.m_MotorThrottle.y > 0f)
                     {
-                        __instance.m_MotorThrottle.y *= 0.5f;
+                        __instance.m_MotorThrottle.y *= 0.4f;
                         JumpReset = true;
                         return;
                     }

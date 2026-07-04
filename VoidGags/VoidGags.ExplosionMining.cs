@@ -29,18 +29,20 @@ namespace VoidGags
             /// </summary>
             public static class Block_OnBlockDestroyedByExplosion
             {
-                public static void Postfix(WorldBase _world, Vector3i _blockPos, BlockValue _blockValue)
+                public static void Postfix(WorldBase _world, BlockValueRef _bvRef, BlockValue _blockValue)
                 {
-                    if (_blockValue.Block.shape.IsTerrain())
+                    if (IsServer && _blockValue.Block.shape.IsTerrain())
                     {
                         if (GameManager.Instance != null && _blockValue.Block.itemsToDrop.TryGetValue(EnumDropEvent.Harvest, out List<Block.SItemDropProb> drop) && drop.Count > 0)
                         {
-                            // wait for a while and spawn resources
+                            var blockPos = _bvRef.BlockPosition;
                             var random = _world.GetGameRandom();
+
+                            // wait for a while and spawn resources
                             Helper.DeferredAction(0.1f + random.RandomFloat / 5, () =>
                             {
-                                var chunk = (Chunk)GameManager.Instance.World.GetChunkSync(World.toChunkXZ(_blockPos.x), World.toChunkXZ(_blockPos.z));
-                                var dropPos = FindAirBlockForDrop(_world, _blockPos);
+                                var chunk = (Chunk)GameManager.Instance.World.GetChunkSync(World.toChunkXZ(blockPos.x), World.toChunkXZ(blockPos.z));
+                                var dropPos = FindAirBlockForDrop(_world, blockPos);
                                 var nearItems = chunk.GetEntities<EntityItem>(dropPos, 3);
 
                                 foreach (var item in drop)
@@ -52,18 +54,18 @@ namespace VoidGags
                                     var lootCount = item.name.StartsWith("terrOre") ? item.maxCount : (int)(item.maxCount * 0.6666f);
                                     if (lootCount > 0)
                                     {
+                                        var mergeLimit = random.Next(50, 100);
                                         var itemType = ItemClass.GetItem(item.name).type;
-                                        var nearItem = nearItems.FirstOrDefault(i => i.itemStack != null && i.itemStack.itemValue.type == itemType);
+                                        var nearItem = nearItems.FirstOrDefault(i => i.itemStack != null && i.itemStack.itemValue.type == itemType && i.itemStack.count < mergeLimit);
 
                                         // add items to the same near EntityItem
                                         if (nearItem != null)
                                         {
-                                            nearItem.itemStack.count += lootCount;
+                                            lootCount += nearItem.itemStack.count;
+                                            dropPos = nearItem.position;
+                                            GameManager.Instance.World.RemoveEntity(nearItem.entityId, EnumRemoveEntityReason.Unloaded);
                                         }
-                                        else
-                                        {
-                                            GameManager.Instance.ItemDropServer(new ItemStack(new ItemValue(itemType), lootCount), dropPos, Vector3.zero);
-                                        }
+                                        GameManager.Instance.ItemDropServer(new ItemStack(new ItemValue(itemType), lootCount), dropPos, Vector3.zero);
                                     }
                                 }
                             });
@@ -107,9 +109,9 @@ namespace VoidGags
                     if (change.blockValue.isair) return;
                     var world = GameManager.Instance.World;
                     if (world == null) return;
-                    var current = world.GetBlock(change.pos);
+                    var blockPos = change.blockValueRef.BlockPosition;
+                    var current = world.GetBlock(blockPos);
                     if (!current.isair) return;
-                    var blockPos = change.pos;
                     var chunk = world.GetChunkFromWorldPos(blockPos) as Chunk;
                     if (chunk == null) return;
                     var entities = chunk.GetEntities<EntityItem>(blockPos.ToVector3Center(), 0.9f);
@@ -131,7 +133,7 @@ namespace VoidGags
                     int GetAirDistance()
                     {
                         var i = 1;
-                        while (blockPos.y + i < 254 && world.GetBlock(new(blockPos.x, blockPos.y + i, blockPos.z)).isair == false)
+                        while (blockPos.y + i < 254 && world.GetBlock(blockPos.x, blockPos.y + i, blockPos.z).isair == false)
                         {
                             i++;
                         }

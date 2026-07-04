@@ -28,6 +28,8 @@ namespace VoidGags
                     if (__instance.sprintMode == PlayerMoveController.cSprintModeHold)
                     {
                         __instance.runInputTime = 1f;
+                        __instance.isAutorunInvalid = true;
+                        __instance.isAutorun = false;
                     }
                 }
             }

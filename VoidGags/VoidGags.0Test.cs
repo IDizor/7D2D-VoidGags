@@ -1,5 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
+using UniLinq;
+using UnityEngine;
+using static EntityVehicle;
 
 namespace VoidGags
 {
@@ -8,66 +14,36 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        //[HarmonyPatch(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon))]
+        //[HarmonyPatch(typeof(AvatarZombieController), nameof(AvatarZombieController.StartAnimationDodge))]
         //public static class knqwefkjeqw
         //{
-        //    public static bool skipPatch = false;
-        //    public static bool Prefix(XUiC_ItemStack __instance)
+        //    public static void Prefix(AvatarZombieController __instance, float _blend)
         //    {
-        //        if (skipPatch)
-        //        {
-        //            skipPatch = false;
-        //            return true;
-        //        }
-        //        try
-        //        {
-        //            skipPatch = true;
-        //            __instance.updateLockTypeIcon();
-        //            return false;
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            LogModError(ex.ToString());
-        //            throw;
-        //        }
+        //        LogWarning($"StartAnimationDodge: {__instance.Entity.EntityName}, blend = {_blend:0.00}");
         //    }
         //}
 
-        //[HarmonyPatch(typeof(XUiC_MapArea), nameof(XUiC_MapArea.OnOpen))]
-        //public static class sgfdgsdgbvc
+        
+
+        //[HarmonyPatch(typeof(LootManager), nameof(LootManager.LootContainerOpened))]
+        //public static class doivjmndf
         //{
-        //    public static void Prefix(XUiC_MapArea __instance)
+        //    [HarmonyReversePatch]
+        //    [MethodImpl(MethodImplOptions.NoInlining)]
+        //    public static void Reverse(LootManager __instance, ITileEntityLootable _tileEntity, int _entityIdThatOpenedIt, FastTags<TagGroup.Global> _containerTags)
         //    {
-        //        var w = __instance.GetParentWindow();
-        //        var g = w.Controller.WindowGroup;
-        //        if (w != null)
-        //        {
-        //            LogModWarning("XUiC_MapArea.OnOpen");
-        //            g.isModal = false;
-        //            //w.UiTransform.gameObject.SetActive(false);
-        //            //w.xui.playerUI.RefreshNavigationTarget();
-        //        }
+        //        throw new NotImplementedException();
         //    }
 
-        //    public static void Postfix(XUiC_MapArea __instance)
+        //    public static bool Prefix(LootManager __instance, ITileEntityLootable _tileEntity, int _entityIdThatOpenedIt, FastTags<TagGroup.Global> _containerTags)
         //    {
-        //        var w = __instance.GetParentWindow();
-        //        var g = w.Controller.WindowGroup;
-        //        if (w != null)
+        //        var pos = _tileEntity.ToWorldPos();
+        //        if (!dfnghdngfmfgh.LootManagerActions.ContainsKey(pos))
         //        {
-        //            LogModWarning("XUiC_MapArea.OnOpen.p");
-        //            g.isModal = false;
-
-        //            __instance.isOpen = false;
-        //            __instance.xui.playerUI.GetComponentInParent<LocalPlayerCamera>().PreRender -= __instance.OnPreRender;
-        //            __instance.xui.calloutWindow.DisableCallouts(XUiC_GamepadCalloutWindow.CalloutType.Menu);
-        //            __instance.xui.playerUI.CursorController.Locked = false;
-        //            SoftCursor.SetCursor(CursorControllerAbs.ECursorType.Default);
-        //            __instance.closestMouseOverNavObject = null;
-        //            g.windowManager.DisableWindowActionSet(g);
-        //            g.windowManager.modalWindow = null;
-        //            g.windowManager.cursorWindowOpen = false;
+        //            dfnghdngfmfgh.LootManagerActions.Add(pos, () => Reverse(__instance, _tileEntity, _entityIdThatOpenedIt, _containerTags));
+        //            Helper.DeferredAction(30f, () => dfnghdngfmfgh.LootManagerActions.Remove(pos));
         //        }
+        //        return false;
         //    }
         //}
     }

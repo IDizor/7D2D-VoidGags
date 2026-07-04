@@ -60,14 +60,22 @@
     <Reference Include="NGUI">
       <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\NGUI.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\System.Xml.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\System.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="mscorlib">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\mscorlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <HintPath>..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\System.Xml.Linq.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\7 Days To Die\7DaysToDie_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
@@ -102,9 +110,14 @@
     <Compile Include="NetPackages\PooledBinaryWriter_Methods.cs" />
     <Compile Include="Types\DelayStorage.cs" />
     <Compile Include="Types\ItemActionEntryCustom.cs" />
+    <Compile Include="Types\ItemActionEntryScrapDrink.cs" />
     <Compile Include="VoidGags.0Test.cs" />
     <Compile Include="VoidGags.ClickableMarkers.cs" />
     <Compile Include="VoidGags.BugFixes.cs" />
+    <Compile Include="VoidGags.RichStashings.cs" />
+    <Compile Include="VoidGags.PickupSpikes.cs" />
+    <Compile Include="VoidGags.ScrapDrinksToEmptyJars.cs" />
+    <Compile Include="VoidGags.SpikesKillExperience.cs" />
     <Compile Include="VoidGags.SpeedIndicator.cs" />
     <Compile Include="VoidGags.CurtainsSmartCut.cs" />
     <Compile Include="VoidGags.SprintModeHold.cs" />

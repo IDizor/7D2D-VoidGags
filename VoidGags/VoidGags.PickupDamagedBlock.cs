@@ -47,11 +47,11 @@ namespace VoidGags
                             prefix: new HarmonyMethod(SomeBlockType_WithMethodThatUsesBlockValue.Prefix));
                     }
                     
-                    Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockActivated), [typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal)]),
+                    Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockActivated), [typeof(WorldBase), typeof(Vector3i), typeof(BlockValue), typeof(EntityPlayerLocal)]),
                         prefix: new HarmonyMethod(SomeBlockType_WithMethodThatUsesBlockValue.Prefix));
-                    
-                    Harmony.Patch(AccessTools.Method(typeof(World), nameof(World.GetBlock), [typeof(Vector3i)]),
-                        postfix: new HarmonyMethod(World_GetBlock.Postfix));
+
+                    Harmony.Patch(AccessTools.Method(typeof(WorldBase), nameof(WorldBase.GetBlock), [typeof(Vector3i)]),
+                        postfix: new HarmonyMethod(WorldBase_GetBlock.Postfix));
                 }
             }
             else
@@ -66,7 +66,6 @@ namespace VoidGags
         public static class PickupDamagedItems
         {
             public static float PickupDamagedBlockPercentage = 0.2f;
-            public static Type[] AllowedToPickupBlockTypes = [typeof(BlockWorkstation)];
 
             /// <summary>
             /// Makes block undamaged for futher checks.
@@ -87,9 +86,8 @@ namespace VoidGags
 
             /// <summary>
             /// Allows to pickup heavy items like crafting stations (event when the timer elapsed).
-            /// Had to add this patch because of an odd code in the original methods like <see cref="BlockCampfire.EventData_Event"/>:
             /// </summary>
-            public static class World_GetBlock
+            public static class WorldBase_GetBlock
             {
                 public static void Postfix(ref BlockValue __result)
                 {
@@ -98,7 +96,7 @@ namespace VoidGags
                         if (PickupDamagedBlockPercentage * __result.Block.MaxDamage > __result.damage)
                         {
                             var caller = Helper.GetCallerMethod();
-                            if (caller.Name == "EventData_Event" && AllowedToPickupBlockTypes.Contains(caller.DeclaringType))
+                            if (caller.Is(nameof(Block.TakeItemWithTimerDone)))
                             {
                                 __result.damage = 0;
                             }

@@ -116,7 +116,7 @@ namespace VoidGags
                     if (DelayClosestRegular.Check())
                     {
                         var world = GameManager.Instance.World;
-                        ClosestVolumes = world.sleeperVolumes
+                        ClosestVolumes = world.sleeperVolumes.Values
                             .Where(sv => sv.BoxMin.IsInCubeWith(__instance.blockPosStandingOn, 300))
                             .ToList();
                     }
@@ -264,7 +264,7 @@ namespace VoidGags
                         {
                             //LogModError($"Activating sleeper '{entity.EntityName}' on a weak block '{weakBlock.blockName}'");
                             entity.ConditionalTriggerSleeperWakeUp();
-                            weakBlock.OnEntityCollidedWithBlock(entity.world, 0, entity.blockPosStandingOn, entity.blockValueStandingOn, entity);
+                            weakBlock.OnEntityCollidedWithBlock(entity.world, entity.blockPosStandingOn, entity.blockValueStandingOn, entity);
                         }
                     }
                     else

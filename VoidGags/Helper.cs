@@ -47,6 +47,24 @@ namespace VoidGags
         public static string WorldSeed => GameManager.Instance?.World?.Seed.ToString();
 
         /// <summary>
+        /// Normalizes angle 0..360° to -180..+180°.
+        /// </summary>
+        public static float Normalize180(this float value)
+        {
+            return value > 180f ? value - 360f : value;
+        }
+
+        /// <summary>
+        /// Normalizes any angle value to 0..360°.
+        /// </summary>
+        public static float Normalize360(this float value)
+        {
+            var result = value % 360f;
+            if (result < 0f) result += 360f;
+            return result;
+        }
+
+        /// <summary>
         /// Gets the method the current method is called from.
         /// </summary>
         /// <param name="index"></param>
@@ -194,7 +212,7 @@ namespace VoidGags
                     var distance = (pos - tilePos.ToVector3Center()).magnitude;
                     if (distance < radius)
                     {
-                        var tile = world.GetTileEntity(0, tilePos);
+                        var tile = world.GetTileEntity(tilePos);
                         if (tile != null)
                         {
                             tiles.Add(new KeyValuePair<float, TileEntity>(distance, tile));
@@ -283,6 +301,11 @@ namespace VoidGags
             return GameManager.Instance.World.IsWithinTraderArea(pos);
         }
 
+        public static bool IsInvulnerableBlock(Vector3i pos)
+        {
+            return World.SandboxUseTraderArea == 0 && GameManager.Instance.World.IsWithinTraderArea(pos);
+        }
+
         /// <summary>
         /// Gets distant block position in the specified direction.
         /// </summary>
@@ -294,35 +317,54 @@ namespace VoidGags
         /// <summary>
         /// Create delay-timer on UI to perform specified action.
         /// </summary>
-        public static void UiTimerAction(float delay, Action action, Action cancelAction = null)
+        public static void UiTimerAction(float delay, Action action, Action cancelAction = null, bool closeOnHit = true)
         {
             LocalPlayerUI playerUI = PlayerLocal?.PlayerUI;
             if (playerUI != null)
             {
-                playerUI.windowManager.Open("timer", _bModal: true);
-                XUiC_Timer childByType = playerUI.xui.GetChildByType<XUiC_Timer>();
-                TimerEventData timerEventData = new();
+                TimerEventData timerEventData = new() { CloseOnHit = closeOnHit };
                 timerEventData.Data = null;
-                timerEventData.Event += OnEvent;
+                timerEventData.FullTimeFinishEvent += OnEvent;
                 if (cancelAction != null)
                 {
                     timerEventData.CloseEvent += OnCancel;
                 }
-                childByType.SetTimer(delay, timerEventData);
+                XUiC_Timer.OpenTimer(playerUI.xui, delay, timerEventData);
+            }
+            else
+            {
+                action();
             }
 
             void OnEvent(TimerEventData data)
             {
-                data.Event -= OnEvent;
+                data.FullTimeFinishEvent -= OnEvent;
                 data.CloseEvent -= OnCancel;
-                action();
+                DeferredAction(0.001f, action);
             }
 
             void OnCancel(TimerEventData data)
             {
-                data.Event -= OnEvent;
+                data.FullTimeFinishEvent -= OnEvent;
                 data.CloseEvent -= OnCancel;
-                cancelAction();
+                DeferredAction(0.001f, cancelAction);
+            }
+        }
+
+        private static float prevTooltipTime = 0f;
+        public static void ShowTooltip(string message, float timeout)
+        {
+            if (PlayerLocal != null && Time.time - prevTooltipTime > 0.1f)
+            {
+                var instance = XUiC_PopupToolTip.GetInstance(PlayerLocal.PlayerUI.xui);
+                if (instance != null)
+                {
+                    prevTooltipTime = Time.time;
+                    XUiC_PopupToolTip.QueueTooltip(PlayerLocal.PlayerUI.xui, _text: message,
+                        _args: null, _alertSound: null, _eventHandler: null, _showImmediately: true,
+                        _pinTooltip: false, _timeout: timeout);
+                    instance.textAlphaCurrent = instance.textAlphaTarget;
+                }
             }
         }
 
@@ -355,6 +397,27 @@ namespace VoidGags
             }
             player = null;
             return false;
+        }
+
+        /// <summary>
+        /// Gets the closest player to the specified position within the specified radius.
+        /// </summary>
+        public static EntityPlayer GetClosestPlayer(World world, Vector3 pos, float maxRadius)
+        {
+            EntityPlayer player = null;
+            float closestDistance = float.MaxValue;
+            for (int i = 0; i < world.Players.list.Count; i++)
+            {
+                var p = world.Players.list[i];
+                var d = p.position.DistanceTo(pos);
+                if (d < maxRadius && d < closestDistance)
+                {
+                    closestDistance = d;
+                    player = p;
+                }
+            }
+
+            return player;
         }
 
         /// <summary>

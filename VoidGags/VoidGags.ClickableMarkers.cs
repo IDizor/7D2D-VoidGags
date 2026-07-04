@@ -67,6 +67,7 @@ namespace VoidGags
 
                                 /// Have to use own method because the original <see cref="XUiC_MapWaypointList.SelectWaypoint"/> has a bug.
                                 /// TODO: Check whether the original method is fixed and can be used.
+                                /// Bug line is: currentPage = i / cCountWaypointsPerPage; // should be: currentPage = Mathf.Max(0, i - 1) / cCountWaypointsPerPage;
                                 void SelectWaypoint(NavObject _nav)
                                 {
                                     var list = new List<Waypoint>(player.Waypoints.Collection.list);
@@ -76,7 +77,7 @@ namespace VoidGags
                                         var wp = list[i];
                                         if (wp.navObject.Equals(_nav))
                                         {
-                                            waypointList.currentPage = Mathf.Max(0, i - 1) / waypointList.cCountWaypointsPerPage; // bug line was: currentPage = i / waypointList.cCountWaypointsPerPage;
+                                            waypointList.currentPage = Mathf.Max(0, i - 1) / waypointList.cCountWaypointsPerPage;
                                             waypointList.UpdateWaypointsList(list[i]);
                                             waypointList.SelectedWaypoint = wp;
                                             break;

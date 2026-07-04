@@ -107,8 +107,7 @@ namespace VoidGags
                 {
                     if (IsDedicatedServer) return true;
 
-                    if (PlayerEntity != null &&
-                        FuelTaken > 0f)
+                    if (PlayerEntity != null && FuelTaken > 0f)
                     {
                         var maxFuelLevel = __instance.GetMaxFuelLevel();
                         var refuelDelay = RefuelingTime - ((Mathf.Clamp(maxFuelLevel, refuelLong, refuelFast) - refuelLong) * refuelUnit);
@@ -116,7 +115,8 @@ namespace VoidGags
                         {
                             AddFuel(__instance, _fuelLevel);
 
-                            if (__instance?.GetFuelPercent() < 1f && __instance.entity != null &&
+                            if (__instance?.GetFuelPercent() < 1f &&
+                                __instance.entity != null &&
                                 PlayerEntity != null)
                             {
                                 // add next fuel portion automatically

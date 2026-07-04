@@ -49,7 +49,7 @@ namespace VoidGags
                             {
                                 var block = ItemActionAttack.GetBlockHit(world, Voxel.voxelRayHitInfo);
                                 if (!block.isair && block.Block != null && block.GetCurrentHP() <= 10 && destroyedBlockPos != Voxel.voxelRayHitInfo.hit.blockPos
-                                    && !Helper.IsTraderArea(Voxel.voxelRayHitInfo.hit.blockPos))
+                                    && !Helper.IsInvulnerableBlock(Voxel.voxelRayHitInfo.hit.blockPos))
                                 {
                                     if (Settings.ArrowsBoltsDistraction)
                                     {
@@ -60,7 +60,7 @@ namespace VoidGags
                                             ArrowsBoltsDistraction.ProcessBlockHitAttraction(hitInfo, block, shotStartPos);
                                         });
                                     }
-                                    block.Block.DamageBlock(world, 0, Voxel.voxelRayHitInfo.hit.blockPos, block, block.Block.MaxDamage, -1);
+                                    block.Block.DamageBlock(world, Voxel.voxelRayHitInfo.hit.blockValueRef, block, block.Block.MaxDamage, -1);
                                     destroyedBlockPos = Voxel.voxelRayHitInfo.hit.blockPos;
                                     repeat = true;
                                 }
@@ -121,7 +121,7 @@ namespace VoidGags
                         {
                             var block = ItemActionAttack.GetBlockHit(world, Voxel.voxelRayHitInfo);
                             var projectileName = __instance.itemProjectile?.Name;
-                            if (!block.isair && block.Block != null && block.GetCurrentHP() <= 5 && projectileName != null && !projectileName.EndsWith("Stone") && !Helper.IsTraderArea(Voxel.voxelRayHitInfo.hit.blockPos))
+                            if (!block.isair && block.Block != null && block.GetCurrentHP() <= 5 && projectileName != null && !projectileName.EndsWith("Stone") && !Helper.IsInvulnerableBlock(Voxel.voxelRayHitInfo.hit.blockPos))
                             {
                                 //Debug.LogWarning($"destroyedBlockPos {Voxel.voxelRayHitInfo.hit.blockPos}, hit = {Voxel.voxelRayHitInfo.hit.pos}, collider.transform.tag = '{Voxel.phyxRaycastHit.collider?.transform?.tag}'");
                                 if (Settings.ArrowsBoltsDistraction)
@@ -133,7 +133,7 @@ namespace VoidGags
                                         ArrowsBoltsDistraction.ProcessBlockHitAttraction(hitInfo, block, shotStartPos);
                                     });
                                 }
-                                block.Block.DamageBlock(world, 0, Voxel.voxelRayHitInfo.hit.blockPos, block, block.Block.MaxDamage, -1);
+                                block.Block.DamageBlock(world, Voxel.voxelRayHitInfo.hit.blockValueRef, block, block.Block.MaxDamage, -1);
                                 destroyedBlockPos = Voxel.voxelRayHitInfo.hit.blockPos;
                                 hitPos = Voxel.voxelRayHitInfo.hit.pos;
                                 repeat = true;

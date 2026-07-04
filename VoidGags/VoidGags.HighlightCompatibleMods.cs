@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 using VoidGags.Types;
 using static VoidGags.VoidGags.HighlightCompatibleMods;
@@ -18,16 +16,17 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.HighlightCompatibleMods));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), nameof(XUiC_ItemInfoWindow.SetInfo)),
+                prefix: new HarmonyMethod(XUiC_ItemInfoWindow_SetInfo.Prefix),
                 postfix: new HarmonyMethod(XUiC_ItemInfoWindow_SetInfo.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemInfoWindow), nameof(XUiC_ItemInfoWindow.ShowEmptyInfo)),
                 prefix: new HarmonyMethod(XUiC_ItemInfoWindow_ShowEmptyInfo.Prefix));
 
-            Harmony.Patch(AccessTools.Method(typeof(XUiC_InfoWindow), nameof(XUiC_InfoWindow.OnVisibilityChanged)),
+            Harmony.Patch(AccessTools.Method(typeof(XUiC_InfoWindow), nameof(XUiC_InfoWindow.OnVisibilityChanged), [typeof(XUiController), typeof(bool), typeof(bool)]),
                 prefix: new HarmonyMethod(XUiC_InfoWindow_OnVisibilityChanged.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_ItemStack), nameof(XUiC_ItemStack.updateLockTypeIcon)),
-                postfix: new HarmonyMethod(XUiC_ItemStack_updateLockTypeIcon.Postfix));
+                prefix: new HarmonyMethod(XUiC_ItemStack_updateLockTypeIcon.Prefix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_RecipeEntry), nameof(XUiC_RecipeEntry.SetRecipeAndHasIngredients)),
                 postfix: new HarmonyMethod(XUiC_RecipeEntry_SetRecipeAndHasIngredients.Postfix));
@@ -40,7 +39,6 @@ namespace VoidGags
         public static class HighlightCompatibleMods
         {
             public static ItemStack SelectedItem = null;
-            public static Dictionary<XUiC_ItemStack, flashLockTypes> ItemFlashLockTypeCache = [];
             
             public static void SetItemStackGridsDirty()
             {
@@ -63,11 +61,16 @@ namespace VoidGags
                 });
             }
 
+            public static bool IsAssembleWindowActive()
+            {
+                var windowManager = Helper.PlayerLocal?.playerUI?.windowManager;
+                return windowManager?.IsWindowOpen(XUiC_AssembleWindowGroup.ID) == true;
+            }
+
             public static void ClearSelectedItem()
             {
-                //LogModInfo($"Selected item cleared {SelectedItem?.itemValue?.ItemClass.Name}");
+                //LogWarning($"Selected item cleared {SelectedItem?.itemValue?.ItemClass.Name}");
                 SelectedItem = null;
-                ItemFlashLockTypeCache.Clear();
                 SetItemStackGridsDirty();
                 RefreshRecipeLists();
             }
@@ -77,18 +80,36 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_ItemInfoWindow_SetInfo
             {
+                public static void Prefix(XUiC_ItemInfoWindow __instance)
+                {
+                    // Clear AssembleItem.CurrentItem to have a correct action list in the item info window.
+                    if (SelectedItem != null &&
+                        __instance.xui.AssembleItem != null &&
+                        __instance.xui.AssembleItem.CurrentItem == SelectedItem &&
+                        !IsAssembleWindowActive())
+                    {
+                        __instance.xui.AssembleItem.CurrentItem = null;
+                    }
+                }
+
                 public static void Postfix(XUiC_ItemInfoWindow __instance, ItemStack stack)
                 {
                     if (stack?.itemValue?.HasModSlots == true)
                     {
-                        SelectedItem = stack?.IsEmpty() == false ? stack.Clone() : null;
-                        //if (SelectedItem != null) LogModInfo($"Selected item is set to {SelectedItem.itemValue?.ItemClass.Name}");
-                        ItemFlashLockTypeCache.Clear();
-                        SetItemStackGridsDirty();
-                        RefreshRecipeLists();
+                        if (!IsAssembleWindowActive())
+                        {
+                            SelectedItem = stack.IsEmpty() == false ? stack.Clone() : null;
+                            //if (SelectedItem != null) LogWarning($"Selected item is set to {SelectedItem.itemValue?.ItemClass.Name}");
+                            SetItemStackGridsDirty();
+                            RefreshRecipeLists();
+                        }
                     }
                     else if (SelectedItem != null)
                     {
+                        if (!IsAssembleWindowActive() && SelectedItem == __instance.xui.AssembleItem.CurrentItem)
+                        {
+                            __instance.xui.AssembleItem.CurrentItem = null;
+                        }
                         ClearSelectedItem();
                     }
                 }
@@ -99,10 +120,14 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_ItemInfoWindow_ShowEmptyInfo
             {
-                public static void Prefix()
+                public static void Prefix(XUiC_ItemInfoWindow __instance)
                 {
                     if (SelectedItem != null)
                     {
+                        if (!IsAssembleWindowActive() && SelectedItem == __instance.xui.AssembleItem.CurrentItem)
+                        {
+                            __instance.xui.AssembleItem.CurrentItem = null;
+                        }
                         ClearSelectedItem();
                     }
                 }
@@ -113,10 +138,14 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_InfoWindow_OnVisibilityChanged
             {
-                public static void Prefix(XUiC_InfoWindow __instance, bool _isVisible)
+                public static void Prefix(XUiC_InfoWindow __instance, bool _visibleInScene)
                 {
-                    if (!_isVisible && __instance is XUiC_ItemInfoWindow)
+                    if (SelectedItem != null && !_visibleInScene && __instance is XUiC_ItemInfoWindow)
                     {
+                        if (!IsAssembleWindowActive() && SelectedItem == __instance.xui.AssembleItem.CurrentItem)
+                        {
+                            __instance.xui.AssembleItem.CurrentItem = null;
+                        }
                         ClearSelectedItem();
                     }
                 }
@@ -127,91 +156,14 @@ namespace VoidGags
             /// </summary>
             public static class XUiC_ItemStack_updateLockTypeIcon
             {
-                public static void Postfix(XUiC_ItemStack __instance)
+                public static void Prefix(XUiC_ItemStack __instance)
                 {
-                    if (ItemFlashLockTypeCache.TryGetValue(__instance, out flashLockTypes flt))
+                    if (SelectedItem != null &&
+                        __instance.xui.AssembleItem != null &&
+                        __instance.xui.AssembleItem.CurrentItem != SelectedItem &&
+                        !IsAssembleWindowActive())
                     {
-                        //LogModWarning($"Used from cache: flashLockTypes for {__instance.itemClass?.Name}.");
-                        __instance.flashLockTypeIcon = flt;
-                        return;
-                    }
-
-                    if (SelectedItem != null && __instance.flashLockTypeIcon == flashLockTypes.None && __instance.itemClass is ItemClassModifier itemClassModifier)
-                    {
-                        /// TODO: Before new release compare this block with the original code from <see cref="XUiC_ItemStack.updateLockTypeIcon"/>.
-                        /// Latest original code was:
-
-                        //if (itemClass is ItemClassModifier itemClassModifier)
-                        //{
-                        //    lockSprite = "ui_game_symbol_assemble";
-                        //    if (itemClassModifier.HasAnyTags(ItemClassModifier.CosmeticModTypes))
-                        //    {
-                        //        lockSprite = "ui_game_symbol_paint_bucket";
-                        //    }
-
-                        //    if (base.xui.AssembleItem.CurrentItem != null)
-                        //    {
-                        //        if ((itemClassModifier.InstallableTags.IsEmpty || base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !base.xui.AssembleItem.CurrentItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
-                        //        {
-                        //            if (StackLocation != StackLocationTypes.Part)
-                        //            {
-                        //                int num = 0;
-                        //                for (int i = 0; i < base.xui.AssembleItem.CurrentItem.itemValue.Modifications.Length; i++)
-                        //                {
-                        //                    ItemValue itemValue = base.xui.AssembleItem.CurrentItem.itemValue.Modifications[i];
-                        //                    if (!itemValue.IsEmpty() && itemValue.ItemClass.HasAnyTags(itemClassModifier.ItemTags))
-                        //                    {
-                        //                        num++;
-                        //                    }
-                        //                }
-
-                        //                if (num >= itemClassModifier.MaxModsAllowed)
-                        //                {
-                        //                    flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
-                        //                    return;
-                        //                }
-                        //            }
-
-                        //            flashLockTypeIcon = flashLockTypes.Allowed;
-                        //        }
-                        //        else
-                        //        {
-                        //            setLockTypeIconColor(Color.grey);
-                        //            flashLockTypeIcon = flashLockTypes.None;
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        setLockTypeIconColor(Color.white);
-                        //        flashLockTypeIcon = flashLockTypes.None;
-                        //    }
-                        //}
-
-                        /// Converted to the following code (SelectedItem should be used instead of base.xui.AssembleItem.CurrentItem) :
-                        if ((itemClassModifier.InstallableTags.IsEmpty || SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.InstallableTags)) && !SelectedItem.itemValue.ItemClass.HasAnyTags(itemClassModifier.DisallowedTags))
-                        {
-                            if (__instance.StackLocation != StackLocationTypes.Part && SelectedItem.itemValue.Modifications != null) // added own check "Modifications != null"
-                            {
-                                int num = 0;
-                                for (int i = 0; i < SelectedItem.itemValue.Modifications.Length; i++)
-                                {
-                                    ItemValue itemValue = SelectedItem.itemValue.Modifications[i];
-                                    if (itemValue != null && !itemValue.IsEmpty() && itemValue.ItemClass?.HasAnyTags(itemClassModifier.ItemTags) == true) // added own null checks "itemValue != null", and ItemClass"." -> "?."
-                                    {
-                                        num++;
-                                    }
-                                }
-                                if (num >= itemClassModifier.MaxModsAllowed)
-                                {
-                                    __instance.flashLockTypeIcon = flashLockTypes.AlreadyEquipped;
-                                    ItemFlashLockTypeCache[__instance] = flashLockTypes.AlreadyEquipped;
-                                    return;
-                                }
-                            }
-                            __instance.flashLockTypeIcon = flashLockTypes.Allowed;
-                            ItemFlashLockTypeCache[__instance] = flashLockTypes.Allowed;
-                        }
-                        /// End of block to compare
+                        __instance.xui.AssembleItem.CurrentItem = SelectedItem;
                     }
                 }
             }

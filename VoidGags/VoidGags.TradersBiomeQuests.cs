@@ -28,7 +28,7 @@ namespace VoidGags
                 {
                     if (!__result) return;
                     var caller = Helper.GetCallerMethod();
-                    if (caller.DeclaringType == typeof(EntityTrader) && caller.Name == nameof(EntityTrader.PopulateActiveQuests))
+                    if (caller.Is(typeof(EntityTrader), nameof(EntityTrader.PopulateActiveQuests)))
                     {
                         var quest = __instance;
                         if (quest.QuestClass.Shareable && quest.PositionData.TryGetValue(Quest.PositionDataTypes.TraderPosition, out Vector3 traderPos))

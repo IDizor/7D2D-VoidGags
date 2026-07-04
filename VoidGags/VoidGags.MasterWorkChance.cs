@@ -1,6 +1,5 @@
 ﻿using Audio;
 using HarmonyLib;
-using UniLinq;
 using VoidGags.NetPackages;
 using static VoidGags.VoidGags.MasterWorkChance;
 
@@ -15,7 +14,7 @@ namespace VoidGags
         {
             LogApplyingPatch(nameof(Settings.MasterWorkChance));
 
-            if (Settings.MasterWorkChance <= 20 && Settings.MasterWorkChance > 0)
+            if (Settings.MasterWorkChance <= ChanceLimit && Settings.MasterWorkChance > 0)
             {
                 if (Settings.MasterWorkChance_MaxQuality < 1 || Settings.MasterWorkChance_MaxQuality > 6)
                 {
@@ -43,12 +42,13 @@ namespace VoidGags
             }
             else if (Settings.MasterWorkChance != 0)
             {
-                LogException($"Invalid value for setting '{nameof(Settings.MasterWorkChance)}'. Should be in range 0..20 percent.");
+                LogException($"Invalid value for setting '{nameof(Settings.MasterWorkChance)}'. Should be in range 0..{ChanceLimit:0} percent.");
             }
         }
 
         public static class MasterWorkChance
         {
+            public static float ChanceLimit = 20f;
             public static float MasterWorkChanceValue = 0.1f;
             public static int PlayerId = -1;
 
@@ -105,8 +105,7 @@ namespace VoidGags
                         RecipeQueueItem recipeQueueItem = __instance.Queue[__instance.Queue.Length - 1];
                         if (recipeQueueItem != null && recipeQueueItem.Multiplier > 0 && recipeQueueItem.Recipe != null && recipeQueueItem.Recipe.GetOutputItemClass().ShowQualityBar)
                         {
-                            var lockedTiles = GameManager.Instance.lockedTileEntities;
-                            if (!lockedTiles.Any(l => ((TileEntity)l.Key).entityId == __instance.entityId)) // if workstation is not opened by any player
+                            if (!__instance.TryGetSelfOrFeature<TEFeatureLockable>(out var lockable) || !lockable.IsLocked()) // if workstation is not opened by any player?
                             {
                                 var crafterId = recipeQueueItem.StartingEntityId;
                                 PlayerId = crafterId;
@@ -128,25 +127,22 @@ namespace VoidGags
             {
                 public static void Prefix(ref int minQuality, ref int maxQuality)
                 {
-                    if (minQuality == maxQuality && maxQuality > 0 && maxQuality < 6 && Settings.MasterWorkChance_MaxQuality > maxQuality)
+                    if (PlayerId > 0 && minQuality == maxQuality && maxQuality > 0 && maxQuality < 6 && Settings.MasterWorkChance_MaxQuality > maxQuality)
                     {
                         if (GameManager.Instance.World.GetGameRandom().RandomFloat <= MasterWorkChanceValue)
                         {
                             minQuality++;
                             maxQuality++;
 
-                            if (PlayerId > 0)
+                            var localPlayer = GameManager.Instance?.World?.GetPrimaryPlayer();
+                            if (localPlayer?.entityId == PlayerId)
                             {
-                                var localPlayer = GameManager.Instance?.World?.GetPrimaryPlayer();
-                                if (localPlayer?.entityId == PlayerId)
-                                {
-                                    PlayMasterWorkSound();
-                                }
-                                else
-                                {
-                                    SingletonMonoBehaviour<ConnectionManager>.Instance.SendPackage(NetPackageManager.GetPackage<NetPackageMasterWorkCreated>()
-                                        .Setup(PlayerId), _onlyClientsAttachedToAnEntity: true, _attachedToEntityId: PlayerId);
-                                }
+                                PlayMasterWorkSound();
+                            }
+                            else
+                            {
+                                SingletonMonoBehaviour<ConnectionManager>.Instance.SendPackage(NetPackageManager.GetPackage<NetPackageMasterWorkCreated>()
+                                    .Setup(PlayerId), _onlyClientsAttachedToAnEntity: true, _attachedToEntityId: PlayerId);
                             }
                         }
                     }

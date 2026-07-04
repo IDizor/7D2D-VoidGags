@@ -82,7 +82,7 @@ namespace VoidGags
                     {
                         if (__instance.eventType == NetPackageQuestEvent.QuestEventTypes.LockPOI)
                         {
-                            var prefabDecorator = GameManager.Instance.World.ChunkClusters[0].ChunkProvider.GetDynamicPrefabDecorator();
+                            var prefabDecorator = GameManager.Instance.GetDynamicPrefabDecorator();
                             var prefab = prefabDecorator.GetPrefabAtPosition(__instance.prefabPos);
                             if (prefab != null)
                             {

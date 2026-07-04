@@ -1,0 +1,15 @@
+<dizor>
+
+  <append xpath="//shapes/shape[starts-with(@name,'curtain')]">
+    <property name="FilterTags" value="VG_verticalHang"/>
+  </append>
+
+  <append xpath="//shapes/shape[starts-with(@name,'verticalBlinds')]">
+    <property name="FilterTags" value="VG_verticalHang"/>
+  </append>
+
+  <append xpath="//shapes/shape[starts-with(@name,'commercialBlind')]">
+    <property name="FilterTags" value="VG_verticalHang"/>
+  </append>
+
+</dizor>

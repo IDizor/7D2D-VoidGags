@@ -87,17 +87,22 @@ namespace VoidGags
             if (Settings.JumpControl) SafePatch(ApplyPatches_JumpControl);
             if (Settings.VisibleScriptedSleepers) SafePatch(ApplyPatches_VisibleScriptedSleepers);
             if (Settings.ZombiesFriendlyFire) SafePatch(ApplyPatches_ZombiesFriendlyFire);
-            if (Settings.ZombiesStumbleChance > 0f) SafePatch(ApplyPatches_ZombiesStumbleChance);
+            if (Settings.ZombiesStumbleChance > 0f ||
+                Settings.ZombiesStumbleChance_OnSpikes > 0f) SafePatch(ApplyPatches_ZombiesStumbleChance);
             if (Settings.DamageModifier) SafePatch(ApplyPatches_DamageModifier);
             if (Settings.MoveOnePiece) SafePatch(ApplyPatches_MoveOnePiece);
             if (Settings.ClickableMarkers) SafePatch(ApplyPatches_ClickableMarkers);
-            if (Settings.TradersPlayerReputation) SafePatch(ApplyPatches_TradersPlayerReputation);
+            if (Settings.NewTradersDontKnowYou) SafePatch(ApplyPatches_NewTradersDontKnowYou);
             if (Settings.TradersBiomeQuests) SafePatch(ApplyPatches_TradersBiomeQuests);
             if (Settings.RoadRash) SafePatch(ApplyPatches_RoadRash);
             if (Settings.RhinoTouch) SafePatch(ApplyPatches_RhinoTouch);
             if (Settings.SprintModeHold) SafePatch(ApplyPatches_SprintModeHold);
             if (Settings.CurtainsSmartCut) SafePatch(ApplyPatches_CurtainsSmartCut);
             if (Settings.SpeedIndicator) SafePatch(ApplyPatches_SpeedIndicator);
+            if (Settings.ScrapDrinksToEmptyJars) SafePatch(ApplyPatches_ScrapDrinksToEmptyJars);
+            if (Settings.PickupSpikes) SafePatch(ApplyPatches_PickupSpikes);
+            if (Settings.SpikesKillExperience > 0f) SafePatch(ApplyPatches_SpikesKillExperience);
+            if (Settings.RichStashings) SafePatch(ApplyPatches_RichStashings);
 
             OnGameLoadedActions.Add(() => {
                 IsServer = SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer;
@@ -196,6 +201,40 @@ namespace VoidGags
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Pickup timer on UI for blocks that have "PickupTime" property.
+        /// </summary>
+        [HarmonyPriority(Priority.VeryHigh)]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.PickupBlockServer))]
+        public static class GameManager_PickupBlockServer
+        {
+            public static bool SkipPatch = false;
+
+            public static bool Prefix(GameManager __instance, Vector3i _blockPos, BlockValue _blockValue, int _playerId, PlatformUserIdentifierAbs persistentPlayerId)
+            {
+                if (IsDedicatedServer) return true;
+
+                if (SkipPatch)
+                {
+                    SkipPatch = false;
+                    return true;
+                }
+
+                if (_blockValue.Block.Properties.Values.TryGetValue("PickupTime", out string value) &&
+                    float.TryParse(value, out float pickupTime) &&
+                    pickupTime > 0)
+                {
+                    Helper.UiTimerAction(pickupTime, () =>
+                    {
+                        SkipPatch = true;
+                        __instance.PickupBlockServer(_blockPos, _blockValue, _playerId, persistentPlayerId);
+                    });
+                    return false;
+                }
+                return true;
             }
         }
 

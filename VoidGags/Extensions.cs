@@ -30,8 +30,20 @@ namespace VoidGags
             return (TValue)AccessTools.Field(obj.GetType(), name).GetValue(obj);
         }
 
+        public static bool Is(this MethodBase caller, Type declaringType, string methodName)
+        {
+            return caller.DeclaringType == declaringType &&
+                (caller.Name == methodName || caller.Name.Contains($"{declaringType.Name}:{methodName}("));
+        }
+
+        public static bool Is(this MethodBase caller, string methodName)
+        {
+            return caller.Name == methodName || caller.Name.Contains($":{methodName}(");
+        }
+
         public static bool Same(this string str, string another)
         {
+            if (str is null) return another is null;
             return str.Equals(another, StringComparison.CurrentCultureIgnoreCase);
         }
 
@@ -39,6 +51,13 @@ namespace VoidGags
         {
             int result = (value / 256) + (value % 256);
             return result < 256 ? (byte)result : EncodeToByte(result);
+        }
+
+        public static bool Includes<T>(this T flags, T flag) where T : struct, Enum
+        {
+            int flagsValue = (int)(object)flags;
+            int flagValue = (int)(object)flag;
+            return (flagsValue & flagValue) != 0;
         }
 
         public static Vector3i ToBlockPos(this Vector3 pos)

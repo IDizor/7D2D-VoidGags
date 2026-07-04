@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
+using UniLinq;
 using UnityEngine;
 using VoidGags.Types;
 using static VoidGags.VoidGags.RoadRash;
@@ -85,6 +86,14 @@ namespace VoidGags
 
             Harmony.Patch(AccessTools.Method(typeof(EntityVehicle), nameof(EntityVehicle.SetWheelsForces)),
                 postfix: new HarmonyMethod(EntityVehicle_SetWheelsForces.Postfix));
+
+            Harmony.Patch(AccessTools.Method(typeof(EntityPlayerLocal), nameof(EntityPlayerLocal.Detach)),
+                prefix: new HarmonyMethod(EntityPlayerLocal_Detach.Prefix),
+                postfix: new HarmonyMethod(EntityPlayerLocal_Detach.Postfix));
+
+            Harmony.Patch(AccessTools.Method(typeof(EntityVehicle), nameof(EntityVehicle.PhysicsFixedUpdate)),
+                prefix: new HarmonyMethod(EntityVehicle_PhysicsFixedUpdate.Prefix),
+                postfix: new HarmonyMethod(EntityVehicle_PhysicsFixedUpdate.Postfix));
         }
 
         public static class RoadRash
@@ -113,6 +122,7 @@ namespace VoidGags
             public static float WalkOther = 1f;
 
             public static Dictionary<int, float> EntityModifiers = [];
+            public static Dictionary<int, float> VehicleInclines = [];
 
             public static bool IsBushBlock(Block block)
             {
@@ -184,7 +194,8 @@ namespace VoidGags
                         var vehicle = __instance.AttachedToEntity as EntityVehicle;
                         var isVehicle = vehicle != null;
                         var bushesModifier = isVehicle ? DriveBushes : WalkBushes;
-                        var isBush = bushesModifier != 1f && (IsBushBlock(standingOn) || IsBushBlock(above));
+                        var isJump = __instance.bJumping;
+                        var isBush = bushesModifier != 1f && !isJump && (IsBushBlock(standingOn) || IsBushBlock(above));
                         var isBigVehicle = isVehicle && IsBigVehicle(vehicle.vehicle);
                         var entityId = isVehicle ? vehicle.entityId : __instance.entityId;
 
@@ -221,7 +232,7 @@ namespace VoidGags
                         else if (isAsphalt) modifier = isVehicle ? DriveAsphalt : WalkAsphalt;
 
                         // check bushes if walking or driving small vehicle
-                        if (!isBigVehicle && bushesModifier != 1f)
+                        if (!isBigVehicle && !isJump && bushesModifier != 1f)
                         {
                             var movingSpeed = isVehicle
                                 ? vehicle.vehicle.CurrentVelocity.magnitude
@@ -257,6 +268,19 @@ namespace VoidGags
                             }
                         }
 
+                        // apply forward incline for vehicle
+                        if (isVehicle && !isBush && VehicleInclines.ContainsKey(entityId))
+                        {
+                            var incline = VehicleInclines[entityId];
+                            if (incline < 0f && vehicle.vehicle.HasEnginePart())
+                            {
+                                incline /= 3f; // motorized vehicles goes uphill more easily
+                            }
+                            var inclineModifier = Mathf.Max(0.2f, (incline * 0.1f) + 1f);
+                            modifier *= inclineModifier;
+                        }
+
+                        // apply modifier
                         if (modifier > prevModifier)
                         {
                             EntityModifiers[entityId] = Mathf.Clamp(prevModifier + 0.2f, MinLimit, modifier);
@@ -337,6 +361,79 @@ namespace VoidGags
                             }
                         }
                     }
+                }
+            }
+
+            /// <summary>
+            /// Slow down wheels on detach vehicle.
+            /// </summary>
+            public static class EntityPlayerLocal_Detach
+            {
+                public static void Prefix(EntityPlayerLocal __instance, out EntityVehicle __state)
+                {
+                    __state = __instance.AttachedToEntity as EntityVehicle;
+                }
+
+                public static void Postfix(EntityVehicle __state)
+                {
+                    if (__state != null)
+                    {
+                        foreach (var wheel in __state.wheels)
+                        {
+                            wheel.wheelC.rotationSpeed *= 0.1f;
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Improve momentum and respect vehicle forward incline.
+            /// </summary>
+            public static class EntityVehicle_PhysicsFixedUpdate
+            {
+                public struct VehicleCache(float velScale, float angVelScale, float velocityMaxForward)
+                {
+                    public float VelScale = velScale;
+                    public float AngVelScale = angVelScale;
+                    public float VelocityMaxForward = velocityMaxForward;
+                };
+
+                public static void Prefix(EntityVehicle __instance, out VehicleCache __state)
+                {
+                    __state = new(__instance.vehicle.AirDragVelScale, __instance.vehicle.AirDragAngVelScale, __instance.vehicle.VelocityMaxForward);
+                    if (__instance.wheels.All(w => !w.isGrounded)) return;
+
+                    var incline = __instance.transform.eulerAngles.x.Normalize180();
+                    if (__instance.vehicle.CurrentForwardVelocity < 0) incline *= -1;
+                    incline = Mathf.Clamp(incline, -45f, 45f); // clamp to 45° deviation
+                    //if (__instance.HasDriver) LogWarningNoSpam($"Incline = {incline:0.0000}", 0.5f, true);
+                    VehicleInclines[__instance.EntityId] = incline; // positive incline° means vehicle goes downhill
+                    var inclineModifier = incline * 0.0004f;
+                    __instance.vehicle.AirDragVelScale = 0.99998f + inclineModifier;
+                    __instance.vehicle.AirDragAngVelScale = 1f + inclineModifier;
+
+                    // update VelocityMaxForward
+                    if (__instance.vehicle.CurrentForwardVelocity > 0.01f && __instance.vehicle.VelocityMaxForward < __instance.vehicle.VelocityMaxTurboForward)
+                    {
+                        if (__instance.movementInput?.moveForward == 0f) // if move forward button not pressed
+                        {
+                            __instance.vehicle.VelocityMaxForward = __instance.vehicle.VelocityMaxTurboForward;
+                        }
+                        else
+                        {
+                            __instance.vehicle.VelocityMaxForward = Mathf.Lerp(
+                                __instance.vehicle.VelocityMaxForward,
+                                __instance.vehicle.VelocityMaxTurboForward,
+                                Mathf.Clamp(incline / 2f, 0f, 1f)); // 0° is MaxForward, 2+° is MaxTurboForward
+                        }
+                    }
+                }
+
+                public static void Postfix(EntityVehicle __instance, VehicleCache __state)
+                {
+                    __instance.vehicle.AirDragVelScale = __state.VelScale;
+                    __instance.vehicle.AirDragAngVelScale = __state.AngVelScale;
+                    __instance.vehicle.VelocityMaxForward = __state.VelocityMaxForward;
                 }
             }
         }

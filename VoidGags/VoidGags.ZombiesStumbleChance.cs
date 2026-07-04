@@ -1,5 +1,4 @@
-﻿using System;
-using HarmonyLib;
+﻿using HarmonyLib;
 using static VoidGags.VoidGags.ZombiesStumbleChance;
 
 namespace VoidGags
@@ -15,6 +14,7 @@ namespace VoidGags
 
             // divided by 200, not by 100, because UpdateNPCStatsOverTime() is called twice per second.
             Chance = Settings.ZombiesStumbleChance / 200f;
+            OnTrapChance = Settings.ZombiesStumbleChance_OnSpikes / 200f;
 
             Harmony.Patch(AccessTools.Method(typeof(EntityStats), nameof(EntityStats.UpdateNPCStatsOverTime)),
                 prefix: new HarmonyMethod(EntityStats_UpdateNPCStatsOverTime.Prefix));
@@ -23,6 +23,7 @@ namespace VoidGags
         public static class ZombiesStumbleChance
         {
             public static float Chance = 0f;
+            public static float OnTrapChance = 0.1f;
 
             /// <summary>
             /// Sometimes zombies can stumble and fall while moving.
@@ -32,14 +33,32 @@ namespace VoidGags
                 public static void Prefix(EntityAlive ___m_entity)
                 {
                     var zombie = ___m_entity as EntityZombie;
-                    if (zombie != null && zombie.rand.RandomFloat < Chance)
+                    if (zombie != null)
                     {
-                        // check state: not ragdoll, is moving, etc.
-                        if (zombie.emodel?.IsRagdollActive == false && zombie.speedForward >= 0.02f && !zombie.IsWalkTypeACrawl() && zombie.onGround && !zombie.IsInWater())
+                        var chance = Chance;
+                        var stunType = EnumEntityStunType.StumbleBreakThroughRagdoll;
+                        var isOnTrap = false;
+
+                        if (OnTrapChance > 0f)
                         {
-                            //Debug.LogWarning("Stumble activated for " + zombie.EntityName);
-                            zombie.emodel.avatarController.BeginStun(EnumEntityStunType.StumbleBreakThroughRagdoll, EnumBodyPartHit.LeftUpperLeg, Utils.EnumHitDirection.None, _criticalHit: false, 1f);
-                            zombie.SetStun(EnumEntityStunType.StumbleBreakThroughRagdoll);
+                            var standingOn = zombie.blockValueStandingOn.Block;
+                            isOnTrap = PickupSpikes.IsSpikesTrap(standingOn);
+                            if (isOnTrap)
+                            {
+                                chance = OnTrapChance;
+                                stunType = EnumEntityStunType.Kneel;
+                            }
+                        }
+
+                        if (chance > 0f && zombie.rand.RandomFloat < chance)
+                        {
+                            // check state: not ragdoll, is moving, etc.
+                            if (zombie.emodel?.IsRagdollActive == false && (isOnTrap || zombie.speedForward >= 0.02f) && !zombie.emodel.avatarController.IsAnimationStunRunning() && !zombie.IsWalkTypeACrawl() && zombie.onGround && !zombie.IsInWater())
+                            {
+                                //Debug.LogWarning("Stumble activated for " + zombie.EntityName);
+                                zombie.emodel.avatarController.BeginStun(stunType, EnumBodyPartHit.LeftUpperLeg, Utils.EnumHitDirection.None, _criticalHit: false, 1f);
+                                zombie.SetStun(stunType);
+                            }
                         }
                     }
                 }

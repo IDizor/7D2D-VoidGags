@@ -55,8 +55,9 @@ namespace VoidGags
                 public static bool Prefix(ref bool __result)
                 {
                     var caller = Helper.GetCallerMethod();
-                    if (caller.Name.Contains(":update0(") || (caller.DeclaringType == typeof(BlockToolSelection) && caller.Name == nameof(BlockToolSelection.ExecuteUseAction)))
+                    if (caller.Is("update0") || caller.Is(typeof(BlockToolSelection), nameof(BlockToolSelection.ExecuteUseAction)))
                     {
+                        //LogWarningNoSpam($"Block_CanPlaceBlockAt: PlacingAllowed = {PlacingAllowed}", 1f, true);
                         if (!PlacingAllowed)
                         {
                             __result = false;

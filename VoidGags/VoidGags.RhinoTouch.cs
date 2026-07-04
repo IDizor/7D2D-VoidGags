@@ -14,7 +14,7 @@ namespace VoidGags
         {
             LogApplyingPatch(nameof(Settings.RhinoTouch));
 
-            Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDamaged), [typeof(WorldBase), typeof(int), typeof(Vector3i), typeof(BlockValue), typeof(int), typeof(int), typeof(AttackHitInfo), typeof(bool), typeof(bool), typeof(int)]),
+            Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDamaged), [typeof(WorldBase), typeof(BlockValueRef), typeof(BlockValue), typeof(int), typeof(int), typeof(AttackHitInfo), typeof(bool), typeof(bool), typeof(int)]),
                 prefix: new HarmonyMethod(Block_OnBlockDamaged.Prefix, Priority.First));
 
             Harmony.Patch(AccessTools.Method(typeof(Block), nameof(Block.OnBlockDestroyedBy)),
@@ -34,9 +34,9 @@ namespace VoidGags
             /// </summary>
             public static class Block_OnBlockDamaged
             {
-                public static bool Prefix(Vector3i _blockPos, BlockValue _blockValue, ref int __result)
+                public static bool Prefix(BlockValueRef _bvRef, BlockValue _blockValue, ref int __result)
                 {
-                    if (BumpedBlockPos != null && BumpedBlockPos.Value == _blockPos)
+                    if (BumpedBlockPos != null && BumpedBlockPos.Value == _bvRef.BlockPosition)
                     {
                         __result = _blockValue.damage;
                         return false;
@@ -50,7 +50,7 @@ namespace VoidGags
             /// </summary>
             public static class Block_OnBlockDestroyedBy
             {
-                public static void Postfix(WorldBase _world, Vector3i _blockPos, BlockValue _blockValue, int _entityId, ref DestroyedResult __result)
+                public static void Postfix(WorldBase _world, BlockValueRef _bvRef, BlockValue _blockValue, int _entityId, ref DestroyedResult __result)
                 {
                     if (__result != DestroyedResult.Keep && !_blockValue.Block.IsPlant())
                     {
@@ -58,7 +58,7 @@ namespace VoidGags
                         if (entity is EntityVehicle)
                         {
                             __result = DestroyedResult.Keep;
-                            (_world as World)?.AddFallingBlock(_blockPos);
+                            (_world as World)?.AddFallingBlock(_bvRef.BlockPosition);
                         }
                     }
                 }
@@ -76,7 +76,7 @@ namespace VoidGags
                     if (hitInfo.hit.blockValue.isair ||
                         hitInfo.hit.blockValue.Block.shape.IsTerrain() ||
                         hitInfo.hit.blockValue.Block.IsPlant() ||
-                        world.IsWithinTraderArea(hitInfo.hit.blockPos) ||
+                        Helper.IsInvulnerableBlock(hitInfo.hit.blockPos) ||
                         hitInfo.hit.blockValue.Block.Is("resourceRock"))
                     {
                         return true;
@@ -85,7 +85,8 @@ namespace VoidGags
                     var entity = world.GetEntity(_attackerEntityId);
                     if (entity is EntityVehicle)
                     {
-                        var speed = entity.GetVelocityPerSecond().magnitude;
+                        var velocity = entity.GetVelocityPerSecond();
+                        var speed = velocity.magnitude;
                         var mass = entity.EntityClass.MassKg;
                         var blockMass = hitInfo.hit.blockValue.Block.MaxDamage;
                         var kineticEnergy = speed * mass * 20f;

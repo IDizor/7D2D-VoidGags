@@ -5,10 +5,10 @@
     /// </summary>
     public partial class VoidGags : IModApi
     {
-        public void ApplyPatches_TradersPlayerReputation()
+        public void ApplyPatches_NewTradersDontKnowYou()
         {
-            LogApplyingPatch(nameof(Settings.TradersPlayerReputation));
-            UseXmlPatches(nameof(Settings.TradersPlayerReputation));
+            LogApplyingPatch(nameof(Settings.NewTradersDontKnowYou));
+            UseXmlPatches(nameof(Settings.NewTradersDontKnowYou));
         }
     }
 }

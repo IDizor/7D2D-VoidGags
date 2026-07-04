@@ -15,8 +15,8 @@ namespace VoidGags
             LogApplyingPatch(nameof(Settings.PreventDestroyOnClose));
             UseXmlPatches(nameof(Settings.PreventDestroyOnClose));
 
-            Harmony.Patch(AccessTools.Method(typeof(GameManager), nameof(GameManager.TEUnlockServer)),
-                prefix: new HarmonyMethod(GameManager_TEUnlockServer.Prefix));
+            Harmony.Patch(AccessTools.Method(typeof(TEFeatureStorage), nameof(TEFeatureStorage.ShouldDestroyOnClose)),
+                postfix: new HarmonyMethod(TEFeatureStorage_ShouldDestroyOnClose.Postfix));
 
             Harmony.Patch(AccessTools.Method(typeof(XUiC_LootWindow), nameof(XUiC_LootWindow.Init)),
                 postfix: new HarmonyMethod(XUiC_LootWindow_Init.Postfix));
@@ -60,18 +60,16 @@ namespace VoidGags
             /// <summary>
             /// Prevent the loot container from being auto-destroyed.
             /// </summary>
-            public static class GameManager_TEUnlockServer
+            public static class TEFeatureStorage_ShouldDestroyOnClose
             {
-                public static void Prefix(Vector3i _blockPos, ref bool _allowContainerDestroy)
+                public static void Postfix(TEFeatureStorage __instance, ref bool __result)
                 {
-                    if (_allowContainerDestroy)
+                    if (__result)
                     {
-                        var tileEntity = GameManager.Instance.World.GetTileEntity(_blockPos);
-                        var blockName = tileEntity?.blockValue.Block?.blockName;
-
+                        var blockName = __instance.Parent.blockValue.Block?.blockName;
                         if (!string.IsNullOrEmpty(blockName))
                         {
-                            _allowContainerDestroy = !Containers.Contains(blockName);
+                            __result = !Containers.Contains(blockName);
                         }
                     }
                 }
@@ -92,7 +90,7 @@ namespace VoidGags
                     static void ToggleAutoDestroy(XUiController _sender, int _mouseButton)
                     {
                         var window = _sender.xui.GetWindowByType<XUiC_LootWindow>();
-                        var blockName = _sender.xui.lootContainer?.blockValue.Block?.blockName;
+                        var blockName = _sender.xui.LootContainer?.blockValue.Block?.blockName;
                         var destroy = Containers.Contains(blockName);
                         UpdateAndSavePreventDestroyValue(blockName, destroy);
                         window?.RefreshBindings();
@@ -112,7 +110,7 @@ namespace VoidGags
                         if (_bindingName == "is_auto_destroyable")
                         {
                             _value = "false";
-                            var lootableEntity = __instance.xui.lootContainer;
+                            var lootableEntity = __instance.xui.LootContainer;
                             if (lootableEntity != null && lootableEntity.GetChunk() != null)
                             {
                                 if (!string.IsNullOrEmpty(lootableEntity.lootListName))
@@ -128,7 +126,7 @@ namespace VoidGags
                         if (_bindingName == "prevent_auto_destroy")
                         {
                             _value = "false";
-                            var lootableEntity = __instance.xui.lootContainer;
+                            var lootableEntity = __instance.xui.LootContainer;
                             if (lootableEntity != null && lootableEntity.GetChunk() != null)
                             {
                                 var blockName = lootableEntity.blockValue.Block?.blockName;
