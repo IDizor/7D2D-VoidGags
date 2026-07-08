@@ -437,5 +437,24 @@ namespace VoidGags
             player = null;
             return false;
         }
+
+        /// <summary>
+        /// Check if any stage of downgradable block is equal to the specified block.
+        /// </summary>
+        public static bool DowngradableBlocksEqual(BlockValue block, BlockValue downgradableBlock)
+        {
+            if (block.type == downgradableBlock.type)
+            {
+                return true;
+            }
+            else if (downgradableBlock.Block.DowngradeBlock.isair)
+            {
+                return false;
+            }
+            else
+            {
+                return DowngradableBlocksEqual(block, downgradableBlock.Block.DowngradeBlock);
+            }
+        }
     }
 }

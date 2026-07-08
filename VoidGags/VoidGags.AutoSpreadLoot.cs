@@ -196,7 +196,7 @@ namespace VoidGags
                             var parentWindowController = sender.GetParentWindow().Controller;
                             var controls = sender.GetParentByType<XUiC_ContainerStandardControls>();
                             var localOpenContainer = controls.xui.LootContainer;
-                            var workstationGroup = localOpenContainer == null ? controls.GetParentByType<XUiC_WorkstationWindowGroup>() : null;
+                            var workstationGroup = localOpenContainer == null ? GetWorkstationWindowGroup() : null;
                             var isWorkstation = workstationGroup != null && workstationGroup.WorkstationData != null;
                             var workstation = isWorkstation ? workstationGroup.WorkstationData.TileEntity : null;
                             LocalOpenEntityPos = isWorkstation ? workstation?.ToWorldPos() : localOpenContainer?.ToWorldPos();
@@ -205,7 +205,7 @@ namespace VoidGags
                             var lockedSlots = controls.xui.playerUI.entityPlayer.bag.LockedSlots;
                             var moveStartBottomRight = controls.MoveStartBottomRight;
 
-                            //LogWarning($"Local active container = {LocalOpenEntityPos.HasValue}");
+                            //LogWarning($"Local active container = {LocalOpenEntityPos.HasValue}, isWorkstation = {isWorkstation}");
                             if (LocalOpenEntityPos.HasValue)
                             {
                                 if (!IgnoredContainers.Contains(LocalOpenEntityPos.Value))
@@ -241,7 +241,7 @@ namespace VoidGags
                                 {
                                     var featureStorage = teLootable as TEFeatureStorage;
                                     var isLocked = featureStorage?.lockFeature != null && featureStorage.lockFeature.IsLocked() && !featureStorage.lockFeature.IsUserAllowed(PlatformManager.InternalLocalUserIdentifier);
-                                    //LogWarning($"Have Access = {!isLocked}");
+                                    //LogWarning($"[{featureStorage.blockValue.Block.blockName}] : have access = {!isLocked}");
                                     if (!isLocked)
                                     {
                                         if (teLootable.ContainsAnyItem(loot))
@@ -328,6 +328,13 @@ namespace VoidGags
                 }
 
                 // auxiliary methods
+
+                public static XUiC_WorkstationWindowGroup GetWorkstationWindowGroup()
+                {
+                    var xui = Helper.PlayerLocal?.PlayerUI?.xui;
+                    return xui?.GetWindowsByType<XUiC_WorkstationWindowGroup>()
+                        .FirstOrDefault(w => w.WindowGroup.isShowing);
+                }
 
                 public static void SaveIgnoredContainers()
                 {

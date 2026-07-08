@@ -14,6 +14,10 @@ namespace VoidGags
     /// </summary>
     public partial class VoidGags : IModApi
     {
+        //Utils.DrawOutline(new Rect(num + 5f, num4, num2 - 10f, inputAreaHeight), text2, labelStyle, Color.black, Color.white);
+
+
+
         //[HarmonyPatch(typeof(AvatarZombieController), nameof(AvatarZombieController.StartAnimationDodge))]
         //public static class knqwefkjeqw
         //{
@@ -23,7 +27,7 @@ namespace VoidGags
         //    }
         //}
 
-        
+
 
         //[HarmonyPatch(typeof(LootManager), nameof(LootManager.LootContainerOpened))]
         //public static class doivjmndf

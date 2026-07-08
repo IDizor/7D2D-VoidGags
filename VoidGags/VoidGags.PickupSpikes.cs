@@ -24,6 +24,15 @@ namespace VoidGags
                 prefix: new HarmonyMethod(Block_OnBlockDamaged.Prefix),
                 postfix: new HarmonyMethod(Block_OnBlockDamaged.Postfix));
 
+            Harmony.Patch(AccessTools.Method(typeof(World), nameof(World.CanPickupBlockAt)),
+                prefix: new HarmonyMethod(World_CanPickupBlockAt.Prefix));
+
+            Harmony.Patch(AccessTools.Method(typeof(WorldBase), nameof(WorldBase.SetBlockRPC), [typeof(BlockValueRef), typeof(BlockValue)]),
+                prefix: new HarmonyMethod(WorldBase_SetBlockRPC.Prefix));
+
+            Harmony.Patch(AccessTools.Method(typeof(Chunk), nameof(Chunk.SetBlock)),
+                prefix: new HarmonyMethod(Chunk_SetBlock.Prefix));
+
             Harmony.Patch(AccessTools.Method(typeof(ItemActionRepair), nameof(ItemActionRepair.ExecuteAction)),
                 prefix: new HarmonyMethod(ItemActionRepair_ExecuteAction.Prefix));
 
@@ -40,6 +49,7 @@ namespace VoidGags
 
             public static List<Vector3i> NonPickableTraps = [];
             public static Dictionary<Vector3i, int> PickableTraps = [];
+            public static List<Vector3i> AllowedPoiTraps = [];
 
             public static bool IsSpikesTrap(Block block)
             {
@@ -62,6 +72,18 @@ namespace VoidGags
             {
                 if (PickableTraps.ContainsKey(trapPos)) return;
                 PickableTraps.Add(trapPos, blockType);
+            }
+
+            public static BlockValue GetPrefabBlock(PrefabInstance poi, Vector3i blockPos)
+            {
+                if (poi == null) return BlockValue.Air;
+                var posInPrefab = blockPos - poi.boundingBoxPosition; // vanilla method GetPositionRelativeToPoi() has issues
+                return poi.prefab.GetBlock(posInPrefab.x, posInPrefab.y, posInPrefab.z);
+            }
+
+            public static bool IsPrefabBlock(EntityPlayer player, BlockValue block, Vector3i blockPos)
+            {
+                return Helper.DowngradableBlocksEqual(block, GetPrefabBlock(player.prefab, blockPos));
             }
 
             /// <summary>
@@ -110,7 +132,7 @@ namespace VoidGags
             }
 
             /// <summary>
-            /// Track POI traps to make them non-pickable.
+            /// Track POI traps to make them non-pickable if repaired somehow.
             /// </summary>
             public static class Block_OnBlockDamaged
             {
@@ -132,6 +154,94 @@ namespace VoidGags
                             if (_world.GetBlock(_bvRef.BlockPosition).isair)
                             {
                                 NonPickableTraps.Remove(_bvRef.BlockPosition);
+                            }
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Disallow to pickup POI traps.
+            /// </summary>
+            public static class World_CanPickupBlockAt
+            {
+                public static bool Prefix(Vector3i blockPos, ref bool __result)
+                {
+                    if (IsDedicatedServer || AllowedPoiTraps.Contains(blockPos)) return true;
+
+                    if (NonPickableTraps.Contains(blockPos))
+                    {
+                        __result = false;
+                        return false;
+                    }
+                    else
+                    {
+                        var player = Helper.PlayerLocal;
+                        var poi = player?.prefab; // or player.world.GetPOIAtPosition(player.position) can be used
+                        if (poi != null)
+                        {
+                            var block = player.world.GetBlock(blockPos);
+                            if (IsSpikesTrap(block.Block) && IsPrefabBlock(player, block, blockPos))
+                            {
+                                AddNonPickableTrap(blockPos);
+                                __result = false;
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Add destroyed POI traps to AllowedPoiTraps.
+            /// </summary>
+            public static class WorldBase_SetBlockRPC
+            {
+                public static void Prefix(BlockValueRef _bvRef, BlockValue _blockValue)
+                {
+                    if (IsDedicatedServer) return;
+
+                    if (_blockValue.isair)
+                    {
+                        var world = GameManager.Instance.World;
+                        var destroyedBlock = world.GetBlock(_bvRef.BlockPosition);
+                        if (!destroyedBlock.isair && IsSpikesTrap(destroyedBlock.Block) && !AllowedPoiTraps.Contains(_bvRef.BlockPosition))
+                        {
+                            var poi = world.GetPOIAtPosition(_bvRef.BlockPosition);
+                            if (poi != null)
+                            {
+                                var prefabBlock = GetPrefabBlock(poi, _bvRef.BlockPosition);
+                                if (Helper.DowngradableBlocksEqual(destroyedBlock, prefabBlock))
+                                {
+                                    //LogWarning($"Allowed POI trap added: {prefabBlock.Block.blockName}");
+                                    AllowedPoiTraps.Add(_bvRef.BlockPosition);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// On POI reset clear AllowedPoiTraps.
+            /// </summary>
+            public static class Chunk_SetBlock
+            {
+                public static void Prefix(int ___m_X, int ___m_Z, int x, int y, int z, BlockValue _blockValue)
+                {
+                    if (IsDedicatedServer) return;
+
+                    if (IsSpikesTrap(_blockValue.Block))
+                    {
+                        var trapPos = new Vector3i((___m_X << 4) + x, y, (___m_Z << 4) + z);
+                        if (AllowedPoiTraps.Contains(trapPos))
+                        {
+                            // if called from POI reset code: Prefab.CopyBlocksIntoChunkNoEntities() <- PrefabInstance.CopyIntoChunk()
+                            var caller = Helper.GetCallerMethod();
+                            if (caller.DeclaringType == typeof(Prefab) && caller.Name == nameof(Prefab.CopyBlocksIntoChunkNoEntities))
+                            {
+                                AllowedPoiTraps.Remove(trapPos);
                             }
                         }
                     }
@@ -161,11 +271,15 @@ namespace VoidGags
                             }
 
                             var block = player.world.GetBlock(hitInfo.hit.blockPos);
-                            if (IsSpikesTrap(block.Block) &&
-                                (NonPickableTraps.Contains(hitInfo.hit.blockPos) || block.Block.blockName.EndsWith("POI", StringComparison.OrdinalIgnoreCase)))
+                            if (IsSpikesTrap(block.Block) && !AllowedPoiTraps.Contains(hitInfo.hit.blockPos))
                             {
-                                Manager.PlayInsidePlayerHead("keystone_build_warning");
-                                return false;
+                                if (NonPickableTraps.Contains(hitInfo.hit.blockPos) ||
+                                    block.Block.blockName.EndsWith("POI", StringComparison.OrdinalIgnoreCase) ||
+                                    IsPrefabBlock(player, block, hitInfo.hit.blockPos))
+                                {
+                                    Manager.PlayInsidePlayerHead("keystone_build_warning");
+                                    return false;
+                                }
                             }
                         }
                     }
